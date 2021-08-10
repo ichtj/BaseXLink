@@ -5,6 +5,7 @@ import android.util.Log;
 import com.future.xlink.api.response.BaseResponse;
 import com.future.xlink.api.retrofit.RetrofitClient;
 import com.future.xlink.bean.InitParams;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,43 +18,43 @@ import retrofit2.Response;
 
 /**
  * 大文件拆分上传处理
- * */
-
+ */
 public class FileUpload {
     private static final String TAG = "FileUpload";
-    public static void readAndUpload(String filePath, String fileName,InitParams params) throws Exception {
+    public static void readAndUpload(String filePath, String fileName, InitParams params) throws Exception {
         File file = new File(filePath);
         long total = file.length();
         long startPos = 0;
-        long readSize =2* 524288;  //每次读取的大小，1M
+        long readSize = 2 * 524288;  //每次读取的大小，1M
 
         long readLen = 0;
         while (readLen < total) {   //直到所有读取完成为止
             long rs = readLen + readSize <= total ? readSize : (int) total - readLen;
             byte[] datas = ZFileUtils.readFile(filePath, startPos, rs); //分段读取文件
             readLen += datas.length;
-           boolean result= uploadBreakpoint(fileName, startPos, datas, total,params); //上传数据
-            if (!result){
-                Log.d(TAG,"readAndUpload failed==>"+startPos);
+            boolean result = uploadBreakpoint(fileName, startPos, datas, total, params); //上传数据
+            if (!result) {
+                Log.d(TAG, "readAndUpload failed==>" + startPos);
                 return;
             }
-            Log.d(TAG,"readAndUpload success==>"+startPos);
+            Log.d(TAG, "readAndUpload success==>" + startPos);
             startPos += datas.length;
         }
     }
-    private static boolean uploadBreakpoint(String fileName, long startPos, byte[] datas, long total,InitParams params) throws Exception {
+
+    private static boolean uploadBreakpoint(String fileName, long startPos, byte[] datas, long total, InitParams params) throws Exception {
         int retryCount = 5; //重试的次数
         boolean suc = false;
         do {
-            suc = doUploadBreakpointEx(fileName, startPos, datas, total,params); //上传数据
+            suc = doUploadBreakpointEx(fileName, startPos, datas, total, params); //上传数据
         } while (!suc && --retryCount > 0); //失败重试
         return suc;
     }
+
     /**
      * 上传文件
      */
     private static boolean doUploadBreakpointEx(String fileName, long startPos, byte[] datas, long total, InitParams params) throws Exception {
-        String url = "api/iot/reg/device/file/upload";
         try {
             Map<String, RequestBody> data = new HashMap<>();
             MediaType textType = MediaType.parse("text/plain");
@@ -63,33 +64,35 @@ public class FileUpload {
             MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, file);
 
             long timestamp = System.currentTimeMillis();
-            String token =Utils.getToken(params,String.valueOf(timestamp));
+            String token = Utils.getToken(params, String.valueOf(timestamp));
             System.out.println("token: " + token);
-            Log.d(TAG,"doUploadBreakpointEx 1111");
-            Response<BaseResponse>  response=
-            RetrofitClient.getInstance()
-                    .doUploadFile(GlobalConfig.HTTP_SERVER+url,token,String.valueOf(timestamp),params.sn,data,
-                            filePart,getContentRange(startPos,datas,total)).execute();
-            BaseResponse baseResponse=response.body();
-            if (baseResponse!=null&&baseResponse.status==0){
-                return  true;
+            Log.d(TAG, "doUploadBreakpointEx 1111");
+            Response<BaseResponse> response =
+                    RetrofitClient.getInstance()
+                            .doUploadFile(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,
+                                    filePart, getContentRange(startPos, datas, total)).execute();
+            BaseResponse baseResponse = response.body();
+            if (baseResponse != null && baseResponse.status == 0) {
+                return true;
             }
         } catch (Exception e) {
-            Log.d(TAG,"doUploadBreakpointEx 1114");
+            Log.d(TAG, "doUploadBreakpointEx 1114");
             e.printStackTrace();
         }
         return false;
     }
+
     private static String getContentRange(long startPos, byte[] datas, long total) {
         //设置Content-Range来支持断点续传，格式：
         //Content-Range: bytes (unit first byte pos) – [last byte pos]/[entity legth]
         //Content-Range: bytes 0-800/801 //801:文件总大小
         return "bytes " + startPos + "-" + (startPos + datas.length - 1) + "/" + total;
     }
+
     private String mUpUrl;
     private File mPath;
     private Call mCall;
-    private Map<String,String> mParams;
+    private Map<String, String> mParams;
     private long mAlreadyUpLength = 0;//已经上传长度
     private long mTotalLength = 0;//整体文件大小
     private int mSign = 0;

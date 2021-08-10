@@ -20,6 +20,7 @@ public class GlobalConfig {
     public static final String AGENT_REGISTER = "/api/iot/reg/device/register"; //注册服务器
     public static final String PRODUCT_UNIQUE = "api/iot/reg/device/unique"; //设备sn唯一性验证
     public static final String UPLOAD_LOGURL = "api/iot/reg/device/uploadLogUrl"; //获取上传日志信息
+    public static final String UPLOAD_FILE = "api/iot/reg/device/file/upload"; //上传文件
 
     public static int MQTT_OutTime = 10;   //设置超时时间，单位：秒
     public static int MQTT_KeepAliveTime = 20;  //心跳包发送间隔，单位：秒

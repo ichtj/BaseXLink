@@ -140,7 +140,7 @@ public class RxMqttService extends Service {
             //创建连接
             Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
             map.clear();//创建连接时清除之前的消息队列
-            boolean isNetOk = Utils.isNetNormal(RxMqttService.this);
+            boolean isNetOk = PingUtils.ping();
             if (!isNetOk) {
                 //网络不正常
                 connTypeCallBack(CONNECT_NO_NETWORK);

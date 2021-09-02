@@ -178,7 +178,7 @@ public class RxMqttService extends Service {
                 subscrible();
             }
         } else if (msg.type == Carrier.TYPE_MODE_DISCONNECT) {
-            //连接断开 注销此连接
+            //主动连接断开 注销此连接
             Log.d(TAG, "onEvent： TYPE_MODE_DISCONNECT");
             stopCheckReconnect();//如果有网络状态检测，停止
             if (mqttManager != null) {
@@ -450,7 +450,7 @@ public class RxMqttService extends Service {
         int outtime = params.reconnectTime * 60 / 10;//超时时间
         SubscriberSingleton.add(TAG, Observable.interval(1, 10, TimeUnit.SECONDS).observeOn(AndroidSchedulers.mainThread()).subscribe(aLong -> {
             boolean isConnect = mqttManager.isConnect();//mqtt连接是断开的
-            boolean isNetOk = PingUtils.ping("114.114.114.114");
+            boolean isNetOk = PingUtils.ping();
             int nowValue = aLong.intValue();//当前的计时
             if (!isConnect) {
                 ConnectLostType type = null;

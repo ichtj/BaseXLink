@@ -140,7 +140,7 @@ public class RxMqttService extends Service {
             //创建连接
             Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
             map.clear();//创建连接时清除之前的消息队列
-            boolean isNetOk = PingUtils.ping();
+            boolean isNetOk = PingUtils.checkNetWork();
             if (!isNetOk) {
                 //网络不正常
                 connTypeCallBack(CONNECT_NO_NETWORK);
@@ -450,7 +450,7 @@ public class RxMqttService extends Service {
         int outtime = params.reconnectTime * 60 / 10;//超时时间
         SubscriberSingleton.add(TAG, Observable.interval(1, 10, TimeUnit.SECONDS).observeOn(AndroidSchedulers.mainThread()).subscribe(aLong -> {
             boolean isConnect = mqttManager.isConnect();//mqtt连接是断开的
-            boolean isNetOk = PingUtils.ping();
+            boolean isNetOk = PingUtils.checkNetWork();
             int nowValue = aLong.intValue();//当前的计时
             if (!isConnect) {
                 ConnectLostType type = null;

@@ -106,6 +106,62 @@ public class PingUtils {
         return false;
     }
 
+    /**
+     * 判断网络是否异常
+     * @return
+     */
+    public static boolean checkNetWork() {
+        String[] PING_ADDR = new String[]{
+                "114.114.114.114", "223.5.5.5", "180.76.76.76", "8.8.8.8"
+        };
+        for (int i = 0; i < PING_ADDR.length; i++) {
+            boolean isNetOk = ping(PING_ADDR[i], 1, 2);
+            if (!isNetOk) {
+                //If it is abnormal when entering the program network at the beginning, then only prompt once
+                continue;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static final boolean ping(String ip, int count, int time) {
+        String result = null;
+
+        try {
+            try {
+                Process p = Runtime.getRuntime().exec("ping -c " + count + " -w " + time + " " + ip);
+                InputStream input = p.getInputStream();
+                BufferedReader in = new BufferedReader(new InputStreamReader(input));
+                StringBuffer stringBuffer = new StringBuffer();
+                String content = "";
+
+                while((content = in.readLine()) != null) {
+                    stringBuffer.append(content);
+                }
+
+                int status = p.waitFor();
+                if (status == 0) {
+                    result = "success";
+                    boolean var10 = true;
+                    return var10;
+                }
+
+                result = "failed";
+            } catch (IOException var15) {
+                result = "IOException";
+            } catch (InterruptedException var16) {
+                result = "InterruptedException";
+            }
+
+            return false;
+        } finally {
+            ;
+        }
+    }
+
+
 
     public static boolean ping(String host) {
         String line = null;

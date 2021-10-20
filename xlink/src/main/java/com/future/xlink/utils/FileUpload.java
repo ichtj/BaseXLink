@@ -18,6 +18,7 @@ import retrofit2.Response;
 
 /**
  * 大文件拆分上传处理
+ * @author chtj
  */
 public class FileUpload {
     private static final String TAG = "FileUpload";

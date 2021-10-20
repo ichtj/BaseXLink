@@ -7,23 +7,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+/**
+ * @author chtj
+ */
 public class PingUtils {
     private static final String TAG = "PingUtils";
+
     public static String ping(String host, int pingCount, StringBuffer stringBuffer) {
         String result = null;
         String line = null;
         Process process = null;
         BufferedReader successReader = null;
         try {
-            String url=null;
-            if (host.startsWith("http://")){
-                url=host.substring("http://".length());
-            }else if (host.startsWith("https://")){
-                url=host.substring("https://".length());
-            }else {
-                url=host;
+            String url = null;
+            if (host.startsWith("http://")) {
+                url = host.substring("http://".length());
+            } else if (host.startsWith("https://")) {
+                url = host.substring("https://".length());
+            } else {
+                url = host;
             }
-            String [] pingHosts=url.split(":");
+            String[] pingHosts = url.split(":");
             String command = "ping -c " + pingCount + " " + pingHosts[0];
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
@@ -74,10 +78,9 @@ public class PingUtils {
      * 不要在主线程使用，会阻塞线程
      */
     public static final boolean ping() {
-
-        String result = null;
         try {
-            String ip = "114.114.114.114";// ping 的地址，可以换成任何一种可靠的外网
+            // ping 的地址，可以换成任何一种可靠的外网
+            String ip = "114.114.114.114";
             Process p = Runtime.getRuntime().exec("ping -c 1 -w 3 " + ip);// ping网址3次
             // 读取ping的内容，可以不加
             InputStream input = p.getInputStream();
@@ -87,28 +90,19 @@ public class PingUtils {
             while ((content = in.readLine()) != null) {
                 stringBuffer.append(content);
             }
-//            Log.d("------ping-----", "result content : " + stringBuffer.toString());
             // ping的状态
             int status = p.waitFor();
             if (status == 0) {
-                result = "success";
                 return true;
-            } else {
-                result = "failed";
             }
-        } catch (IOException e) {
-            result = "IOException";
-        } catch (InterruptedException e) {
-            result = "InterruptedException";
-        } finally {
-//            Log.d("----result---", "result = " + result);
+        } catch (Throwable e) {
+            Log.d(TAG, "ping: ", e);
         }
         return false;
     }
 
     /**
      * 判断网络是否异常
-     * @return
      */
     public static boolean checkNetWork() {
         String[] PING_ADDR = new String[]{
@@ -127,82 +121,59 @@ public class PingUtils {
     }
 
     public static final boolean ping(String ip, int count, int time) {
-        String result = null;
-
         try {
-            try {
-                Process p = Runtime.getRuntime().exec("ping -c " + count + " -w " + time + " " + ip);
-                InputStream input = p.getInputStream();
-                BufferedReader in = new BufferedReader(new InputStreamReader(input));
-                StringBuffer stringBuffer = new StringBuffer();
-                String content = "";
-
-                while((content = in.readLine()) != null) {
-                    stringBuffer.append(content);
-                }
-
-                int status = p.waitFor();
-                if (status == 0) {
-                    result = "success";
-                    boolean var10 = true;
-                    return var10;
-                }
-
-                result = "failed";
-            } catch (IOException var15) {
-                result = "IOException";
-            } catch (InterruptedException var16) {
-                result = "InterruptedException";
+            Process p = Runtime.getRuntime().exec("ping -c " + count + " -w " + time + " " + ip);
+            InputStream input = p.getInputStream();
+            BufferedReader in = new BufferedReader(new InputStreamReader(input));
+            StringBuffer stringBuffer = new StringBuffer();
+            String content = "";
+            while ((content = in.readLine()) != null) {
+                stringBuffer.append(content);
             }
-
-            return false;
-        } finally {
-            ;
+            int status = p.waitFor();
+            if (status == 0) {
+                return true;
+            }
+        } catch (Throwable var15) {
+            Log.d(TAG, "ping: ", var15);
         }
+        return false;
     }
-
 
 
     public static boolean ping(String host) {
-        String line = null;
         Process process = null;
-        boolean result=false;
         try {
-            String url=null;
-            if (host.startsWith("http://")){
-                url=host.substring("http://".length());
-            }else if (host.startsWith("https://")){
-                url=host.substring("https://".length());
-            }else {
-                url=host;
+            String url = null;
+            if (host.startsWith("http://")) {
+                url = host.substring("http://".length());
+            } else if (host.startsWith("https://")) {
+                url = host.substring("https://".length());
+            } else {
+                url = host;
             }
-            String [] pingHosts=url.split(":");
+            String[] pingHosts = url.split(":");
             String command = "ping -c " + 3 + " " + pingHosts[0];
-            //Log.d(PingUtils.class, "ping", command);
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
                 Log.d(TAG, "ping ping fail:process is null.");
-                return result;
+                return false;
             }
-
             int status = process.waitFor();
             if (status == 0) {
                 Log.d(TAG, "ping exec cmd success:" + command);
-                result=true;
+                return true;
             }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "ping", e);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
+            Log.e(TAG, "ping: ",e );
         } finally {
-            //Log.d(PingUtils.class, "ping", "ping exit.");
             if (process != null) {
                 process.destroy();
             }
-
         }
-        return result;
+        return false;
     }
+
     private static void append(StringBuffer stringBuffer, String text) {
         if (stringBuffer != null) {
             stringBuffer.append(text + "/n");

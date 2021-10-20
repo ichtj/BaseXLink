@@ -10,12 +10,15 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+/**
+ * @author chtj
+ */
 public class MqttCallbackBus implements MqttCallbackExtended {
     private static final String TAG = "MqttCallbackBus";
     /**
      * 连接丢失后 回调
      *
-     * @param cause
+     * @param cause  异常反馈
      */
     @Override
     public void connectionLost(Throwable cause) {
@@ -26,8 +29,8 @@ public class MqttCallbackBus implements MqttCallbackExtended {
     /**
      * 连接完成后 回调
      *
-     * @param reconnect
-     * @param serverURI
+     * @param reconnect 是否为重连
+     * @param serverURI 服务器地址
      */
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
@@ -38,8 +41,8 @@ public class MqttCallbackBus implements MqttCallbackExtended {
     /**
      * 消息到达后 回调
      *
-     * @param topic
-     * @param message
+     * @param topic 消息主题
+     * @param message 消息内容
      */
     @Override
     public void messageArrived(String topic, MqttMessage message) {
@@ -49,8 +52,6 @@ public class MqttCallbackBus implements MqttCallbackExtended {
 
     /**
      * 消息发送成功后 回调
-     *
-     * @param token
      */
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {

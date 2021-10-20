@@ -1,7 +1,5 @@
 package com.future.xlink.utils;
 
-import android.util.Log;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -14,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * maximumPoolSize  指定了线程池中的最大线程数量，这个参数会根据你使用的workQueue任务队列的类型，决定线程池会开辟的最大线程数量；
  *      当线程数=maxPoolSize，且任务队列已满时，线程池会拒绝处理任务而抛出异常
  * keepAliveTime    当线程池中空闲线程数量超过corePoolSize时，多余的线程会在多长时间内被销毁
- *
+ * @author chtj
  */
 public class ThreadPool {
     private static final String TAG = "ThreadPool";
@@ -24,7 +22,7 @@ public class ThreadPool {
     }
 
     private static class ThreadFactoryImpl implements ThreadFactory {
-        private static final AtomicInteger poolNumber = new AtomicInteger(1);
+        private static final AtomicInteger POOL_NUMBER = new AtomicInteger(1);
         private final ThreadGroup group;
         private final AtomicInteger threadNumber = new AtomicInteger(1);
         private final String namePrefix;
@@ -32,7 +30,7 @@ public class ThreadPool {
         ThreadFactoryImpl() {
             SecurityManager s = System.getSecurityManager();
             group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
-            namePrefix = "pool-" + poolNumber.getAndIncrement() + "-thread-";
+            namePrefix = "pool-" + POOL_NUMBER.getAndIncrement() + "-thread-";
         }
 
         @Override

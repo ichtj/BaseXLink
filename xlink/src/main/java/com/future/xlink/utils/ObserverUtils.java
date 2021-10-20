@@ -21,7 +21,6 @@ import com.future.xlink.listener.PingListener;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -98,8 +97,8 @@ public class ObserverUtils {
     /**
      * 获取代理服务地址
      *
-     * @param context
-     * @param params
+     * @param context 上下文
+     * @param params 必要参数
      */
     public static void getAgentList(Context context, InitParams params) {
         String time = String.valueOf(System.currentTimeMillis());
@@ -205,7 +204,7 @@ public class ObserverUtils {
 
                                     @Override
                                     public String apply(@NonNull Integer integer) throws Exception {
-                                        return PingUtils.ping(pingUrl.get(integer.intValue()), 4, new StringBuffer());
+                                        return PingUtils.ping(pingUrl.get(integer.intValue()), 3, new StringBuffer());
                                     }
                                 });
                     }
@@ -215,7 +214,6 @@ public class ObserverUtils {
                 executor.shutdown();
                 System.out.println("ping --end");
                 //ping结果比较，获取最佳的链接
-//                String result=compare(list);
                 if (listener != null) {
                     listener.pingResult(compare(list));
                 }

@@ -11,15 +11,15 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.future.xlink.bean.InitParams;
-import com.future.xlink.mqtt.MqttManager;
-
 import java.util.UUID;
 
+/**
+ * @author chtj
+ */
 public class Utils {
     private static final String TAG = "Utils";
     public static String getToken(InitParams params, String time) {
         String token = "Basic " + AESUtils.encrypt(params.key, params.sn + ":" + params.secret + ":" + time);
-        //Log.d(Utils.class, "getToken", token);
         return token;
     }
 
@@ -94,7 +94,7 @@ public class Utils {
         final TelephonyManager tm = (TelephonyManager) context
                 .getSystemService(Context.TELEPHONY_SERVICE);
         PhoneStateListener mylistener = new PhoneStateListener() {
-            //            @Override
+            @Override
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
                 super.onSignalStrengthsChanged(signalStrength);
                 String signalInfo = signalStrength.toString();
@@ -149,10 +149,8 @@ public class Utils {
     /**
      * [获取应用程序版本名称信息]
      *
-     * @param context
      * @return 当前应用的版本名称
      */
-
     public static synchronized String getPackageName(Context context) {
         try {
             PackageManager packageManager = context.getPackageManager();
@@ -168,18 +166,11 @@ public class Utils {
 
     /**
      * 判断网络是否正常
-     *
-     * @param context
-     * @return
      */
     public static boolean isNetNormal(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService("connectivity");
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
-        if (networkInfo.isAvailable() && networkInfo.isConnected()) {
-            return true;
-        } else {
-            return false;
-        }
+        return networkInfo.isAvailable() && networkInfo.isConnected();
     }
 
 }

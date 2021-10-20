@@ -131,13 +131,12 @@ public class PropertiesUtil {
 	/**
 	 * 清除保存的缓存数据
 	 * */
-	public  static  void  clearProperties(Context mContext){
+	public void clearProperties(Context mContext){
 		PropertiesUtil mProp = PropertiesUtil.getInstance(mContext).init();
 
 		mProp.open();
 		//保存存储参数
 		mProp.writeString(Constants.SSID, "");
-//		mProp.writeString(Constants.MQTTBROKER, "");
 		mProp.writeString(Constants.MQTTUSERNAME, "");
 		mProp.writeString(Constants.MQTTPASSWORD, "");
 		mProp.commit();

@@ -25,13 +25,14 @@ import java.io.File;
 
 /**
  * 管理mqtt的连接,发布,订阅,断开连接, 断开重连等操作
+ * @author chtj
  */
-
 public class MqttManager {
     private static final String TAG = "MqttManager";
-    // 单例
     private static MqttManager mInstance = null;
-    // 回调
+    /**
+     * 回调
+     */
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
     private Context context;
@@ -57,10 +58,7 @@ public class MqttManager {
 
     /**
      * 创建Mqtt 连接
-     *
-     * @return
      */
-
     public void creatConnect(Context context, InitParams params, Register register) {
         this.context = context;
         this.params = params;
@@ -70,7 +68,7 @@ public class MqttManager {
         try {
             conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
             //解析注册时服务器返回的用户名密码 如果解析异常 ，可能是无权限
-            if(conOpt.getUserName()==null||conOpt.getPassword()==null||conOpt.getUserName().equals("")||conOpt.getPassword().equals("")){
+            if(conOpt.getUserName()==null||conOpt.getPassword()==null|| "".equals(conOpt.getUserName())|| "".equals(conOpt.getPassword())){
                 XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_NO_PERMISSION));
                 //删除配置文件
                 String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
@@ -137,8 +135,9 @@ public class MqttManager {
             disconnectedBufferOptions.setBufferSize(params.bufferSize);
             disconnectedBufferOptions.setPersistBuffer(false);
             disconnectedBufferOptions.setDeleteOldestMessages(false);
-            if (client != null)
+            if (client != null) {
                 client.setBufferOpts(disconnectedBufferOptions);
+            }
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_SUCCESS));
         }
 
@@ -193,7 +192,8 @@ public class MqttManager {
             try {
                 client.publish(topicName, message);
                 flag = true;
-            } catch (MqttException e) {
+            } catch (Throwable e) {
+                Log.e(TAG, "publish: ",e);
             }
         } else {
             Log.d(TAG, "publish: client == null && !client.isConnected() || !isConnectIsNormal(context)");

@@ -41,16 +41,6 @@ public class Carrier {
 
     public static final int TYPE_TCP_SEND = 5000;
 
-
-    /**
-     * 信号强度
-     */
-    public static final int TYPE_SIGNAL_STRENGTH = 9000;
-    /**
-     * 升级
-     */
-    public static final int TYPE_PAGE_UPDATE = 9001;
-
     public int type;
     public  String topic;
     public Object obj;

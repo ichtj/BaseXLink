@@ -228,16 +228,6 @@ public class ZFileUtils {
                 while ((readCount = bufferedReader.read(buffer)) > 0) {
                     sb.append(new String(buffer, 0, readCount));
                 }
-
-//            boolean suc = false;
-//            do {
-//                String line = bufferedReader.readLine();
-//                suc = line != null && line.length() > 0;
-//                if (suc) {
-//                    sb.append(line);
-//                }
-//            } while (suc);
-
             }
         }
         return sb.toString();

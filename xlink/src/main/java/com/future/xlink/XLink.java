@@ -2,7 +2,6 @@ package com.future.xlink;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Protocal;
@@ -19,14 +18,13 @@ import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 import io.reactivex.annotations.NonNull;
 
+/**
+ * @author chtj
+ */
 public class XLink {
-    private static final String TAG = "XLink";
     /**
      * 单例
      */
@@ -144,7 +142,6 @@ public class XLink {
     /**
      * 代理服务端请求响应事件
      *
-     * @param protocal
      */
     public void upResponse(Protocal protocal) {
         publish(Carrier.TYPE_REMOTE_TX, protocal);

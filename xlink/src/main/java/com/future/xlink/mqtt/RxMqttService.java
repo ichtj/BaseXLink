@@ -30,7 +30,6 @@ import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.PropertiesUtil;
 import com.future.xlink.utils.ThreadPool;
-import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -38,7 +37,6 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,6 +51,8 @@ import static com.future.xlink.bean.common.ConnectType.CONNECT_NO_NETWORK;
 
 /**
  * mqtt消息推送服务
+ *
+ * @author chtj
  */
 
 public class RxMqttService extends Service {
@@ -88,7 +88,7 @@ public class RxMqttService extends Service {
                     initState = InitState.INIT_PARAMS_LOST;
                 } else {
                     Register register = PropertiesUtil.getProperties(this);
-                    Log.d(TAG,"onStartCommand get register:"+register.toString());
+                    Log.d(TAG, "onStartCommand get register:" + register.toString());
                     //查看是否注册过
                     if (register.isNull()) {
                         //未注册过那么先获取代理服务器列表
@@ -208,7 +208,7 @@ public class RxMqttService extends Service {
     /**
      * 回调连接的状态
      *
-     * @param type
+     * @param type 连接状态
      */
     private void connTypeCallBack(ConnectType type) {
         Log.d(TAG, "connectTypeCallBack： name=" + type.getValue());
@@ -315,9 +315,7 @@ public class RxMqttService extends Service {
         } else {
             protocal.rx = rx;
         }
-
         map.put(request.iid, protocal);
-
     }
 
     /**
@@ -333,7 +331,7 @@ public class RxMqttService extends Service {
                         try {
                             executeQueen();
                             lock.wait(50);
-                        } catch (InterruptedException e) {
+                        } catch (Throwable e) {
                             //数据处理异常5
                             Log.e(TAG, "读取等待", e);
                         }
@@ -352,12 +350,14 @@ public class RxMqttService extends Service {
             if (protocal.isOverTime()) {
                 //超时未应答
                 if (protocal.type == Carrier.TYPE_REMOTE_RX) {
-                    if (protocal.tx == null)
+                    if (protocal.tx == null) {
                         protocal.tx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
+                    }
                 } else if (protocal.type == Carrier.TYPE_REMOTE_TX || protocal.type == Carrier.TYPE_REMOTE_TX_EVENT || protocal.type == Carrier.TYPE_REMOTE_TX_SERVICE) {
                     //告知消息超时，发送消息到代理服务器
-                    if (TextUtils.isEmpty(protocal.rx))
+                    if (TextUtils.isEmpty(protocal.rx)) {
                         protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
+                    }
                 }
                 Log.d(TAG, "executeQueen Message processing timeout！");
                 //超时两端都需要汇报
@@ -373,8 +373,9 @@ public class RxMqttService extends Service {
                 } else {
                     //消息应答处理
                     if (protocal.tx != null && (!TextUtils.isEmpty(protocal.rx))) {
-                        if (judgeMethod(protocal))
+                        if (judgeMethod(protocal)) {
                             map.remove(protocal.iid);
+                        }
                     }
                 }
             }
@@ -425,11 +426,9 @@ public class RxMqttService extends Service {
                 Response response = new Response();
                 response.act = msg.act;
                 response.iid = msg.iid;
-
                 response.payload = msg.tx;
                 boolean isComplete = mqttManager.publish(msg.ack, 2, GsonUtils.toJsonWtihNullField(response).getBytes());
                 Log.d(TAG, "sendRxMsg publish msg-->" + GsonUtils.toJsonWtihNullField(response));
-                //Log.d(TAG.getSimpleName(), "sendRxMsg: isComplete="+isComplete);
                 return isComplete;
             }
         } catch (Exception e) {
@@ -448,58 +447,60 @@ public class RxMqttService extends Service {
     public void checkReconnect() {
         timeout = 0;//重置记录超时后 网络正常的时间
         int outtime = params.reconnectTime * 60 / 10;//超时时间
-        SubscriberSingleton.add(TAG, Observable.interval(1, 10, TimeUnit.SECONDS).observeOn(AndroidSchedulers.mainThread()).subscribe(aLong -> {
-            boolean isConnect = mqttManager.isConnect();//mqtt连接是断开的
-            boolean isNetOk = PingUtils.checkNetWork();
-            int nowValue = aLong.intValue();//当前的计时
-            if (!isConnect) {
-                ConnectLostType type = null;
-                if (nowValue == outtime) {
-                    //时间刚好达到超时时间
-                    Log.d(TAG, "checkReconnect: next ");
-                    if (isNetOk) {
-                        //114能ping通，说明网络通讯正常；
-                        boolean state2 = PingUtils.ping(GlobalConfig.HTTP_SERVER);
-                        if (state2) {
-                            //网络和代理连接正常，但服务无法正常连接
-                            type = ConnectLostType.LOST_TYPE_1;
-                        } else {
-                            //网络正常，代理服务异常2
-                            type = ConnectLostType.LOST_TYPE_2;
-                        }
-                    } else {
-                        //本地网络异常，只记录一次
-                        type = ConnectLostType.LOST_TYPE_3;
-                    }
-                    connLostCallBack(type, new Throwable(type.getValue()));
-                } else if (nowValue > outtime) {
-                    //超过指定时间后的处理
-                    if (isNetOk) { //网络正常 需要尝试去重连
-                        if (timeout != 0 && nowValue >= timeout + (1 * 60 / 10)) {
-                            //超过指定重连的时间并且加两分钟还未成功
-                            //那么网络应该正常但是 网络或者连接已经重置
-                            type = ConnectLostType.LOST_TYPE_5;
+        SubscriberSingleton.add(TAG, Observable.interval(1, 10, TimeUnit.SECONDS).
+                observeOn(AndroidSchedulers.mainThread()).
+                subscribe(aLong -> {
+                    boolean isConnect = mqttManager.isConnect();//mqtt连接是断开的
+                    boolean isNetOk = PingUtils.checkNetWork();
+                    int nowValue = aLong.intValue();//当前的计时
+                    if (!isConnect) {
+                        ConnectLostType type = null;
+                        if (nowValue == outtime) {
+                            //时间刚好达到超时时间
+                            Log.d(TAG, "checkReconnect: next ");
+                            if (isNetOk) {
+                                //114能ping通，说明网络通讯正常；
+                                boolean state2 = PingUtils.ping(GlobalConfig.HTTP_SERVER);
+                                if (state2) {
+                                    //网络和代理连接正常，但服务无法正常连接
+                                    type = ConnectLostType.LOST_TYPE_1;
+                                } else {
+                                    //网络正常，代理服务异常2
+                                    type = ConnectLostType.LOST_TYPE_2;
+                                }
+                            } else {
+                                //本地网络异常，只记录一次
+                                type = ConnectLostType.LOST_TYPE_3;
+                            }
                             connLostCallBack(type, new Throwable(type.getValue()));
-                            mqttManager.disConnect();
-                            //重连机制无法建立 需要重新初始化后连接
-                            stopCheckReconnect();
-                        } else {
-                            if (timeout == 0) {
-                                //记录当前的超时
-                                timeout = nowValue;
-                                type = ConnectLostType.LOST_TYPE_4;
-                                connLostCallBack(type, new Throwable(type.getValue()));
+                        } else if (nowValue > outtime) {
+                            //超过指定时间后的处理
+                            if (isNetOk) { //网络正常 需要尝试去重连
+                                if (timeout != 0 && nowValue >= timeout + (60 / 10)) {
+                                    //超过指定重连的时间并且加两分钟还未成功
+                                    //那么网络应该正常但是 网络或者连接已经重置
+                                    type = ConnectLostType.LOST_TYPE_5;
+                                    connLostCallBack(type, new Throwable(type.getValue()));
+                                    mqttManager.disConnect();
+                                    //重连机制无法建立 需要重新初始化后连接
+                                    stopCheckReconnect();
+                                } else {
+                                    if (timeout == 0) {
+                                        //记录当前的超时
+                                        timeout = nowValue;
+                                        type = ConnectLostType.LOST_TYPE_4;
+                                        connLostCallBack(type, new Throwable(type.getValue()));
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-                Log.e(TAG, "sendRxMsg", throwable);
-            }
-        }));
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        Log.e(TAG, "sendRxMsg", throwable);
+                    }
+                }));
     }
 
     /**

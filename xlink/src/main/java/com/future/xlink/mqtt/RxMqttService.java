@@ -115,7 +115,7 @@ public class RxMqttService extends Service {
     /**
      * 创建连接
      */
-    private void createConect(Register register) {
+    private void createConect(Register register) throws Throwable {
         mqttManager = MqttManager.getInstance();
         mqttManager.creatConnect(RxMqttService.this, params, register);
     }
@@ -147,15 +147,23 @@ public class RxMqttService extends Service {
             } else {
                 Register register = PropertiesUtil.getProperties(RxMqttService.this);
                 if (mqttManager != null) {
-                    Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
-                    //如果先前的连接还在建立，先断开之前的连接，再重新创建
-                    if (mqttManager.isConnect()) {
-                        mqttManager.disConnect();
+                    try {
+                        Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
+                        //如果先前的连接还在建立，先断开之前的连接，再重新创建
+                        if (mqttManager.isConnect()) {
+                            mqttManager.disConnect();
+                        }
+                        //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
+                        mqttManager.doConntect(RxMqttService.this, params, register);
+                    }catch (Throwable e){
+                        connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
                     }
-                    //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
-                    mqttManager.doConntect(RxMqttService.this, params, register);
                 } else {
-                    createConect(register);
+                    try {
+                        createConect(register);
+                    }catch (Throwable e){
+                        connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+                    }
                 }
             }
         } else if (msg.type == Carrier.TYPE_MODE_CONNECTED) {

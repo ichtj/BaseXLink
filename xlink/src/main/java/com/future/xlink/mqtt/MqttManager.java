@@ -25,6 +25,7 @@ import java.io.File;
 
 /**
  * 管理mqtt的连接,发布,订阅,断开连接, 断开重连等操作
+ *
  * @author chtj
  */
 public class MqttManager {
@@ -59,55 +60,46 @@ public class MqttManager {
     /**
      * 创建Mqtt 连接
      */
-    public void creatConnect(Context context, InitParams params, Register register) {
+    public void creatConnect(Context context, InitParams params, Register register) throws Throwable {
         this.context = context;
         this.params = params;
         isInitconnect = true;
         String tmpDir = System.getProperty("java.io.tmpdir");
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
-        try {
-            conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
-            //解析注册时服务器返回的用户名密码 如果解析异常 ，可能是无权限
-            if(conOpt.getUserName()==null||conOpt.getPassword()==null|| "".equals(conOpt.getUserName())|| "".equals(conOpt.getPassword())){
-                XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_NO_PERMISSION));
-                //删除配置文件
-                String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
-                boolean isDel = new File(path).delete();
-                Log.d(TAG, "creatConnect: isDel my.properties=" + isDel);
-                return;
-            }
-            // Construct an MQTT blocking mode client ;clientId需要修改为设备sn
-            client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
-            Log.d(TAG, "creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
-            // Set this wrapper as the callback handler
-            client.setCallback(mCallback);
-            connAndListener(context);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.e(TAG, "creatConnect", e);
+        conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
+        //解析注册时服务器返回的用户名密码 如果解析异常 ，可能是无权限
+        if (conOpt.getUserName() == null || conOpt.getPassword() == null || "".equals(conOpt.getUserName()) || "".equals(conOpt.getPassword())) {
+            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_NO_PERMISSION));
+            //删除配置文件
+            String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
+            boolean isDel = new File(path).delete();
+            Log.d(TAG, "creatConnect: isDel my.properties=" + isDel);
+            return;
         }
+        // Construct an MQTT blocking mode client ;clientId需要修改为设备sn
+        client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
+        Log.d(TAG, "creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
+        // Set this wrapper as the callback handler
+        client.setCallback(mCallback);
+        connAndListener(context);
+
     }
 
     /**
      * 建立连接 并监听连接回调
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
-    public void connAndListener(Context context) {
-        try {
-            if (client != null && !client.isConnected()) {
-                IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
-                Log.d(TAG, "connAndListener Waiting for connection to complete！");
-                //阻止当前线程，直到该令牌关联的操作完成
-                itoken.waitForCompletion();
-                Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.e(TAG, "connAndListener", e);
+    public void connAndListener(Context context) throws Throwable {
+        if (client != null && !client.isConnected()) {
+            IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
+            Log.d(TAG, "connAndListener Waiting for connection to complete！");
+            //阻止当前线程，直到该令牌关联的操作完成
+            itoken.waitForCompletion();
+            Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
         }
     }
 
-    public void doConntect(Context context, InitParams params, Register register) {
+    public void doConntect(Context context, InitParams params, Register register) throws Throwable {
         if (client == null) {
             //client为空时代表需要重新建立连接
             creatConnect(context, params, register);
@@ -193,7 +185,7 @@ public class MqttManager {
                 client.publish(topicName, message);
                 flag = true;
             } catch (Throwable e) {
-                Log.e(TAG, "publish: ",e);
+                Log.e(TAG, "publish: ", e);
             }
         } else {
             Log.d(TAG, "publish: client == null && !client.isConnected() || !isConnectIsNormal(context)");

@@ -22,7 +22,7 @@ public class MqttCallbackBus implements MqttCallbackExtended {
      */
     @Override
     public void connectionLost(Throwable cause) {
-        Log.d(TAG, "connectionLost " + cause != null ? cause.getMessage() : "");
+        Log.d(TAG, "connectionLost " + ((cause != null) ? cause.getMessage() : ""));
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
     }
 

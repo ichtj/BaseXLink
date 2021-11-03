@@ -207,10 +207,6 @@ public class MqttManager implements MqttCallbackExtended {
             // Create and configure a message
             MqttMessage message = new MqttMessage(payload);
             message.setQos(qos);
-            Log.d(TAG, "publish Publishing to topic \"" + topicName + "\" qos " + qos + ",messageId=" + message.getId());
-            // Send the message to the server, control is not returned until
-            // it has been delivered to the server meeting the specified
-            // quality of service.
             try {
                 client.publish(topicName, message);
             } catch (Throwable e) {

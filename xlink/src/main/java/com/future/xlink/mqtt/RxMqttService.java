@@ -434,7 +434,9 @@ public class RxMqttService extends Service {
                 response.act = msg.act;
                 response.iid = msg.iid;
                 response.payload = msg.tx;
-                mqttManager.publish(msg.ack, 2, GsonUtils.toJsonWtihNullField(response).getBytes());
+                String dataJson=GsonUtils.toJsonWtihNullField(response);
+                Log.d(TAG, "sendRxMsg: dataJson="+dataJson);
+                mqttManager.publish(msg.ack, 2,dataJson.getBytes());
             }
         } catch (Throwable e) {
             //7消息发送异常

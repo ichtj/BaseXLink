@@ -17,6 +17,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -29,7 +30,7 @@ import java.io.File;
  *
  * @author chtj
  */
-public class MqttManager {
+public class MqttManager implements MqttCallbackExtended {
     private static final String TAG = "MqttManager";
     private static MqttManager mInstance = null;
     /**
@@ -40,10 +41,10 @@ public class MqttManager {
     private Context context;
     private InitParams params;
     private boolean isInitconnect = false;// 是否初始化重连
-    private MqttCallback mCallback;
+    //private MqttCallback mCallback;
 
     private MqttManager() {
-        mCallback = new MqttCallbackBus();
+        //mCallback = new MqttCallbackBus();
     }
 
 
@@ -81,9 +82,38 @@ public class MqttManager {
         client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
         Log.d(TAG, "creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         // Set this wrapper as the callback handler
-        client.setCallback(mCallback);
+        client.setCallback(this);
         connAndListener(context);
+    }
 
+    @Override
+    public void connectComplete(boolean reconnect, String serverURI) {
+        Log.d(TAG, "connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
+        XBus.post(new Carrier(Carrier.TYPE_MODE_RECONNECT_COMPLETE, serverURI, reconnect));
+    }
+
+    @Override
+    public void connectionLost(Throwable cause) {
+        Log.d(TAG, "connectionLost " + ((cause != null) ? cause.getMessage() : ""));
+        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+        Log.d(TAG, "messageArrived" + topic + "====" + message.toString());
+        XBus.post(new Carrier(Carrier.TYPE_REMOTE_RX, topic, message));
+    }
+
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken token) {
+        try {
+            boolean isComplete = token.isComplete();
+            Log.d(TAG, "deliveryComplete token isComplete=" + isComplete + ",errMeg=" + (isComplete ? "" : token.getException().toString()));
+            Log.d(TAG, "deliveryComplete token message=" + token.getMessage().toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e(TAG, "deliveryComplete errMeg=" + e.toString());
+        }
     }
 
     /**

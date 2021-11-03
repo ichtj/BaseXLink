@@ -17,8 +17,8 @@ public class Carrier {
     /**
      * 远程控制指令
      */
-    public static final int TYPE_REMOTE_RX = 2000;
-    public static final int TYPE_REMOTE_TX = 2001;
+    public static final int TYPE_REMOTE_RX = 2000;//消息接收
+    public static final int TYPE_REMOTE_TX = 2001;//消息上报
 
     public static final int TYPE_REMOTE_TIME_OUT = 2002;
     public  static final  int TYPE_MODE_INIT_RX=2003;   //获取初始化参数

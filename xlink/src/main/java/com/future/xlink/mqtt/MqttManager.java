@@ -170,8 +170,7 @@ public class MqttManager {
      * @return boolean
      */
 
-    public boolean publish(String topicName, int qos, byte[] payload) {
-        boolean flag = false;
+    public void publish(String topicName, int qos, byte[] payload) {
         //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
         isInitconnect = false;
         if (client != null && client.isConnected()) {
@@ -183,15 +182,13 @@ public class MqttManager {
             // it has been delivered to the server meeting the specified
             // quality of service.
             try {
-                IMqttDeliveryToken iMqttDeliveryToken= client.publish(topicName, message);
-                flag = iMqttDeliveryToken.isComplete();
+                client.publish(topicName, message);
             } catch (Throwable e) {
                 Log.e(TAG, "publish: ", e);
             }
         } else {
             Log.d(TAG, "publish: client == null && !client.isConnected() || !isConnectIsNormal(context)");
         }
-        return flag;
     }
 
 

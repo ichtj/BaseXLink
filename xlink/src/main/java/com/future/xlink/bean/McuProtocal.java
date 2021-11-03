@@ -16,7 +16,7 @@ public class McuProtocal extends Protocal {
     public  int status; //是否处理标志位 0，没处理，1处理
 
     public boolean isOverTime() {
-        long t=System.currentTimeMillis()-time;
+        //long t=System.currentTimeMillis()-time;
         if (overtime*1000<=GlobalConfig.OVER_TIME){
             overtime=GlobalConfig.OVER_TIME;
         }

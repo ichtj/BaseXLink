@@ -381,24 +381,23 @@ public class RxMqttService extends Service {
                 } else {
                     //消息应答处理
                     if (protocal.tx != null && (!TextUtils.isEmpty(protocal.rx))) {
-                        if (judgeMethod(protocal)) {
-                            map.remove(protocal.iid);
-                        }
+                        judgeMethod(protocal);
+                        map.remove(protocal.iid);
                     }
                 }
             }
         }
     }
 
-    private boolean judgeMethod(McuProtocal protocal) {
-        boolean flag = false;
+    private void judgeMethod(McuProtocal protocal) {
         //非超时处理
         if (protocal.type == Carrier.TYPE_REMOTE_TX || protocal.type == Carrier.TYPE_REMOTE_TX_EVENT || protocal.type == Carrier.TYPE_REMOTE_TX_SERVICE) {
-            flag = sendRxMsg(protocal);
+            //消息上报
+            sendRxMsg(protocal);
         } else if (protocal.type == Carrier.TYPE_REMOTE_RX) {
-            flag = sendTxMsg(protocal);
+            //消息接收
+            sendTxMsg(protocal);
         }
-        return flag;
     }
 
 
@@ -428,25 +427,19 @@ public class RxMqttService extends Service {
     /**
      * 发送消息到服务端
      */
-    private boolean sendRxMsg(McuProtocal msg) {
+    private void sendRxMsg(McuProtocal msg) {
         try {
             if (mqttManager != null && mqttManager.isConnect()) {
                 Response response = new Response();
                 response.act = msg.act;
                 response.iid = msg.iid;
                 response.payload = msg.tx;
-                boolean isComplete = mqttManager.publish(msg.ack, 2, GsonUtils.toJsonWtihNullField(response).getBytes());
-                if(isComplete){
-                    Log.d(TAG, "sendRxMsg publish msg-->" + GsonUtils.toJsonWtihNullField(response));
-                }
-                return isComplete;
+                mqttManager.publish(msg.ack, 2, GsonUtils.toJsonWtihNullField(response).getBytes());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
             //7消息发送异常
             Log.e(TAG, "sendRxMsg: errMeg=" + e.getMessage());
         }
-        return false;
     }
 
     int timeout = 0;

@@ -37,7 +37,6 @@ public class XLink {
      * 消息回调接口
      */
     MessageListener listener;
-    //Intent intent = null;
 
     private XLink() {
 

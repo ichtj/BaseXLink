@@ -436,7 +436,9 @@ public class RxMqttService extends Service {
                 response.iid = msg.iid;
                 response.payload = msg.tx;
                 boolean isComplete = mqttManager.publish(msg.ack, 2, GsonUtils.toJsonWtihNullField(response).getBytes());
-                Log.d(TAG, "sendRxMsg publish msg-->" + GsonUtils.toJsonWtihNullField(response));
+                if(isComplete){
+                    Log.d(TAG, "sendRxMsg publish msg-->" + GsonUtils.toJsonWtihNullField(response));
+                }
                 return isComplete;
             }
         } catch (Exception e) {

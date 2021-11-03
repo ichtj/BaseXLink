@@ -14,6 +14,7 @@ import com.future.xlink.utils.XBus;
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -182,8 +183,8 @@ public class MqttManager {
             // it has been delivered to the server meeting the specified
             // quality of service.
             try {
-                client.publish(topicName, message);
-                flag = true;
+                IMqttDeliveryToken iMqttDeliveryToken= client.publish(topicName, message);
+                flag = iMqttDeliveryToken.isComplete();
             } catch (Throwable e) {
                 Log.e(TAG, "publish: ", e);
             }

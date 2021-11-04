@@ -27,9 +27,9 @@ public class McuProtocal extends Protocal {
     }
 
     /**
-     * 消息是否超过了30秒
+     * 消息是否超过了120秒
      */
-    public boolean isTimeout30Seconds(){
-        return (System.currentTimeMillis()-time)/1000>=30;
+    public boolean isTimeoutSeconds(){
+        return (System.currentTimeMillis()-time)/1000>=120;
     }
 }

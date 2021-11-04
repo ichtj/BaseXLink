@@ -387,8 +387,8 @@ public class RxMqttService extends Service {
                             judgeMethod(protocal);
                             map.remove(protocal.iid);
                         }
-                        if(protocal.isTimeout30Seconds()){
-                            //判断消息是否超过了30秒
+                        if(protocal.isTimeoutSeconds()){
+                            //判断消息是否超过了2分钟
                             mapErrCount++;
                         }
                     }

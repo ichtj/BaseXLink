@@ -353,6 +353,7 @@ public class RxMqttService extends Service {
      * 消息中转处理判断
      */
     private void executeQueen() {
+        int mapErrCount =0;//代表map集合中未正常处理的消息错误的计数
         for (Map.Entry<String, McuProtocal> entry : map.entrySet()) {
             McuProtocal protocal = entry.getValue();
             if (protocal.isOverTime()) {
@@ -367,25 +368,33 @@ public class RxMqttService extends Service {
                         protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
                     }
                 }
-                Log.d(TAG, "executeQueen Message processing timeout！");
+                Log.d(TAG, "iid=["+protocal.iid+"],rx=["+protocal.tx+"];Message processing timeout！");
                 //超时两端都需要汇报
                 sendTxMsg(protocal);
                 sendRxMsg(protocal);
                 map.remove(protocal.iid);
             } else {
-                //未超时
                 if (protocal.status == 0) {
-                    //消息发送处理
+                    //这里只是代表准备进行发送，至于又没有发送成功，不确定
                     judgeMethod(protocal);
+                    //这里只是代表已处理
                     protocal.status = protocal.status + 1;
                 } else {
-                    //消息应答处理
-                    if (protocal.tx != null && (!TextUtils.isEmpty(protocal.rx))) {
-                        judgeMethod(protocal);
-                        map.remove(protocal.iid);
+                    if(protocal.tx != null ){
+                        if (!TextUtils.isEmpty(protocal.rx)) {
+                            //这里表示已经接收到了服务器的回复
+                            judgeMethod(protocal);
+                            map.remove(protocal.iid);
+                        }
+                        if(protocal.tx.toString().contains("online")){
+                            mapErrCount++;
+                        }
                     }
                 }
             }
+        }
+        if(mapErrCount>=4){
+            XLink.getInstance().disconnect();
         }
     }
 

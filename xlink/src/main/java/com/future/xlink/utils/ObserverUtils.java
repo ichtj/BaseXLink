@@ -108,6 +108,7 @@ public class ObserverUtils {
             @Override
             public void onNext(BaseResponse<Agents> baseResponse) {
                 super.onNext(baseResponse);
+                Log.d(TAG, "getAgentList: baseResponse="+baseResponse.toString());
                 if (baseResponse.isSuccess() && baseResponse.isSuccessNonNull()) {
                     //获取服务器列表成功，进行ping操作，获得最佳连接链路
                     List<String> pinglist = baseResponse.payload.servers;

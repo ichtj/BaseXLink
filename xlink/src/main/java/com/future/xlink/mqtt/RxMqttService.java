@@ -386,7 +386,7 @@ public class RxMqttService extends Service {
                             judgeMethod(protocal);
                             map.remove(protocal.iid);
                         }
-                        if(protocal.tx.toString().contains("hearbeat")){
+                        if(protocal.tx.toString().contains("heartbeat")){
                             mapErrCount++;
                         }
                     }

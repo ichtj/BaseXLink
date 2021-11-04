@@ -193,6 +193,7 @@ public class RxMqttService extends Service {
                 mqttManager.disConnect();
                 map.clear();
             }
+            connTypeCallBack(ConnectType.CONNECT_DISCONNECT);
         } else if (msg.type == Carrier.TYPE_MODE_CONNECT_LOST) {
             Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_LOST");
             //连接丢失
@@ -394,6 +395,8 @@ public class RxMqttService extends Service {
             }
         }
         if(mapErrCount>=4){
+            Log.d(TAG, "executeQueen: Heartbeat events failed to be reported for many times！");
+            //主动关闭连接
             XLink.getInstance().disconnect();
         }
     }

@@ -358,7 +358,7 @@ public class RxMqttService extends Service {
         for (Map.Entry<String, McuProtocal> entry : map.entrySet()) {
             McuProtocal protocal = entry.getValue();
             if (protocal.isOverTime()) {
-                //超时未应答
+                //超时10分钟,服务器还没有
                 if (protocal.type == Carrier.TYPE_REMOTE_RX) {
                     if (protocal.tx == null) {
                         protocal.tx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
@@ -387,14 +387,15 @@ public class RxMqttService extends Service {
                             judgeMethod(protocal);
                             map.remove(protocal.iid);
                         }
-                        if(protocal.tx.toString().contains("heartbeat")){
+                        if(protocal.isTimeout30Seconds()){
+                            //判断消息是否超过了30秒
                             mapErrCount++;
                         }
                     }
                 }
             }
         }
-        if(mapErrCount>=4){
+        if(mapErrCount>=5){
             Log.d(TAG, "executeQueen: Heartbeat events failed to be reported for many times！");
             //主动关闭连接
             XLink.getInstance().disconnect();

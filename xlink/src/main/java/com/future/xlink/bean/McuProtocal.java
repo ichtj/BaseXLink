@@ -15,12 +15,21 @@ public class McuProtocal extends Protocal {
     public  int type; //当前消息类型
     public  int status; //是否处理标志位 0，没处理，1处理
 
+    /**
+     * 自消息纪录以来 该消息已经超时了10分钟未得到服务器回应
+     * @return 是否超时
+     */
     public boolean isOverTime() {
-        //long t=System.currentTimeMillis()-time;
         if (overtime*1000<=GlobalConfig.OVER_TIME){
             overtime=GlobalConfig.OVER_TIME;
         }
         return time != 0 && (System.currentTimeMillis() - time >= overtime);
     }
 
+    /**
+     * 消息是否超过了30秒
+     */
+    public boolean isTimeout30Seconds(){
+        return (System.currentTimeMillis()-time)/1000>=30;
+    }
 }

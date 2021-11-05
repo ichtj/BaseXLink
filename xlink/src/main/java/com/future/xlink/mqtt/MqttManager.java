@@ -251,9 +251,8 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void unSubscribe(String topicName, int qos){
         if (client != null) {
-            Log.d(TAG, "subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
-                client.subscribe(topicName, qos);
+                client.unsubscribe(topicName);
             } catch (MqttException e) {
                 e.printStackTrace();
             }
@@ -265,13 +264,13 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void disConnect() {
         try {
+            unSubscribe("dev/" + params.sn + "/#", 2);
             if (client != null&&client.isConnected()) {
                 Log.d(TAG, "release the mqtt connection");
-                unSubscribe("dev/" + params.sn + "/#", 2);
                 client.disconnect();
             }
         } catch (Throwable e) {
-            Log.e(TAG, "release", e);
+            Log.e(TAG, "disConnect", e);
         }
     }
 

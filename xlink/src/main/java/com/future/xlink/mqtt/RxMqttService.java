@@ -150,9 +150,7 @@ public class RxMqttService extends Service {
                     try {
                         Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
                         //如果先前的连接还在建立，先断开之前的连接，再重新创建
-                        if (mqttManager.isConnect()) {
-                            mqttManager.disConnect();
-                        }
+                        mqttManager.disConnect();
                         //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
                         mqttManager.doConntect(RxMqttService.this, params, register);
                     }catch (Throwable e){
@@ -247,7 +245,6 @@ public class RxMqttService extends Service {
         //添加#进行匹配
         mqttManager.subscribe("dev/" + params.sn + "/#", 2);
     }
-
 
     /**
      * 解析客户端上报的消息，添加到消息map集合中
@@ -540,7 +537,7 @@ public class RxMqttService extends Service {
             map.clear();
             stopCheckReconnect();
             threadTerminated = true;
-            mqttManager.release();
+            mqttManager.disConnect();
             mqttManager = null;
         } catch (Exception e) {
             e.printStackTrace();

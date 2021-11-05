@@ -244,18 +244,19 @@ public class MqttManager implements MqttCallbackExtended {
             }
         }
         return flag;
-
     }
 
     /**
-     * 释放单例, 及其所引用的资源
-     * 连接主动断开
-     * 重新连接时
+     * 解除订阅
      */
-    public void release() {
-        if (mInstance != null) {
-            mInstance.disConnect();
-            mInstance = null;
+    public void unSubscribe(String topicName, int qos){
+        if (client != null) {
+            Log.d(TAG, "subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
+            try {
+                client.subscribe(topicName, qos);
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -264,16 +265,12 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void disConnect() {
         try {
-            if (client != null && client.isConnected()) {
+            if (client != null&&client.isConnected()) {
                 Log.d(TAG, "release the mqtt connection");
-                client.unregisterResources();
-                client.close();
-                client = null;
-                conOpt = null;
-                context = null;
+                unSubscribe("dev/" + params.sn + "/#", 2);
+                client.disconnect();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
             Log.e(TAG, "release", e);
         }
     }

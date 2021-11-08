@@ -22,11 +22,9 @@ public class Carrier {
 
     public static final int TYPE_REMOTE_TIME_OUT = 2002;
     public  static final  int TYPE_MODE_INIT_RX=2003;   //获取初始化参数
-    public  static final  int TYPE_MODE_CONNECT=2005;  //创建connect连接
-    public  static final  int TYPE_MODE_CONNECTED=2004; //创建连接 变动的状态
+    public  static final  int TYPE_MODE_TO_CONNECT=2005;  //创建连接
+    public  static final  int TYPE_MODE_CONNECT_RESULT=2004; //连接结果 变动的状态
 
-    public  static final  int TYPE_MODE_DISCONNECT=2006; //取消连接
-    public  static  final int TYPE_MODE_RECONNECT_COMPLETE=2007; //重连连接完成
     public  static  final int TYPE_MODE_CONNECT_LOST=2008; //连接异常
     public  static  final  int TYPE_REMOTE_TX_SERVICE=2009; //属性服务上报
     public static final int TYPE_REMOTE_TX_EVENT=20010; //事件上报

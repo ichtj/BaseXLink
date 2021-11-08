@@ -73,7 +73,7 @@ public class MqttManager implements MqttCallbackExtended {
         //解析注册时服务器返回的用户名密码 如果解析异常 ，可能是无权限
         boolean pwdIsNull = conOpt.getPassword() == null || conOpt.getPassword().length == 0;
         if (TextUtils.isEmpty(conOpt.getUserName()) || pwdIsNull) {
-            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_NO_PERMISSION));
+            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
             //删除配置文件
             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
             boolean isDel = new File(path).delete();
@@ -91,7 +91,8 @@ public class MqttManager implements MqttCallbackExtended {
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
         Log.d(TAG, "connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
-        XBus.post(new Carrier(Carrier.TYPE_MODE_RECONNECT_COMPLETE, serverURI, reconnect));
+        //XBus.post(new Carrier(Carrier.TYPE_MODE_RECONNECT_COMPLETE, serverURI, reconnect));
+        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, serverURI, ConnectType.RECONNECT_SUCCESS));
     }
 
     @Override
@@ -164,7 +165,7 @@ public class MqttManager implements MqttCallbackExtended {
             if (client != null) {
                 client.setBufferOpts(disconnectedBufferOptions);
             }
-            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_SUCCESS));
+            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SUCCESS));
         }
 
         @Override
@@ -176,7 +177,7 @@ public class MqttManager implements MqttCallbackExtended {
                     if (arg1.getMessage().contains("无权连接")) {
                         try {
                             //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
-                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_NO_PERMISSION));
+                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
                             //删除配置文件
                             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
                             boolean isDel = new File(path).delete();
@@ -185,11 +186,11 @@ public class MqttManager implements MqttCallbackExtended {
                             Log.e(TAG, "onFailure", e);
                         }
                     } else {
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_FAIL));
+                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                     }
                 }
             } else {
-                XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_FAIL));
+                XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
             }
         }
     };

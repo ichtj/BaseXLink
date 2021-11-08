@@ -130,86 +130,117 @@ public class RxMqttService extends Service {
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onEvent(Carrier msg) throws MqttException, IOException {
         if (msg.type == Carrier.TYPE_MODE_INIT_RX) {
-            Log.d(TAG, "onEvent： TYPE_MODE_INIT_RX");
-            //获取初始化参数状态
-            InitState initState = (InitState) msg.obj;
-            if (XLink.getInstance().getListener() != null) {
-                XLink.getInstance().getListener().initState(initState);
-            }
-        } else if (msg.type == Carrier.TYPE_MODE_CONNECT) {
-            //创建连接
-            Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
-            map.clear();//创建连接时清除之前的消息队列
-            boolean isNetOk = PingUtils.checkNetWork();
-            if (!isNetOk) {
-                //网络不正常
-                connTypeCallBack(CONNECT_NO_NETWORK);
-            } else {
-                Register register = PropertiesUtil.getProperties(RxMqttService.this);
-                if (mqttManager != null) {
-                    try {
-                        Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
-                        //如果先前的连接还在建立，先断开之前的连接，再重新创建
-                        mqttManager.disConnect();
-                        //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
-                        mqttManager.doConntect(RxMqttService.this, params, register);
-                    }catch (Throwable e){
-                        connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
-                    }
-                } else {
-                    try {
-                        createConect(register);
-                    }catch (Throwable e){
-                        connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
-                    }
-                }
-            }
-        } else if (msg.type == Carrier.TYPE_MODE_CONNECTED) {
-            //连接状态 结果从MqttManager的iMqttActionListener进行回调
-            Log.d(TAG, "onEvent： TYPE_MODE_CONNECTED");
-            ConnectType type = (ConnectType) msg.obj;
-            connTypeCallBack(type);
-            if (type == ConnectType.CONNECT_SUCCESS) {
-                //订阅消息 连接完成
-                subscrible();
-            }
-        } else if (msg.type == Carrier.TYPE_MODE_RECONNECT_COMPLETE) {
-            Log.d(TAG, "onEvent： TYPE_MODE_RECONNECT_COMPLETE");
-            //重连成功
-            stopCheckReconnect();//停止网络状态检测
-            //为true表示重连成功 为false代表第一次连接
-            boolean reconnect = (Boolean) msg.obj;
-            if (reconnect) {
-                connTypeCallBack(ConnectType.RECONNECT_SUCCESS);
-                subscrible();
-            }
-        } else if (msg.type == Carrier.TYPE_MODE_DISCONNECT) {
-            //主动连接断开 注销此连接
-            Log.d(TAG, "onEvent： TYPE_MODE_DISCONNECT");
-            stopCheckReconnect();//如果有网络状态检测，停止
-            if (mqttManager != null) {
-                mqttManager.disConnect();
-                map.clear();
-            }
-            connTypeCallBack(ConnectType.CONNECT_DISCONNECT);
+            toInit((InitState) msg.obj);
+        } else if (msg.type == Carrier.TYPE_MODE_TO_CONNECT) {
+            //执行连接操作
+            toConnect();
+        } else if (msg.type == Carrier.TYPE_MODE_CONNECT_RESULT) {
+            //连接状态改变
+            connStatusChange((ConnectType) msg.obj);
         } else if (msg.type == Carrier.TYPE_MODE_CONNECT_LOST) {
-            Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_LOST");
             //连接丢失
-            if (params.automaticReconnect) {
-                checkReconnect();//开始重连状态检测
-            }
-            connLostCallBack(ConnectLostType.LOST_TYPE_0, (Throwable) msg.obj);
+            connectLost((Throwable) msg.obj);
         } else if (msg.type == Carrier.TYPE_REMOTE_RX) {
             //代理服务器下发消息
             MqttMessage mqttMessage = (MqttMessage) msg.obj;
             String temp = mqttMessage.toString();
             Request request = GsonUtils.fromJson(temp, Request.class);
             parseData(msg.type, request);
-        } else if (msg.type == Carrier.TYPE_REMOTE_TX_EVENT || msg.type == Carrier.TYPE_REMOTE_TX_SERVICE || msg.type == Carrier.TYPE_REMOTE_TX) {
+        } else if (msg.type == Carrier.TYPE_REMOTE_TX_EVENT ||
+                msg.type == Carrier.TYPE_REMOTE_TX_SERVICE ||
+                msg.type == Carrier.TYPE_REMOTE_TX) {
             //事件，服务属性上报
             Protocal protocal = (Protocal) msg.obj;
             parseData(msg.type, protocal);
         }
+    }
+
+    /**
+     * 进行初始化操作
+     *
+     * @param initState 初始化状态
+     */
+    public void toInit(InitState initState) {
+        Log.d(TAG, "onEvent： TYPE_MODE_INIT_RX");
+        //获取初始化参数状态
+        if (XLink.getInstance().getListener() != null) {
+            XLink.getInstance().getListener().initState(initState);
+        }
+    }
+
+    /**
+     * 去执行连接
+     */
+    public void toConnect() {
+        Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
+        map.clear();//创建连接时清除之前的消息队列
+        boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
+        Log.d(TAG, "onEvent: isNetOk=" + isNetOk);
+        if (!isNetOk) {
+            connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
+        } else {
+            Register register = PropertiesUtil.getProperties(RxMqttService.this);
+            if (mqttManager != null) {
+                Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
+                //如果先前的连接还在建立，先断开之前的连接，再重新创建
+                mqttManager.disConnect();
+                try {
+                    //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
+                    mqttManager.doConntect(RxMqttService.this, params, register);
+                } catch (Throwable e) {
+                    connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+                }
+            } else {
+                try {
+                    createConect(register);
+                } catch (Throwable e) {
+                    connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+                }
+            }
+        }
+    }
+
+    /**
+     * 连接丢失
+     *
+     * @param error 连接异常信息
+     */
+    public void connectLost(Throwable error) {
+        Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_LOST");
+        //连接丢失
+        if (params.automaticReconnect) {
+            checkReconnect();//开始重连状态检测
+        }
+        connLostCallBack(ConnectLostType.LOST_TYPE_0, error);
+    }
+
+    /**
+     * 连接状态，连接结果变更
+     *
+     * @param type 状态
+     *             结果从MqttManager的iMqttActionListener进行回调
+     *             主动断开
+     */
+    public void connStatusChange(ConnectType type) {
+        //连接状态
+        Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_RESULT value=" + type.getValue());
+        stopCheckReconnect();//停止网络状态检测
+        switch (type) {
+            case CONNECT_SUCCESS://订阅消息 连接完成
+            case RECONNECT_SUCCESS://订阅消息 连接完成
+                subscrible();
+                break;
+            case CONNECT_DISCONNECT://连接断开
+                //断开操作
+                if (mqttManager != null) {
+                    mqttManager.disConnect();
+                }
+                //连接断开时,清理集合中的消息
+                map.clear();
+                break;
+        }
+        //回调结果
+        connTypeCallBack(type);
     }
 
     /**
@@ -351,7 +382,7 @@ public class RxMqttService extends Service {
      * 消息中转处理判断
      */
     private void executeQueen() {
-        int mapErrCount =0;//代表map集合中未正常处理的消息错误的计数
+        int mapErrCount = 0;//代表map集合中未正常处理的消息错误的计数
         for (Map.Entry<String, McuProtocal> entry : map.entrySet()) {
             McuProtocal protocal = entry.getValue();
             if (protocal.isOverTime()) {
@@ -366,7 +397,7 @@ public class RxMqttService extends Service {
                         protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
                     }
                 }
-                Log.d(TAG, "iid=["+protocal.iid+"],rx=["+protocal.tx+"];Message processing timeout！");
+                Log.d(TAG, "iid=[" + protocal.iid + "],rx=[" + protocal.tx + "];Message processing timeout！");
                 //超时两端都需要汇报
                 sendTxMsg(protocal);
                 sendRxMsg(protocal);
@@ -378,13 +409,13 @@ public class RxMqttService extends Service {
                     //这里只是代表已处理
                     protocal.status = protocal.status + 1;
                 } else {
-                    if(protocal.tx != null ){
+                    if (protocal.tx != null) {
                         if (!TextUtils.isEmpty(protocal.rx)) {
                             //这里表示已经接收到了服务器的回复
                             judgeMethod(protocal);
                             map.remove(protocal.iid);
                         }
-                        if(protocal.isTimeoutSeconds()){
+                        if (protocal.isTimeoutSeconds()) {
                             //判断消息是否超过了2分钟
                             mapErrCount++;
                         }
@@ -392,7 +423,7 @@ public class RxMqttService extends Service {
                 }
             }
         }
-        if(mapErrCount>=5){
+        if (mapErrCount >= 5) {
             Log.d(TAG, "executeQueen: Heartbeat events failed to be reported for many times！");
             //主动关闭连接
             XLink.getInstance().disconnect();
@@ -442,9 +473,9 @@ public class RxMqttService extends Service {
                 response.act = msg.act;
                 response.iid = msg.iid;
                 response.payload = msg.tx;
-                String dataJson=GsonUtils.toJsonWtihNullField(response);
-                Log.d(TAG, "sendRxMsg: dataJson="+dataJson);
-                mqttManager.publish(msg.ack, 2,dataJson.getBytes());
+                String dataJson = GsonUtils.toJsonWtihNullField(response);
+                Log.d(TAG, "sendRxMsg: dataJson=" + dataJson);
+                mqttManager.publish(msg.ack, 2, dataJson.getBytes());
             }
         } catch (Throwable e) {
             //7消息发送异常

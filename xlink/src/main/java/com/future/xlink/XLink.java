@@ -6,6 +6,7 @@ import android.content.Intent;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Protocal;
 import com.future.xlink.bean.common.ConnectLostType;
+import com.future.xlink.bean.common.ConnectType;
 import com.future.xlink.bean.common.RespType;
 import com.future.xlink.bean.mqtt.RespStatus;
 import com.future.xlink.listener.MessageListener;
@@ -14,6 +15,7 @@ import com.future.xlink.mqtt.RxMqttService;
 import com.future.xlink.utils.Carrier;
 import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
+import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.PropertiesUtil;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
@@ -99,14 +101,14 @@ public class XLink {
      * 创建连接函数
      */
     public void connect() {
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT));
+        XBus.post(new Carrier(Carrier.TYPE_MODE_TO_CONNECT));
     }
 
     /**
      * 断开连接
      */
     public void disconnect() {
-        XBus.post(new Carrier(Carrier.TYPE_MODE_DISCONNECT));
+        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_DISCONNECT));
     }
 
 
@@ -156,9 +158,6 @@ public class XLink {
                 //交互已经出现问题,回调该消息异常
                 protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_CONNECT_LOST.getTye(), RespType.RESP_CONNECT_LOST.getValue()));
                 this.listener.messageArrived(protocal);
-                //告知连接异常
-                ConnectLostType lostType=ConnectLostType.LOST_TYPE_2;
-                listener.connectionLost(lostType,new Throwable(lostType.getValue()));
             }
         }
     }

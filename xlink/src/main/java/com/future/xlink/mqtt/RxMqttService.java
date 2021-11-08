@@ -129,29 +129,34 @@ public class RxMqttService extends Service {
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onEvent(Carrier msg) throws MqttException, IOException {
-        if (msg.type == Carrier.TYPE_MODE_INIT_RX) {
-            toInit((InitState) msg.obj);
-        } else if (msg.type == Carrier.TYPE_MODE_TO_CONNECT) {
-            //执行连接操作
-            toConnect();
-        } else if (msg.type == Carrier.TYPE_MODE_CONNECT_RESULT) {
-            //连接状态改变
-            connStatusChange((ConnectType) msg.obj);
-        } else if (msg.type == Carrier.TYPE_MODE_CONNECT_LOST) {
-            //连接丢失
-            connectLost((Throwable) msg.obj);
-        } else if (msg.type == Carrier.TYPE_REMOTE_RX) {
-            //代理服务器下发消息
-            MqttMessage mqttMessage = (MqttMessage) msg.obj;
-            String temp = mqttMessage.toString();
-            Request request = GsonUtils.fromJson(temp, Request.class);
-            parseData(msg.type, request);
-        } else if (msg.type == Carrier.TYPE_REMOTE_TX_EVENT ||
-                msg.type == Carrier.TYPE_REMOTE_TX_SERVICE ||
-                msg.type == Carrier.TYPE_REMOTE_TX) {
-            //事件，服务属性上报
-            Protocal protocal = (Protocal) msg.obj;
-            parseData(msg.type, protocal);
+        switch (msg.type) {
+            case Carrier.TYPE_MODE_INIT_RX://初始化
+                toInit((InitState) msg.obj);
+                break;
+            case Carrier.TYPE_MODE_TO_CONNECT://执行连接操作
+                toConnect();
+                break;
+            case Carrier.TYPE_MODE_CONNECT_RESULT://连接状态改变
+                connStatusChange((ConnectType) msg.obj);
+                break;
+            case Carrier.TYPE_MODE_CONNECT_LOST://连接丢失
+                connectLost((Throwable) msg.obj);
+                break;
+            case Carrier.TYPE_REMOTE_RX://代理服务器下发消息
+                MqttMessage mqttMessage = (MqttMessage) msg.obj;
+                String temp = mqttMessage.toString();
+                Request request = GsonUtils.fromJson(temp, Request.class);
+                parseData(msg.type, request);
+                break;
+            case Carrier.TYPE_REMOTE_TX_EVENT:
+            case Carrier.TYPE_REMOTE_TX_SERVICE:
+            case Carrier.TYPE_REMOTE_TX:
+                //事件，服务属性上报
+                Protocal protocal = (Protocal) msg.obj;
+                parseData(msg.type, protocal);
+                break;
+            default:
+                break;
         }
     }
 
@@ -226,8 +231,8 @@ public class RxMqttService extends Service {
         Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_RESULT value=" + type.getValue());
         stopCheckReconnect();//停止网络状态检测
         switch (type) {
-            case CONNECT_SUCCESS://订阅消息 连接完成
-            case RECONNECT_SUCCESS://订阅消息 连接完成
+            case CONNECT_SUCCESS://连接完成
+            case RECONNECT_SUCCESS://重连成功
                 subscrible();
                 break;
             case CONNECT_DISCONNECT://连接断开
@@ -568,8 +573,7 @@ public class RxMqttService extends Service {
             threadTerminated = true;
             mqttManager.disConnect();
             mqttManager = null;
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
             //停止服务异常2
             Log.e(TAG, "onDestroy errMeg:" + e.getMessage());
         }

@@ -91,7 +91,6 @@ public class MqttManager implements MqttCallbackExtended {
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
         Log.d(TAG, "connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
-        //XBus.post(new Carrier(Carrier.TYPE_MODE_RECONNECT_COMPLETE, serverURI, reconnect));
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, serverURI, ConnectType.RECONNECT_SUCCESS));
     }
 

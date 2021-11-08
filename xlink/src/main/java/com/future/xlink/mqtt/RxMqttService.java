@@ -265,7 +265,7 @@ public class RxMqttService extends Service {
             return;
         }
 
-        McuProtocal mcuprotocal = null;
+        McuProtocal mcuprotocal;
         if (map.containsKey(protocal.iid)) {
             mcuprotocal = map.get(protocal.iid);
             mcuprotocal.status = mcuprotocal.status + 1;
@@ -298,7 +298,7 @@ public class RxMqttService extends Service {
      * 解析代理服务器下发的消息，添加到消息map集合中
      **/
     private synchronized void parseData(int type, Request request) {
-        McuProtocal protocal = null;
+        McuProtocal protocal;
         if (map.containsKey(request.iid)) {
             protocal = map.get(request.iid);
             //如果接收到代理服务端下发的重复数据，还没有处理，需要过滤掉
@@ -425,13 +425,11 @@ public class RxMqttService extends Service {
     /**
      * 转发消息到调用端
      */
-    private boolean sendTxMsg(Protocal msg) {
+    private void sendTxMsg(Protocal msg) {
         MessageListener listener = XLink.getInstance().getListener();
         if (listener != null) {
             listener.messageArrived(msg);
-            return true;
         }
-        return false;
     }
 
     /**
@@ -469,7 +467,7 @@ public class RxMqttService extends Service {
                     boolean isNetOk = PingUtils.checkNetWork();
                     int nowValue = aLong.intValue();//当前的计时
                     if (!isConnect) {
-                        ConnectLostType type = null;
+                        ConnectLostType type;
                         if (nowValue == outtime) {
                             //时间刚好达到超时时间
                             Log.d(TAG, "checkReconnect: next ");

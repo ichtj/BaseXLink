@@ -1,6 +1,7 @@
 package com.future.xlink.mqtt;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.future.xlink.bean.InitParams;
@@ -16,7 +17,6 @@ import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -40,11 +40,12 @@ public class MqttManager implements MqttCallbackExtended {
     private MqttConnectOptions conOpt;
     private Context context;
     private InitParams params;
-    private boolean isInitconnect = false;// 是否初始化重连
-    //private MqttCallback mCallback;
+    /**
+     * 是否初始化重连
+     */
+    private boolean isInitconnect = false;
 
     private MqttManager() {
-        //mCallback = new MqttCallbackBus();
     }
 
 
@@ -70,7 +71,8 @@ public class MqttManager implements MqttCallbackExtended {
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
         conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
         //解析注册时服务器返回的用户名密码 如果解析异常 ，可能是无权限
-        if (conOpt.getUserName() == null || conOpt.getPassword() == null || "".equals(conOpt.getUserName()) || "".equals(conOpt.getPassword())) {
+        boolean pwdIsNull = conOpt.getPassword() == null || conOpt.getPassword().length == 0;
+        if (TextUtils.isEmpty(conOpt.getUserName()) || pwdIsNull) {
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECTED, ConnectType.CONNECT_NO_PERMISSION));
             //删除配置文件
             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
@@ -94,8 +96,9 @@ public class MqttManager implements MqttCallbackExtended {
 
     @Override
     public void connectionLost(Throwable cause) {
-        Log.d(TAG, "connectionLost " + ((cause != null) ? cause.getMessage() : ""));
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
+        Throwable newCause = new Throwable("连接丢失,请尝试重启应用！");
+        Log.d(TAG, "connectionLost " + ((cause != null) ? cause.getMessage() : newCause.getMessage()));
+        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause != null ? cause : newCause));
     }
 
     @Override
@@ -197,9 +200,7 @@ public class MqttManager implements MqttCallbackExtended {
      * @param topicName the name of the topic to publish to
      * @param qos       the quality of service to delivery the message at (0,1,2)
      * @param payload   the set of bytes to send to the MQTT server
-     * @return boolean
      */
-
     public void publish(String topicName, int qos, byte[] payload) {
         //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
         isInitconnect = false;
@@ -229,30 +230,12 @@ public class MqttManager implements MqttCallbackExtended {
      *
      * @param topicName to subscribe to (can be wild carded)
      * @param qos       the maximum quality of service to receive messages at for this subscription
-     * @return boolean
      */
-
-    public boolean subscribe(String topicName, int qos) {
-        boolean flag = false;
+    public void subscribe(String topicName, int qos) {
         if (client != null && client.isConnected()) {
             Log.d(TAG, "subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);
-                flag = true;
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
-        }
-        return flag;
-    }
-
-    /**
-     * 解除订阅
-     */
-    public void unSubscribe(String topicName, int qos){
-        if (client != null) {
-            try {
-                client.unsubscribe(topicName);
             } catch (MqttException e) {
                 e.printStackTrace();
             }
@@ -264,8 +247,7 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void disConnect() {
         try {
-            unSubscribe("dev/" + params.sn + "/#", 2);
-            if (client != null&&client.isConnected()) {
+            if (client != null && client.isConnected()) {
                 Log.d(TAG, "release the mqtt connection");
                 client.disconnect();
                 client.unregisterResources();

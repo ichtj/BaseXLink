@@ -246,7 +246,7 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void disConnect() {
         try {
-            if (client != null && client.isConnected()) {
+            if (client != null /*&& client.isConnected()*/) {
                 Log.d(TAG, "release the mqtt connection");
                 client.disconnect();
                 client.unregisterResources();

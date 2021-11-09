@@ -109,7 +109,7 @@ public class ObserverUtils {
             public void onNext(BaseResponse<Agents> baseResponse) {
                 super.onNext(baseResponse);
                 Log.d(TAG, "getAgentList: baseResponse="+baseResponse.toString());
-                if (baseResponse.isSuccess() && baseResponse.isSuccessNonNull()) {
+                if (baseResponse.isSuccessNonNull()) {
                     //获取服务器列表成功，进行ping操作，获得最佳连接链路
                     List<String> pinglist = baseResponse.payload.servers;
                     Log.d(TAG,"onNext pinglist:"+ pinglist.toString());
@@ -120,7 +120,7 @@ public class ObserverUtils {
                         //如果列表只有一个取消ping操作
                         registerRequest(context, params, baseResponse.payload.servers.get(0));
                     } else {
-                        //执行循环ping操作
+                        //执行循环ping操作,找到最优的线路
                         ObserverUtils.pingTest(pinglist, o -> registerRequest(context, params, o));
                     }
                 } else {

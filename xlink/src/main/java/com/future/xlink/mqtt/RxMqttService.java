@@ -79,33 +79,31 @@ public class RxMqttService extends Service {
         Log.d(TAG, "onStartCommand map.size=" + map.size());
         if (intent != null) {
             params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
-            InitState initState = null; //获取参数状态
+            //设置一个注册的默认状态
+            InitState initState=InitState.INIT_SERVICE_ERR;
             try {
-                //开启线程执行消息
                 looperQueen();
-                if (TextUtils.isEmpty(params.key) || TextUtils.isEmpty(params.secret)) {
-                    //key不能为空
+                if (TextUtils.isEmpty(params.key) ||
+                        TextUtils.isEmpty(params.secret)||TextUtils.isEmpty(params.pdid)) {
+                    //判断注册参数是否有误
                     initState = InitState.INIT_PARAMS_LOST;
                 } else {
+                    //查看本地文件是否已经记录了注册参数
                     Register register = PropertiesUtil.getProperties(this);
-                    Log.d(TAG, "onStartCommand get register:" + register.toString());
-                    //查看是否注册过
                     if (register.isNull()) {
+                        Log.d(TAG, "No local registration was detected");
                         //未注册过那么先获取代理服务器列表
                         ObserverUtils.getAgentList(RxMqttService.this, params);
                     } else {
-                        //这里通知获取参数成功
+                        Log.d(TAG, "this devices has been registered");
+                        //直接提示已注册过
                         initState = InitState.INIT_SUCCESS;
                     }
                 }
-            } catch (Exception e) {
-                //初始化异常1
-                e.printStackTrace();
-                initState = InitState.INIT_CONN_SERVICE_ERR;
+            } catch (Throwable e) {
+                initState = InitState.INIT_SERVICE_ERR;
             } finally {
-                if (initState != null) {
-                    XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, initState));
-                }
+                XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, initState));
             }
         }
         return super.onStartCommand(intent, flags, startId);

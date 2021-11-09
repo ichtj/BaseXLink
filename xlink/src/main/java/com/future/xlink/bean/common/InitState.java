@@ -9,7 +9,7 @@ public enum InitState {
     INIT_GETAGENT_ERR(500, "获取代理服务器列表异常"),
     INIT_REGISTER_AGENT_FAIL(1004, "注册代理服务器失败"),
     INIT_REGISTER_AGENT_ERR(501, "注册代理服务器异常"),
-    INIT_CACHE_NOEXIST(1005, "注册代理服务器成功但缓存已丢失"),
+    INIT_CACHE_NOEXIST(1005, "注册成功,但缓存写入失败"),
     INIT_CONN_SERVICE_ERR(1008, "初始化连接服务异常"),
     INIT_DEVICE_NOT_EIXST_ERR(1009, "设备未在平台注册"),
     INIT_SUCCESS(0, "初始化成功");

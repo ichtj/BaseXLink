@@ -91,7 +91,7 @@ public class MqttManager implements MqttCallbackExtended {
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
         Log.d(TAG, "connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, reconnect?ConnectType.RECONNECT_SUCCESS:ConnectType.CONNECT_SUCCESS));
+        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, reconnect ? ConnectType.RECONNECT_SUCCESS : ConnectType.CONNECT_SUCCESS));
     }
 
     @Override
@@ -245,15 +245,22 @@ public class MqttManager implements MqttCallbackExtended {
      * 断开连接
      */
     public void disConnect() {
-        try {
-            if (client != null /*&& client.isConnected()*/) {
-                Log.d(TAG, "release the mqtt connection");
-                client.disconnect();
+        if (client != null) {
+            Log.d(TAG, "release the mqtt connection");
+            try {
+                if (client.isConnected()) {
+                    client.disconnect();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "1disConnect", e);
+            }
+            try {
                 client.unregisterResources();
                 client.close();
+                client = null;
+            } catch (Throwable e) {
+                Log.e(TAG, "2disConnect", e);
             }
-        } catch (Throwable e) {
-            Log.e(TAG, "disConnect", e);
         }
     }
 

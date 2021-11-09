@@ -128,7 +128,7 @@ public class MqttManager implements MqttCallbackExtended {
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
             Log.d(TAG, "connAndListener Waiting for connection to complete！");
             //阻止当前线程，直到该令牌关联的操作完成
-            itoken.waitForCompletion(1*60*1000);
+            itoken.waitForCompletion();
             Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
         }
     }
@@ -257,10 +257,10 @@ public class MqttManager implements MqttCallbackExtended {
             try {
                 client.unregisterResources();
                 client.close();
-                client = null;
             } catch (Throwable e) {
                 Log.e(TAG, "2disConnect", e);
             }
+            client = null;
         }
     }
 

@@ -24,6 +24,11 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 
 /**
  * 管理mqtt的连接,发布,订阅,断开连接, 断开重连等操作
@@ -40,6 +45,9 @@ public class MqttManager implements MqttCallbackExtended {
     private MqttConnectOptions conOpt;
     private Context context;
     private InitParams params;
+    //连接过程的阻塞
+    private boolean isBlocking = true;
+    private Disposable mConnDisposable;
     /**
      * 是否初始化重连
      */
@@ -125,12 +133,38 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void connAndListener(Context context) throws Throwable {
         if (client != null && !client.isConnected()) {
+            isBlocking = true;
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
             Log.d(TAG, "connAndListener Waiting for connection to complete！");
+            if (mConnDisposable == null) {
+                mConnDisposable = Observable.interval(0, 2, TimeUnit.SECONDS).
+                        subscribe(new Consumer<Long>() {
+                            @Override
+                            public void accept(Long aLong) throws Exception {
+                                //循环检测连接是否完成
+                                if (!isBlocking) {
+                                    Log.d(TAG, "accept: !isBlocking");
+                                    closeDisposable();
+                                }else{
+                                    if(aLong>=8){
+                                        Log.d(TAG, "accept: aLong>=8");
+                                        closeDisposable();
+                                    }
+                                }
+                            }
+                        });
+            }
             //阻止当前线程，直到该令牌关联的操作完成
             itoken.waitForCompletion();
+            //代表阻塞完毕 可以说是已经连接完毕
+            isBlocking = false;
             Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
         }
+    }
+
+    public void closeDisposable(){
+        mConnDisposable.dispose();
+        mConnDisposable = null;
     }
 
     public void doConntect(Context context, InitParams params, Register register) throws Throwable {

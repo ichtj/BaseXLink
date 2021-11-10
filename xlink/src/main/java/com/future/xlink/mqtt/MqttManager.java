@@ -4,6 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * 管理mqtt的连接,发布,订阅,断开连接, 断开重连等操作
@@ -132,37 +134,38 @@ public class MqttManager implements MqttCallbackExtended {
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
     public void connAndListener(Context context) throws Throwable {
-        if (client != null && !client.isConnected()) {
+        if (client != null && !client.isConnected()&&mConnDisposable==null) {
             isBlocking = true;
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
             Log.d(TAG, "connAndListener Waiting for connection to complete！");
-            if (mConnDisposable == null) {
-                mConnDisposable = Observable.interval(0, 2, TimeUnit.SECONDS).
-                        subscribe(new Consumer<Long>() {
-                            @Override
-                            public void accept(Long aLong) throws Exception {
-                                //循环检测连接是否完成
-                                if (!isBlocking) {
-                                    Log.d(TAG, "accept: !isBlocking");
+            mConnDisposable = Observable.
+                    interval(0, 2, TimeUnit.SECONDS)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(new Consumer<Long>() {
+                        @Override
+                        public void accept(Long aLong) throws Exception {
+                            //循环检测连接是否完成
+                            if (!isBlocking) {
+                                Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
+                                closeDisposable();
+                            } else {
+                                if (aLong >= 8) {
+                                    Log.d(TAG, "The specified connection timeout period is reached");
                                     closeDisposable();
-                                }else{
-                                    if(aLong>=8){
-                                        Log.d(TAG, "accept: aLong>=8");
-                                        closeDisposable();
-                                    }
+                                    //反馈连接超时
+                                    XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_RESPONSE_TIMEOUT));
                                 }
                             }
-                        });
-            }
+                        }
+                    });
             //阻止当前线程，直到该令牌关联的操作完成
             itoken.waitForCompletion();
             //代表阻塞完毕 可以说是已经连接完毕
             isBlocking = false;
-            Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
         }
     }
 
-    public void closeDisposable(){
+    public void closeDisposable() {
         mConnDisposable.dispose();
         mConnDisposable = null;
     }

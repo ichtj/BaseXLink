@@ -93,7 +93,6 @@ public class MqttManager implements MqttCallbackExtended {
         // Construct an MQTT blocking mode client ;clientId需要修改为设备sn
         client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
         Log.d(TAG, "creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
-        // Set this wrapper as the callback handler
         client.setCallback(this);
         connAndListener(context);
     }

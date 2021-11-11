@@ -48,7 +48,8 @@ public class MqttManager implements MqttCallbackExtended {
     private Context context;
     private InitParams params;
     //连接过程的阻塞
-    private boolean isBlocking = true;
+    private boolean isBlocking = false;
+    public boolean isConning = false;
     private Disposable mConnDisposable;
     /**
      * 是否初始化重连
@@ -133,7 +134,7 @@ public class MqttManager implements MqttCallbackExtended {
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
     public void connAndListener(Context context) throws Throwable {
-        if (client != null && !client.isConnected()&&mConnDisposable==null) {
+        if (client != null && !client.isConnected()) {
             isBlocking = true;
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
             Log.d(TAG, "connAndListener Waiting for connection to complete！");
@@ -167,6 +168,7 @@ public class MqttManager implements MqttCallbackExtended {
     public void closeDisposable() {
         mConnDisposable.dispose();
         mConnDisposable = null;
+        isConning = false;
     }
 
     public void doConntect(Context context, InitParams params, Register register) throws Throwable {

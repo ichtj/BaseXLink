@@ -80,11 +80,11 @@ public class RxMqttService extends Service {
         if (intent != null) {
             params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
             //设置一个注册的默认状态
-            InitState initState=InitState.INIT_SERVICE_ERR;
+            InitState initState = InitState.INIT_SERVICE_ERR;
             try {
                 looperQueen();
                 if (TextUtils.isEmpty(params.key) ||
-                        TextUtils.isEmpty(params.secret)||TextUtils.isEmpty(params.pdid)) {
+                        TextUtils.isEmpty(params.secret) || TextUtils.isEmpty(params.pdid)) {
                     //判断注册参数是否有误
                     initState = InitState.INIT_PARAMS_LOST;
                 } else {
@@ -175,29 +175,35 @@ public class RxMqttService extends Service {
      * 去执行连接
      */
     public void toConnect() {
-        Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
-        map.clear();//创建连接时清除之前的消息队列
-        boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
-        Log.d(TAG, "onEvent: isNetOk=" + isNetOk);
-        if (!isNetOk) {
-            connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
-        } else {
-            Register register = PropertiesUtil.getProperties(RxMqttService.this);
-            if (mqttManager != null) {
-                Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
-                //如果先前的连接还在建立，先断开之前的连接，再重新创建
-                mqttManager.disConnect();
-                try {
-                    //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
-                    mqttManager.doConntect(RxMqttService.this, params, register);
-                } catch (Throwable e) {
-                    connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
-                }
+        boolean isConning=MqttManager.getInstance().isConning;
+        Log.d(TAG, "toConnect: isConning="+isConning);
+        if(!isConning){
+            //标记正在连接中
+            MqttManager.getInstance().isConning=true;
+            Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
+            map.clear();//创建连接时清除之前的消息队列
+            boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
+            Log.d(TAG, "onEvent: isNetOk=" + isNetOk);
+            if (!isNetOk) {
+                connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
             } else {
-                try {
-                    createConect(register);
-                } catch (Throwable e) {
-                    connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+                Register register = PropertiesUtil.getProperties(RxMqttService.this);
+                if (mqttManager != null) {
+                    Log.d(TAG, "onEvent： Disconnect the previous connection and recreate it");
+                    //如果先前的连接还在建立，先断开之前的连接，再重新创建
+                    mqttManager.disConnect();
+                    try {
+                        //创建连接 连接结果将在MqttManager的iMqttActionListener进行回调
+                        mqttManager.doConntect(RxMqttService.this, params, register);
+                    } catch (Throwable e) {
+                        connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+                    }
+                } else {
+                    try {
+                        createConect(register);
+                    } catch (Throwable e) {
+                        connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+                    }
                 }
             }
         }
@@ -252,7 +258,6 @@ public class RxMqttService extends Service {
      * @param type 连接状态
      */
     private void connTypeCallBack(ConnectType type) {
-        Log.d(TAG, "connectTypeCallBack： name=" + type.getValue());
         MessageListener listener = XLink.getInstance().getListener();
         if (listener != null) {
             listener.connectState(type);

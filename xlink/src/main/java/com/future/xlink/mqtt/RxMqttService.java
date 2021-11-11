@@ -104,7 +104,7 @@ public class RxMqttService extends Service {
                 initState = InitState.INIT_SERVICE_ERR;
             } finally {
                 Log.d(TAG, "onStartCommand: initState="+initState.getValue());
-                XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, initState));
+                toInit(initState);
             }
         }
         return super.onStartCommand(intent, flags, startId);

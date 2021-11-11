@@ -48,7 +48,7 @@ public class MqttManager implements MqttCallbackExtended {
     private Context context;
     private InitParams params;
     //连接过程的阻塞
-    private boolean isBlockStart= false;
+    private boolean isBlockStart = false;
     //是否正在连接中 此时防止重复进行连接操作
     public boolean isConning = false;
     private Disposable mConnDisposable;
@@ -134,7 +134,7 @@ public class MqttManager implements MqttCallbackExtended {
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
     public void connAndListener(Context context) throws Throwable {
-        if (client != null && !client.isConnected()) {
+        if (!isConnect()) {
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
             Log.d(TAG, "Waiting for connection to finish！");
             mConnDisposable = Observable.
@@ -144,8 +144,8 @@ public class MqttManager implements MqttCallbackExtended {
                         @Override
                         public void accept(Long aLong) throws Exception {
                             //循环检测连接是否完成
-                            if (!isBlockStart&&client.isConnected()) {
-                                Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
+                            if (!isBlockStart && isConnect()) {
+                                Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + isConnect());
                                 closeDisposable();
                             } else {
                                 if (aLong >= 8) {
@@ -186,11 +186,11 @@ public class MqttManager implements MqttCallbackExtended {
         }
     }
 
+    /**
+     * 判断mqtt是否连接完成
+     */
     public boolean isConnect() {
-        if (client != null) {
-            return client.isConnected();
-        }
-        return false;
+        return client != null && client.isConnected();
     }
 
     private IMqttActionListener iMqttActionListener = new IMqttActionListener() {
@@ -245,7 +245,7 @@ public class MqttManager implements MqttCallbackExtended {
     public void publish(String topicName, int qos, byte[] payload) {
         //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
         isInitconnect = false;
-        if (client != null && client.isConnected()) {
+        if (isConnect()) {
             // Create and configure a message
             MqttMessage message = new MqttMessage(payload);
             message.setQos(qos);
@@ -255,7 +255,7 @@ public class MqttManager implements MqttCallbackExtended {
                 Log.e(TAG, "publish: ", e);
             }
         } else {
-            Log.d(TAG, "publish: client == null && !client.isConnected() || !isConnectIsNormal(context)");
+            Log.d(TAG, "publish: client == null && isConnected=false || !isConnectIsNormal(context)");
         }
     }
 
@@ -273,7 +273,7 @@ public class MqttManager implements MqttCallbackExtended {
      * @param qos       the maximum quality of service to receive messages at for this subscription
      */
     public void subscribe(String topicName, int qos) {
-        if (client != null && client.isConnected()) {
+        if (isConnect()) {
             Log.d(TAG, "subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);

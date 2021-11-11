@@ -161,4 +161,12 @@ public class XLink {
             }
         }
     }
+
+    /**
+     * 获取Mqtt连接状态
+     * @return true连接 false断开
+     */
+    public boolean isConnected(){
+        return MqttManager.getInstance().isConnect();
+    }
 }

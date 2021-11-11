@@ -103,6 +103,7 @@ public class RxMqttService extends Service {
             } catch (Throwable e) {
                 initState = InitState.INIT_SERVICE_ERR;
             } finally {
+                Log.d(TAG, "onStartCommand: initState="+initState.getValue());
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, initState));
             }
         }
@@ -115,7 +116,7 @@ public class RxMqttService extends Service {
      */
     private void createConect(Register register) throws Throwable {
         mqttManager = MqttManager.getInstance();
-        mqttManager.creatConnect(RxMqttService.this, params, register);
+        mqttManager.creatNewConnect(RxMqttService.this, params, register);
     }
 
 

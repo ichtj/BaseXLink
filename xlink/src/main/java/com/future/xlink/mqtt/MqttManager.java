@@ -48,7 +48,8 @@ public class MqttManager implements MqttCallbackExtended {
     private Context context;
     private InitParams params;
     //连接过程的阻塞
-    private boolean isBlocking = false;
+    private boolean isBlockStart= false;
+    //是否正在连接中 此时防止重复进行连接操作
     public boolean isConning = false;
     private Disposable mConnDisposable;
     /**
@@ -74,7 +75,7 @@ public class MqttManager implements MqttCallbackExtended {
     /**
      * 创建Mqtt 连接
      */
-    public void creatConnect(Context context, InitParams params, Register register) throws Throwable {
+    public void creatNewConnect(Context context, InitParams params, Register register) throws Throwable {
         this.context = context;
         this.params = params;
         isInitconnect = true;
@@ -91,7 +92,6 @@ public class MqttManager implements MqttCallbackExtended {
             Log.d(TAG, "creatConnect: isDel my.properties=" + isDel);
             return;
         }
-        // Construct an MQTT blocking mode client ;clientId需要修改为设备sn
         client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
         Log.d(TAG, "creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         client.setCallback(this);
@@ -135,9 +135,8 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void connAndListener(Context context) throws Throwable {
         if (client != null && !client.isConnected()) {
-            isBlocking = true;
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
-            Log.d(TAG, "connAndListener Waiting for connection to complete！");
+            Log.d(TAG, "Waiting for connection to finish！");
             mConnDisposable = Observable.
                     interval(0, 2, TimeUnit.SECONDS)
                     .subscribeOn(Schedulers.io())
@@ -145,7 +144,7 @@ public class MqttManager implements MqttCallbackExtended {
                         @Override
                         public void accept(Long aLong) throws Exception {
                             //循环检测连接是否完成
-                            if (!isBlocking) {
+                            if (!isBlockStart&&client.isConnected()) {
                                 Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + client.isConnected());
                                 closeDisposable();
                             } else {
@@ -158,13 +157,18 @@ public class MqttManager implements MqttCallbackExtended {
                             }
                         }
                     });
+            //标记开始阻塞
+            isBlockStart = true;
             //阻止当前线程，直到该令牌关联的操作完成
             itoken.waitForCompletion();
-            //代表阻塞完毕 可以说是已经连接完毕
-            isBlocking = false;
+            //代表阻塞结束 也能说明连接过程完毕
+            isBlockStart = false;
         }
     }
 
+    /**
+     * 关闭检测连接阻塞后 的连接状态检测
+     */
     public void closeDisposable() {
         mConnDisposable.dispose();
         mConnDisposable = null;
@@ -174,7 +178,7 @@ public class MqttManager implements MqttCallbackExtended {
     public void doConntect(Context context, InitParams params, Register register) throws Throwable {
         if (client == null) {
             //client为空时代表需要重新建立连接
-            creatConnect(context, params, register);
+            creatNewConnect(context, params, register);
         } else {
             //client不为空时表明 利用原有的连接信息
             this.context = context;

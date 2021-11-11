@@ -79,14 +79,12 @@ public class RxMqttService extends Service {
         Log.d(TAG, "onStartCommand map.size=" + map.size());
         if (intent != null) {
             params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
-            //设置一个注册的默认状态
-            InitState initState = InitState.INIT_SERVICE_ERR;
             try {
                 looperQueen();
                 if (TextUtils.isEmpty(params.key) ||
                         TextUtils.isEmpty(params.secret) || TextUtils.isEmpty(params.pdid)) {
                     //判断注册参数是否有误
-                    initState = InitState.INIT_PARAMS_LOST;
+                    toInit(InitState.INIT_PARAMS_LOST);
                 } else {
                     //查看本地文件是否已经记录了注册参数
                     Register register = PropertiesUtil.getProperties(this);
@@ -97,14 +95,11 @@ public class RxMqttService extends Service {
                     } else {
                         Log.d(TAG, "this devices has been registered");
                         //直接提示已注册过
-                        initState = InitState.INIT_SUCCESS;
+                        toInit(InitState.INIT_SUCCESS);
                     }
                 }
             } catch (Throwable e) {
-                initState = InitState.INIT_SERVICE_ERR;
-            } finally {
-                Log.d(TAG, "onStartCommand: initState="+initState.getValue());
-                toInit(initState);
+                toInit(InitState.INIT_SERVICE_ERR);
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -165,7 +160,7 @@ public class RxMqttService extends Service {
      * @param initState 初始化状态
      */
     public void toInit(InitState initState) {
-        Log.d(TAG, "onEvent： TYPE_MODE_INIT_RX");
+        Log.d(TAG, "onEvent： TYPE_MODE_INIT_RX initState="+initState.getValue());
         //获取初始化参数状态
         if (XLink.getInstance().getListener() != null) {
             XLink.getInstance().getListener().initState(initState);

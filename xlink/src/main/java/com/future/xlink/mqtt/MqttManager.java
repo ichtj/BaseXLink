@@ -90,6 +90,7 @@ public class MqttManager implements MqttCallbackExtended {
             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
             boolean isDel = new File(path).delete();
             Log.d(TAG, "creatConnect: isDel my.properties=" + isDel);
+            isConning=false;
             return;
         }
         client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);

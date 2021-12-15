@@ -37,9 +37,9 @@ public class InitParams implements Serializable {
      */
     public int outTime = 30;
     /**
-     * 心跳发送间隔时长,单位s
+     * 信令包发送间隔时长,单位s
      */
-    public int keepAliveTime = 10;
+    public int keepAliveTime = 60;
     /**
      * 设备唯一编码,可以为工控的IMEI编号，不可为空
      */

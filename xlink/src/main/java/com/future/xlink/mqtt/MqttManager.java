@@ -50,7 +50,7 @@ public class MqttManager implements MqttCallbackExtended {
     //连接过程的阻塞
     private boolean isBlockStart = false;
     //是否正在连接中 此时防止重复进行连接操作
-    public boolean isConning = false;
+    public boolean isConnStatus = false;
     private Disposable mConnDisposable;
     /**
      * 是否初始化重连
@@ -90,7 +90,7 @@ public class MqttManager implements MqttCallbackExtended {
             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
             boolean isDel = new File(path).delete();
             Log.d(TAG, "creatConnect: isDel my.properties=" + isDel);
-            isConning=false;
+            isConnStatus=false;
             return;
         }
         client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
@@ -173,14 +173,16 @@ public class MqttManager implements MqttCallbackExtended {
     public void closeDisposable() {
         mConnDisposable.dispose();
         mConnDisposable = null;
-        isConning = false;
+        isConnStatus = false;
     }
 
     public void doConntect(Context context, InitParams params, Register register) throws Throwable {
         if (client == null) {
+            Log.d(TAG, "doConntect: client == null");
             //client为空时代表需要重新建立连接
             creatNewConnect(context, params, register);
         } else {
+            Log.d(TAG, "doConntect: client != null");
             //client不为空时表明 利用原有的连接信息
             this.context = context;
             connAndListener(context);

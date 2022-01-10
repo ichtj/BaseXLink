@@ -185,6 +185,7 @@ public class RxMqttService extends Service {
             } else {
                 Register register = PropertiesUtil.getProperties(RxMqttService.this);
                 try {
+                    Log.d(TAG, "toConnect: register="+register.toString());
                     createConect(register);
                 } catch (Throwable e) {
                     connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);

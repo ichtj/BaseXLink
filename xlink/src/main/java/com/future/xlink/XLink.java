@@ -37,6 +37,8 @@ import io.reactivex.annotations.NonNull;
  * @author chtj
  */
 public class XLink {
+    //代表1天1L * 24L * 60L * 60L * 1000L
+    //代表30天1L * 24L * 60L * 60L * 1000L
     private static final long MAX_TIME=1L * 24L * 60L * 60L * 1000L;
     /**
      * 单例
@@ -49,7 +51,7 @@ public class XLink {
     /**
      * 消息回调接口
      */
-    MessageListener listener;
+    private MessageListener listener;
 
     private XLink() {
 
@@ -77,7 +79,7 @@ public class XLink {
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         String pkgName = Utils.getPackageName(context);
         GlobalConfig.PROPERT_URL = GlobalConfig.SYS_ROOT_PATH + pkgName + "/" + params.sn + "/";
-        createFile(pkgName);//创建info,error日志的存储路径和.log文件my.properties文件
+        createPropertiesLogFile(pkgName);//创建info,error日志的存储路径和.log文件my.properties文件
         this.context = context;
         this.listener = listener;
         Intent intent = new Intent(context, RxMqttService.class);
@@ -90,7 +92,7 @@ public class XLink {
     /**
      * 初始化时创建配置文件
      */
-    private void createFile(String pkgName) {
+    private void createPropertiesLogFile(String pkgName) {
         //创建err文件夹
         File errLogFile = new File(GlobalConfig.PROPERT_URL);
         if (!errLogFile.exists()) {
@@ -101,31 +103,31 @@ public class XLink {
         if (!configBySn.exists()) {
             try {
                 configBySn.createNewFile();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
         }
         LogConfiguration config = new LogConfiguration.Builder()
-                .logLevel(LogLevel.ALL)             // 指定日志级别，低于该级别的日志将不会被打印，默认为 LogLevel.ALL
-                .tag("XLink")                                         // 指定 TAG，默认为 "X-LOG"
-                .enableThreadInfo()                                    // 允许打印线程信息，默认禁止
-                .enableStackTrace(2)                                   // 允许打印深度为 2 的调用栈信息，默认禁止
-                //.enableBorder()                                        // 允许打印日志边框，默认禁止
+                .logLevel(LogLevel.ALL)   // 指定日志级别，低于该级别的日志将不会被打印，默认为 LogLevel.ALL
+                .tag("XLink")             // 指定 TAG，默认为 "X-LOG"
+                .enableThreadInfo()       // 允许打印线程信息，默认禁止
+                .enableStackTrace(2)      // 允许打印深度为 2 的调用栈信息，默认禁止
+                //.enableBorder()         // 允许打印日志边框，默认禁止
                 .build();
 
         String xlogPath=GlobalConfig.SYS_ROOT_PATH+pkgName+ "/"+ Build.SERIAL+"/"+"xlink-log/";
-        Printer androidPrinter = new AndroidPrinter(true);         // 通过 android.util.Log 打印日志的打印器
-        //Printer consolePrinter = new ConsolePrinter();             // 通过 System.out 打印日志到控制台的打印器
-        Printer filePrinter = new FilePrinter                     // 打印日志到文件的打印器
-                .Builder(xlogPath)                             // 指定保存日志文件的路径
+        Printer androidPrinter = new AndroidPrinter(true);// 通过 android.util.Log 打印日志的打印器
+        //Printer consolePrinter = new ConsolePrinter();            // 通过 System.out 打印日志到控制台的打印器
+        Printer filePrinter = new FilePrinter                       // 打印日志到文件的打印器
+                .Builder(xlogPath)                                  // 指定保存日志文件的路径
                 .fileNameGenerator(new DataFormatFileInfo())        // 指定日志文件名生成器，默认为 ChangelessFileNameGenerator("log")
-                .backupStrategy(new NeverBackupStrategy())             // 指定日志文件备份策略，默认为 FileSizeBackupStrategy(1024 * 1024)
+                .backupStrategy(new NeverBackupStrategy())          // 指定日志文件备份策略，默认为 FileSizeBackupStrategy(1024 * 1024)
                 .cleanStrategy(new FileLastModifiedCleanStrategy(MAX_TIME))     // 指定日志文件清除策略，默认为 NeverCleanStrategy()
                 .flattener(new DefaultFlattenerInfo())
                 .build();
-        XLog.init(                                                 // 初始化 XLog
-                config,                                                // 指定日志配置，如果不指定，会默认使用 new LogConfiguration.Builder().build()
-                androidPrinter,                                        // 添加任意多的打印器。如果没有添加任何打印器，会默认使用 AndroidPrinter(Android)/ConsolePrinter(java)
+        XLog.init(                                                  // 初始化 XLog
+                config,                                             // 指定日志配置，如果不指定，会默认使用 new LogConfiguration.Builder().build()
+                androidPrinter,                                     // 添加任意多的打印器。如果没有添加任何打印器，会默认使用 AndroidPrinter(Android)/ConsolePrinter(java)
                 //consolePrinter,
                 filePrinter);
     }

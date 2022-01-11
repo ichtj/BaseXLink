@@ -42,6 +42,7 @@ dependencies {
     implementation rootProject.ext.dependencies["retrofit"]
     implementation rootProject.ext.dependencies["converter-gson"]
     implementation rootProject.ext.dependencies["adapter-rxjava"]
+    implementation rootProject.ext.dependencies["xlog"]
     //okhttp目前只能使用该版本，最新版本需要针对android低版本做兼容操作
     implementation rootProject.ext.dependencies["okhttp12"]
     //Mqtt

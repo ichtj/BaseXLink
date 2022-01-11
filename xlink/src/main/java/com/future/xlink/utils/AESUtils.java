@@ -1,7 +1,8 @@
 package com.future.xlink.utils;
 
 import android.util.Base64;
-import android.util.Log;
+
+import com.elvishew.xlog.XLog;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -95,7 +96,6 @@ public class AESUtils {
      * 处理异常
      */
     private static void handleException(String methodName, Exception e) {
-        e.printStackTrace();
-        Log.e(TAG, methodName + "---->" + e);
+        XLog.e(e);
     }
 }

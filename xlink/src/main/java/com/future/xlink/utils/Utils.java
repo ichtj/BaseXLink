@@ -8,7 +8,6 @@ import android.net.NetworkInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 
 import com.future.xlink.bean.InitParams;
 import java.util.UUID;

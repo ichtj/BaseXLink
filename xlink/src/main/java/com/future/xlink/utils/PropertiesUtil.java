@@ -1,8 +1,7 @@
 package com.future.xlink.utils;
 
 import android.content.Context;
-import android.util.Log;
-
+import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.Constants;
 import com.future.xlink.bean.Register;
 
@@ -50,8 +49,7 @@ public class PropertiesUtil {
 			mProp.load(is);
 			is.close();
 		} catch (Exception e) {
-			e.printStackTrace();
-			Log.e(TAG, "init: errMeg="+e.getMessage());
+			XLog.e(e);
 		}
 		return this;
 	}

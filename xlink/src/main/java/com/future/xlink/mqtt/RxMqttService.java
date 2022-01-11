@@ -5,8 +5,8 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
-import android.util.Log;
 
+import com.elvishew.xlog.XLog;
 import com.future.xlink.XLink;
 import com.future.xlink.api.SubscriberSingleton;
 import com.future.xlink.bean.Constants;
@@ -70,13 +70,13 @@ public class RxMqttService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate start service");
+        XLog.d("onCreate start service");
         XBus.register(this);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand map.size=" + map.size());
+        XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
             params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
             try {
@@ -89,11 +89,11 @@ public class RxMqttService extends Service {
                     //查看本地文件是否已经记录了注册参数
                     Register register = PropertiesUtil.getProperties(this);
                     if (register.isNull()) {
-                        Log.d(TAG, "No local registration was detected");
+                        XLog.d("No local registration was detected");
                         //未注册过那么先获取代理服务器列表
                         ObserverUtils.getAgentList(RxMqttService.this, params);
                     } else {
-                        Log.d(TAG, "this devices has been registered");
+                        XLog.d("this devices has been registered");
                         //直接提示已注册过
                         toInit(InitState.INIT_SUCCESS);
                     }
@@ -160,7 +160,7 @@ public class RxMqttService extends Service {
      * @param initState 初始化状态
      */
     public void toInit(InitState initState) {
-        Log.d(TAG, "onEvent： TYPE_MODE_INIT_RX initState="+initState.getValue());
+        XLog.d("onEvent： TYPE_MODE_INIT_RX initState="+initState.getValue());
         //获取初始化参数状态
         if (XLink.getInstance().getListener() != null) {
             XLink.getInstance().getListener().initState(initState);
@@ -172,20 +172,20 @@ public class RxMqttService extends Service {
      */
     public void toConnect() {
         boolean isConning=MqttManager.getInstance().isConnStatus;
-        Log.d(TAG, "toConnect: isConning="+isConning);
+        XLog.d("toConnect: isConning="+isConning);
         if(!isConning){
             //标记正在连接中
             MqttManager.getInstance().isConnStatus=true;
-            Log.d(TAG, "onEvent： TYPE_MODE_CONNECT");
+            XLog.d("onEvent： TYPE_MODE_CONNECT");
             map.clear();//创建连接时清除之前的消息队列
             boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
-            Log.d(TAG, "onEvent: isNetOk=" + isNetOk);
+            XLog.d("onEvent: isNetOk=" + isNetOk);
             if (!isNetOk) {
                 connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
             } else {
                 Register register = PropertiesUtil.getProperties(RxMqttService.this);
                 try {
-                    Log.d(TAG, "toConnect: register="+register.toString());
+                    XLog.d("toConnect: register="+register.toString());
                     createConect(register);
                 } catch (Throwable e) {
                     connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
@@ -200,7 +200,7 @@ public class RxMqttService extends Service {
      * @param error 连接异常信息
      */
     public void connectLost(Throwable error) {
-        Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_LOST");
+        XLog.d("onEvent： TYPE_MODE_CONNECT_LOST");
         //连接丢失
         if (params.automaticReconnect) {
             checkReconnect();//开始重连状态检测
@@ -217,7 +217,7 @@ public class RxMqttService extends Service {
      */
     public void connStatusChange(ConnectType type) {
         //连接状态
-        Log.d(TAG, "onEvent： TYPE_MODE_CONNECT_RESULT value=" + type.getValue());
+        XLog.d("onEvent： TYPE_MODE_CONNECT_RESULT value=" + type.getValue());
         stopCheckReconnect();//停止网络状态检测
         switch (type) {
             case CONNECT_SUCCESS://连接完成
@@ -329,7 +329,7 @@ public class RxMqttService extends Service {
             protocal = map.get(request.iid);
             //如果接收到代理服务端下发的重复数据，还没有处理，需要过滤掉
             if (protocal.tx == null) {
-                Log.d(TAG, "parseData 重复数据下发-->" + request.iid);
+                XLog.d("parseData 重复数据下发-->" + request.iid);
                 return;
             }
             protocal.status = protocal.status + 1;
@@ -365,7 +365,7 @@ public class RxMqttService extends Service {
                             lock.wait(50);
                         } catch (Throwable e) {
                             //数据处理异常5
-                            Log.e(TAG, "读取等待", e);
+                            XLog.e(e);
                         }
                     }
                 }
@@ -392,7 +392,7 @@ public class RxMqttService extends Service {
                         protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
                     }
                 }
-                Log.d(TAG, "iid=[" + protocal.iid + "],rx=[" + protocal.tx + "];Message processing timeout！");
+                XLog.d("iid=[" + protocal.iid + "],rx=[" + protocal.tx + "];Message processing timeout！");
                 //超时两端都需要汇报
                 sendTxMsg(protocal);
                 sendRxMsg(protocal);
@@ -419,7 +419,7 @@ public class RxMqttService extends Service {
             }
         }
         if (mapErrCount >= 5) {
-            Log.d(TAG, "executeQueen: Heartbeat events failed to be reported for many times！");
+            XLog.d("executeQueen: Heartbeat events failed to be reported for many times！");
             //主动关闭连接
             XLink.getInstance().disconnect();
         }
@@ -469,12 +469,12 @@ public class RxMqttService extends Service {
                 response.iid = msg.iid;
                 response.payload = msg.tx;
                 String dataJson = GsonUtils.toJsonWtihNullField(response);
-                Log.d(TAG, "sendRxMsg: dataJson=" + dataJson);
+                XLog.d("sendRxMsg: dataJson=" + dataJson);
                 mqttManager.publish(msg.ack, 2, dataJson.getBytes());
             }
         } catch (Throwable e) {
             //7消息发送异常
-            Log.e(TAG, "sendRxMsg: errMeg=" + e.getMessage());
+            XLog.e(e);
         }
     }
 
@@ -496,7 +496,7 @@ public class RxMqttService extends Service {
                         ConnectLostType type;
                         if (nowValue == outtime) {
                             //时间刚好达到超时时间
-                            Log.d(TAG, "checkReconnect: next ");
+                            XLog.d("checkReconnect: next ");
                             if (isNetOk) {
                                 //114能ping通，说明网络通讯正常；
                                 boolean state2 = PingUtils.ping(GlobalConfig.HTTP_SERVER);
@@ -537,7 +537,7 @@ public class RxMqttService extends Service {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        Log.e(TAG, "accept", throwable);
+                        XLog.e(throwable);
                     }
                 }));
     }
@@ -548,7 +548,7 @@ public class RxMqttService extends Service {
     private void stopCheckReconnect() {
         //重置记录超时后 网络正常的时间
         timeout = 0;
-        Log.d(TAG, "stopCheckReconnect map.size=" + map.size());
+        XLog.d("stopCheckReconnect map.size=" + map.size());
         SubscriberSingleton.clear(TAG);
     }
 
@@ -556,7 +556,7 @@ public class RxMqttService extends Service {
     public void onDestroy() {
         super.onDestroy();
         try {
-            Log.d(TAG, "onDestroy stop service");
+            XLog.d("onDestroy stop service");
             XBus.unregister(this);
             map.clear();
             stopCheckReconnect();
@@ -565,7 +565,7 @@ public class RxMqttService extends Service {
             mqttManager = null;
         } catch (Throwable e) {
             //停止服务异常2
-            Log.e(TAG, "onDestroy errMeg:" + e.getMessage());
+            XLog.e(e);
         }
     }
 }

@@ -2,9 +2,8 @@ package com.future.xlink.mqtt;
 
 import android.content.Context;
 import android.text.TextUtils;
-import android.util.Log;
 
-import com.future.xlink.XLink;
+import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
@@ -38,7 +37,6 @@ import io.reactivex.schedulers.Schedulers;
  * @author chtj
  */
 public class MqttManager implements MqttCallbackExtended {
-    private static final String TAG = "MqttManager";
     private static MqttManager mInstance = null;
     /**
      * 回调
@@ -89,32 +87,32 @@ public class MqttManager implements MqttCallbackExtended {
             //删除配置文件
             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
             boolean isDel = new File(path).delete();
-            Log.d(TAG, "creatConnect: isDel my.properties=" + isDel);
+            XLog.d("creatConnect: isDel my.properties=" + isDel);
             isConnStatus=false;
             return;
         }
         client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
-        Log.d(TAG, "creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
+        XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         client.setCallback(this);
         connAndListener(context);
     }
 
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
-        Log.d(TAG, "connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
+        XLog.d("connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, reconnect ? ConnectType.RECONNECT_SUCCESS : ConnectType.CONNECT_SUCCESS));
     }
 
     @Override
     public void connectionLost(Throwable cause) {
         Throwable newCause = new Throwable("连接丢失,请尝试重启应用！");
-        Log.d(TAG, "connectionLost " + ((cause != null) ? cause.getMessage() : newCause.getMessage()));
+        XLog.d("connectionLost " + ((cause != null) ? cause.getMessage() : newCause.getMessage()));
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause != null ? cause : newCause));
     }
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        Log.d(TAG, "messageArrived" + topic + "====" + message.toString());
+        XLog.d("messageArrived" + topic + "====" + message.toString());
         XBus.post(new Carrier(Carrier.TYPE_REMOTE_RX, topic, message));
     }
 
@@ -122,11 +120,10 @@ public class MqttManager implements MqttCallbackExtended {
     public void deliveryComplete(IMqttDeliveryToken token) {
         try {
             boolean isComplete = token.isComplete();
-            Log.d(TAG, "deliveryComplete token isComplete=" + isComplete + ",errMeg=" + (isComplete ? "" : token.getException().toString()));
-            Log.d(TAG, "deliveryComplete token message=" + token.getMessage().toString());
+            XLog.d("deliveryComplete token isComplete=" + isComplete + ",errMeg=" + (isComplete ? "" : token.getException().toString()));
+            XLog.d("deliveryComplete token message=" + token.getMessage().toString());
         } catch (Exception e) {
-            e.printStackTrace();
-            Log.e(TAG, "deliveryComplete errMeg=" + e.toString());
+            XLog.e(e);
         }
     }
 
@@ -137,7 +134,7 @@ public class MqttManager implements MqttCallbackExtended {
     public void connAndListener(Context context) throws Throwable {
         if (!isConnect()) {
             IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
-            Log.d(TAG, "Waiting for connection to finish！");
+            XLog.d("Waiting for connection to finish！");
             mConnDisposable = Observable.
                     interval(0, 2, TimeUnit.SECONDS)
                     .subscribeOn(Schedulers.io())
@@ -146,11 +143,11 @@ public class MqttManager implements MqttCallbackExtended {
                         public void accept(Long aLong) throws Exception {
                             //循环检测连接是否完成
                             if (!isBlockStart && isConnect()) {
-                                Log.d(TAG, "connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + isConnect());
+                                XLog.d("connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + isConnect());
                                 closeDisposable();
                             } else {
                                 if (aLong >= 8) {
-                                    Log.d(TAG, "The specified connection timeout period is reached");
+                                    XLog.d("The specified connection timeout period is reached");
                                     closeDisposable();
                                     //反馈连接超时
                                     XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_RESPONSE_TIMEOUT));
@@ -178,11 +175,11 @@ public class MqttManager implements MqttCallbackExtended {
 
     public void doConntect(Context context, InitParams params, Register register) throws Throwable {
         if (client == null) {
-            Log.d(TAG, "doConntect: client == null");
+            XLog.d("doConntect: client == null");
             //client为空时代表需要重新建立连接
             creatNewConnect(context, params, register);
         } else {
-            Log.d(TAG, "doConntect: client != null");
+            XLog.d("doConntect: client != null");
             //client不为空时表明 利用原有的连接信息
             this.context = context;
             connAndListener(context);
@@ -200,7 +197,7 @@ public class MqttManager implements MqttCallbackExtended {
 
         @Override
         public void onSuccess(IMqttToken arg0) {
-            Log.d(TAG, "onSuccess connection onSuccess");
+            XLog.d("onSuccess connection onSuccess");
             DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
             disconnectedBufferOptions.setBufferEnabled(params.bufferEnable);
             disconnectedBufferOptions.setBufferSize(params.bufferSize);
@@ -213,7 +210,7 @@ public class MqttManager implements MqttCallbackExtended {
 
         @Override
         public void onFailure(IMqttToken arg0, Throwable arg1) {
-            Log.d(TAG, "onFailure onFailure-->" + arg1.getMessage());
+            XLog.d("onFailure onFailure-->" + arg1.getMessage());
             if (params.automaticReconnect) {
                 //只在客户端主动创建初始化连接时回调
                 if (isInitconnect) {
@@ -224,9 +221,9 @@ public class MqttManager implements MqttCallbackExtended {
                             //删除配置文件
                             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
                             boolean isDel = new File(path).delete();
-                            Log.d(TAG, "onFailure: isDel my.properties=" + isDel);
+                            XLog.d("onFailure: isDel my.properties=" + isDel);
                         } catch (Exception e) {
-                            Log.e(TAG, "onFailure", e);
+                            XLog.e(e);
                         }
                     } else {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
@@ -255,10 +252,10 @@ public class MqttManager implements MqttCallbackExtended {
             try {
                 client.publish(topicName, message);
             } catch (Throwable e) {
-                Log.e(TAG, "publish: ", e);
+                XLog.e(e);
             }
         } else {
-            Log.d(TAG, "publish: client == null && isConnected=false || !isConnectIsNormal(context)");
+            XLog.d("publish: client == null && isConnected=false || !isConnectIsNormal(context)");
         }
     }
 
@@ -277,7 +274,7 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void subscribe(String topicName, int qos) {
         if (isConnect()) {
-            Log.d(TAG, "subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
+            XLog.d("subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);
             } catch (MqttException e) {
@@ -291,19 +288,19 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void disConnect() {
         if (client != null) {
-            Log.d(TAG, "release the mqtt connection");
+            XLog.d("release the mqtt connection");
             try {
                 if (client.isConnected()) {
                     client.disconnect();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "1disConnect", e);
+                XLog.e(e);
             }
             try {
                 client.unregisterResources();
                 client.close();
             } catch (Throwable e) {
-                Log.e(TAG, "2disConnect", e);
+                XLog.e(e);
             }
             client = null;
         }

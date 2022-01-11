@@ -1,6 +1,6 @@
 package com.future.xlink.utils;
 
-import android.util.Log;
+import com.elvishew.xlog.XLog;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,13 +35,13 @@ public class PingUtils {
             String command = "ping -c " + pingCount + " " + pingHosts[0];
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
-                Log.d(TAG, "ping ping fail:process is null.");
+                XLog.d("ping ping fail:process is null.");
                 append(stringBuffer, "ping fail:process is null.");
                 return result;
             }
             successReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while ((line = successReader.readLine()) != null) {
-                Log.d(TAG, "ping line-->" + line);
+                XLog.d("ping line-->" + line);
                 if (line.contains("rtt min/avg/max/mdev = ")) {
                     //获取avg数据返回
                     result = host + "#" + parsedata(line);
@@ -50,18 +50,18 @@ public class PingUtils {
             }
             int status = process.waitFor();
             if (status == 0) {
-                Log.d(TAG, "ping exec cmd success:" + command);
+                XLog.d("ping exec cmd success:" + command);
                 append(stringBuffer, "exec cmd success:" + command);
             } else {
-                Log.d(TAG, "ping exec cmd fail.");
+                XLog.d("ping exec cmd fail.");
                 append(stringBuffer, "exec cmd fail.");
             }
-            Log.d(TAG, "ping exec finished.");
+            XLog.d("ping exec finished.");
             append(stringBuffer, "exec finished.");
         } catch (InterruptedException e) {
-            Log.e(TAG, "ping", e);
+            XLog.e(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            XLog.e(e);
         } finally {
             if (process != null) {
                 process.destroy();
@@ -70,7 +70,7 @@ public class PingUtils {
                 try {
                     successReader.close();
                 } catch (IOException e) {
-                    Log.e(TAG, "ping", e);
+                    XLog.e(e);
                 }
             }
         }
@@ -100,7 +100,7 @@ public class PingUtils {
                 return true;
             }
         } catch (Throwable e) {
-            Log.d(TAG, "ping: ", e);
+            XLog.e(e);
         }
         return false;
     }
@@ -167,7 +167,7 @@ public class PingUtils {
                 return true;
             }
         } catch (Throwable var15) {
-            Log.d(TAG, "ping: ", var15);
+            XLog.e(var15);
         }
         return false;
     }
@@ -188,16 +188,16 @@ public class PingUtils {
             String command = "ping -c " + 3 + " " + pingHosts[0];
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
-                Log.d(TAG, "ping ping fail:process is null.");
+                XLog.d("ping ping fail:process is null.");
                 return false;
             }
             int status = process.waitFor();
             if (status == 0) {
-                Log.d(TAG, "ping exec cmd success:" + command);
+                XLog.d("ping exec cmd success:" + command);
                 return true;
             }
         } catch (Throwable e) {
-            Log.e(TAG, "ping: ",e );
+            XLog.e(e);
         } finally {
             if (process != null) {
                 process.destroy();

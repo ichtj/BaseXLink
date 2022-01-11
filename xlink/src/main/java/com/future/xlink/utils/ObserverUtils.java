@@ -2,8 +2,8 @@ package com.future.xlink.utils;
 
 import android.content.Context;
 import android.os.Environment;
-import android.util.Log;
 
+import com.elvishew.xlog.XLog;
 import com.future.xlink.api.ApiService;
 import com.future.xlink.api.response.BaseResponse;
 import com.future.xlink.api.retrofit.RetrofitClient;
@@ -55,21 +55,21 @@ public class ObserverUtils {
             @Override
             public void onNext(BaseResponse<LogPayload> baseResponse) {
                 super.onNext(baseResponse);
-                Log.d(TAG, "getUploadLogUrl "+GsonUtils.toJsonWtihNullField(baseResponse));
+                XLog.d("getUploadLogUrl "+GsonUtils.toJsonWtihNullField(baseResponse));
                 if (baseResponse.status == 0) {
                     //日志上传接口请求成功，上传文件
                     String path = Environment.getExternalStorageDirectory().getPath() + File.separator + bean.filename;
                     File file = new File(path);
-                    Log.d(TAG, "getUploadLogUrl size==" + file.length());
+                    XLog.d("getUploadLogUrl size==" + file.length());
                     doUploadFile(file, baseResponse.payload, new Callback<BaseResponse>() {
                         @Override
                         public void onResponse(Call<BaseResponse> call, Response<BaseResponse> response) {
-                            Log.d(TAG, "onResponse result==>" + response.isSuccessful());
+                            XLog.d("onResponse result==>" + response.isSuccessful());
                         }
 
                         @Override
                         public void onFailure(Call<BaseResponse> call, Throwable t) {
-                            Log.e(TAG, "onFailure", t);
+                            XLog.e(t);
 
                         }
                     });
@@ -79,7 +79,7 @@ public class ObserverUtils {
             @Override
             public void onError(Throwable e) {
                 super.onError(e);
-                Log.e(TAG, "onError", e);
+                XLog.e(e);
             }
         });
     }
@@ -108,11 +108,11 @@ public class ObserverUtils {
             @Override
             public void onNext(BaseResponse<Agents> baseResponse) {
                 super.onNext(baseResponse);
-                Log.d(TAG, "getAgentList: baseResponse="+baseResponse.toString());
+                XLog.d("getAgentList: baseResponse="+baseResponse.toString());
                 if (baseResponse.isSuccessNonNull()) {
                     //获取服务器列表成功，进行ping操作，获得最佳连接链路
                     List<String> pinglist = baseResponse.payload.servers;
-                    Log.d(TAG,"onNext pinglist:"+ pinglist.toString());
+                    XLog.d("onNext pinglist:"+ pinglist.toString());
                     if (pinglist == null || pinglist.size() == 0) {
                         //返回失败1
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
@@ -137,7 +137,7 @@ public class ObserverUtils {
             public void onError(Throwable e) {
                 super.onError(e);
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_ERR));
-                Log.e(TAG, "getAgentList", e);
+                XLog.e("getAgentList", e);
             }
         });
     }
@@ -158,11 +158,11 @@ public class ObserverUtils {
             @Override
             public void onNext(BaseResponse<Register> registerBaseResponse) {
                 super.onNext(registerBaseResponse);
-                Log.d(TAG, "registerRequest onNext status:" + registerBaseResponse.status);
+                XLog.d("registerRequest onNext status:" + registerBaseResponse.status);
                 if (registerBaseResponse.isSuccess() && registerBaseResponse.isSuccessNonNull()) {
                     //mqtt连接
                     Register register = registerBaseResponse.payload;
-                    Log.d(TAG, "registerRequest onNext get register:" + register.toString());
+                    XLog.d("registerRequest onNext get register:" + register.toString());
                     PropertiesUtil.saveProperties(context, register);
                     Register readFileregister = PropertiesUtil.getProperties(context);
                     if (!readFileregister.isNull()) {
@@ -177,7 +177,7 @@ public class ObserverUtils {
 
             @Override
             public void onError(Throwable e) {
-                Log.e(TAG, "registerRequest", e);
+                XLog.e(e);
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_ERR));
             }
         });

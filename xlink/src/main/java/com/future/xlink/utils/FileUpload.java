@@ -2,6 +2,7 @@ package com.future.xlink.utils;
 
 import android.util.Log;
 
+import com.elvishew.xlog.XLog;
 import com.future.xlink.api.response.BaseResponse;
 import com.future.xlink.api.retrofit.RetrofitClient;
 import com.future.xlink.bean.InitParams;
@@ -35,10 +36,10 @@ public class FileUpload {
             readLen += datas.length;
             boolean result = uploadBreakpoint(fileName, startPos, datas, total, params); //上传数据
             if (!result) {
-                Log.d(TAG, "readAndUpload failed==>" + startPos);
+                XLog.d("readAndUpload failed==>" + startPos);
                 return;
             }
-            Log.d(TAG, "readAndUpload success==>" + startPos);
+            XLog.d("readAndUpload success==>" + startPos);
             startPos += datas.length;
         }
     }
@@ -67,7 +68,7 @@ public class FileUpload {
             long timestamp = System.currentTimeMillis();
             String token = Utils.getToken(params, String.valueOf(timestamp));
             System.out.println("token: " + token);
-            Log.d(TAG, "doUploadBreakpointEx 1111");
+            XLog.d("doUploadBreakpointEx 1111");
             Response<BaseResponse> response =
                     RetrofitClient.getInstance()
                             .doUploadFile(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,
@@ -77,7 +78,7 @@ public class FileUpload {
                 return true;
             }
         } catch (Exception e) {
-            Log.d(TAG, "doUploadBreakpointEx 1114");
+            XLog.e(e);
             e.printStackTrace();
         }
         return false;

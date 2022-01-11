@@ -2,6 +2,8 @@ package com.future.xlink.utils;
 
 import android.util.Log;
 
+import com.elvishew.xlog.XLog;
+
 import org.greenrobot.eventbus.EventBus;
 
 public final class XBus {
@@ -11,12 +13,12 @@ public final class XBus {
     }
 
     public static void register(Object subscriber) {
-        Log.d(TAG, "register xbus");
+        XLog.d("register xbus");
         EventBus.getDefault().register(subscriber);
     }
 
     public static void unregister(Object subscriber) {
-        Log.d(TAG, "unregister xbus");
+        XLog.d("unregister xbus");
         EventBus.getDefault().unregister(subscriber);
     }
 }

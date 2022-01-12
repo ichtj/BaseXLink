@@ -61,7 +61,7 @@ public class PropertiesUtil {
 			mProp.store(os, "");
 			os.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			XLog.e(e);
 		}
 		mProp.clear();
 	}
@@ -79,8 +79,8 @@ public class PropertiesUtil {
 			mProp = new Properties();
 			mProp.load(is);
 			is.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Throwable e) {
+			XLog.e(e);
 		}
 	}
 

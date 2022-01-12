@@ -1,10 +1,7 @@
 package com.future.xlink.api.retrofit;
 
 import android.text.TextUtils;
-import android.util.Log;
-
 import com.elvishew.xlog.XLog;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -48,25 +45,18 @@ final class OkHttpSingleton {
         public Response intercept(@NonNull Interceptor.Chain chain) throws IOException {
             Request original = chain.request();
             HttpUrl.Builder builder = original.url().newBuilder();
-
-//            builder.addQueryParameter("controlCode", DataManager.getInstance().getSystemProvaderData(GlobalConfig.CONTROL_CODE_KEY));
-//            builder.addQueryParameter("token", DataManager.getInstance().getSystemProvaderData(ShareParams.TOKEN_KEY));
-//            builder.addQueryParameter("app_name", BuildConfig.AppName);
-//            builder.addQueryParameter("type", "kt_tool");
             HttpUrl modifiedUrl = builder.build();
             Request request = original.newBuilder().url(modifiedUrl).build();
             try {
-//                if (BuildConfig.IsDebug) {
-                    String params = getParameters(request.body());
-                    String urlStr = request.url().toString();
-                    if (TextUtils.isEmpty(params)) {
-                        XLog.d(urlStr);
-                    } else {
-                        XLog.d(urlStr + "&" + params);
-                    }
-//                }
-            } catch (Exception e) {
-                e.printStackTrace();
+                String params = getParameters(request.body());
+                String urlStr = request.url().toString();
+                if (TextUtils.isEmpty(params)) {
+                    XLog.d(urlStr);
+                } else {
+                    XLog.d(urlStr + "&" + params);
+                }
+            } catch (Throwable e) {
+                XLog.e(e);
             }
             return chain.proceed(request);
         }
@@ -87,15 +77,15 @@ final class OkHttpSingleton {
                     }
                     resultBuffer.append(new String(Arrays.copyOf(inputBytes, count), "UTF-8"));
                 }
-                String data=resultBuffer.toString();
+                String data = resultBuffer.toString();
                 data = data.replaceAll("%(?![0-9a-fA-F]{2})", "%25");
                 data = data.replaceAll("\\+", "%2B");
                 final String parameter = URLDecoder.decode(data, "UTF-8");
                 bufferedInputStream.close();
                 return parameter;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
+            XLog.e(e);
         }
         return "";
     }

@@ -58,9 +58,7 @@ public class PingUtils {
             }
             XLog.d("ping exec finished.");
             append(stringBuffer, "exec finished.");
-        } catch (InterruptedException e) {
-            XLog.e(e);
-        } catch (IOException e) {
+        } catch (Throwable e) {
             XLog.e(e);
         } finally {
             if (process != null) {
@@ -69,7 +67,7 @@ public class PingUtils {
             if (successReader != null) {
                 try {
                     successReader.close();
-                } catch (IOException e) {
+                } catch (Throwable e) {
                     XLog.e(e);
                 }
             }
@@ -216,9 +214,9 @@ public class PingUtils {
         try {
             String end = line.substring("rtt min/avg/max/mdev = ".length());
             return end.split("/")[1];
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
+            XLog.e(e);
+            return null;
         }
-        return null;
     }
 }

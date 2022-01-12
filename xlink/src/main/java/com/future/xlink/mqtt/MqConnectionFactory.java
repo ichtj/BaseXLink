@@ -31,7 +31,7 @@ public class MqConnectionFactory {
             conOpt.setPassword(password);
             conOpt.setServerURIs(new String[]{register.mqttBroker});
             conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             XLog.e(e);
         }
         return conOpt;

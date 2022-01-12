@@ -294,8 +294,8 @@ public class MqttManager implements MqttCallbackExtended {
             XLog.d("subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);
-            } catch (MqttException e) {
-                e.printStackTrace();
+            } catch (Throwable e) {
+                XLog.e(e);
             }
         }
     }

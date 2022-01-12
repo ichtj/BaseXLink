@@ -225,7 +225,6 @@ public class ObserverUtils {
                     @Override
                     public void accept(@NonNull Object o) throws Exception {
                         list.add((String) o);
-                        System.out.println(o);
                     }
                 });
     }

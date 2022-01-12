@@ -9,6 +9,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 
+import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
 import java.util.UUID;
 
@@ -40,8 +41,8 @@ public class Utils {
             PackageInfo packageInfo = packageManager.getPackageInfo(
                     context.getPackageName(), 0);
             return packageInfo.packageName;
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
+            XLog.e(e);
         }
         return null;
     }

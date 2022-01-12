@@ -1,5 +1,7 @@
 package com.future.xlink.utils;
 
+import com.elvishew.xlog.XLog;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -300,7 +302,7 @@ public class ZFileUtils {
      * 读取文件
      */
     public static byte[] readFile(String filePath, long seek, long readLength)
-            throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+            throws Throwable {
         return readFile(filePath, seek, readLength, BUFFER_LENGTH);
     }
 
@@ -308,7 +310,7 @@ public class ZFileUtils {
      * 读取文件
      */
     public static byte[] readFile(String filePath, long seek, long readLength, int bufferLength)
-            throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+            throws Throwable {
         bufferLength = bufferLength <= 0 ? BUFFER_LENGTH : bufferLength;
         RandomAccessFile raf = new RandomAccessFile(filePath, "rw");
         try  {
@@ -320,9 +322,6 @@ public class ZFileUtils {
                     readLength = size;
                 }
                 try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-//                    long len = isRealALl ? size - seek : readLength;
-//                    MappedByteBuffer mbbo = fc.map(FileChannel.MapMode.READ_ONLY, seek, readLength);
-
                     long total = size - seek;
                     long len = isRealALl ? total : (total > readLength ? readLength : total);
                     MappedByteBuffer mbbo = fc.map(FileChannel.MapMode.READ_ONLY, seek, len);
@@ -341,8 +340,8 @@ public class ZFileUtils {
                     return byteArrayOutputStream.toByteArray();
                 }
             }
-        }catch (Exception e){
-            e.printStackTrace();
+        }catch (Throwable e){
+            XLog.e(e);
         } finally {
             raf.close();
         }

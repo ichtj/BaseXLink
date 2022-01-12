@@ -19,11 +19,13 @@ import retrofit2.Response;
 
 /**
  * 大文件拆分上传处理
+ *
  * @author chtj
  */
 public class FileUpload {
     private static final String TAG = "FileUpload";
-    public static void readAndUpload(String filePath, String fileName, InitParams params) throws Exception {
+
+    public static void readAndUpload(String filePath, String fileName, InitParams params) throws Throwable {
         File file = new File(filePath);
         long total = file.length();
         long startPos = 0;
@@ -37,7 +39,7 @@ public class FileUpload {
             boolean result = uploadBreakpoint(fileName, startPos, datas, total, params); //上传数据
             if (!result) {
                 XLog.d("readAndUpload failed==>" + startPos);
-                return;
+                throw new Throwable("uploadBreakpoint error");
             }
             XLog.d("readAndUpload success==>" + startPos);
             startPos += datas.length;
@@ -57,31 +59,27 @@ public class FileUpload {
      * 上传文件
      */
     private static boolean doUploadBreakpointEx(String fileName, long startPos, byte[] datas, long total, InitParams params) throws Exception {
-        try {
-            Map<String, RequestBody> data = new HashMap<>();
-            MediaType textType = MediaType.parse("text/plain");
-            data.put("fileName", RequestBody.create(textType, fileName));
+        Map<String, RequestBody> data = new HashMap<>();
+        MediaType textType = MediaType.parse("text/plain");
+        data.put("fileName", RequestBody.create(textType, fileName));
 
-            RequestBody file = RequestBody.create(MediaType.parse("application/octet-stream"), datas);
-            MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, file);
+        RequestBody file = RequestBody.create(MediaType.parse("application/octet-stream"), datas);
+        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, file);
 
-            long timestamp = System.currentTimeMillis();
-            String token = Utils.getToken(params, String.valueOf(timestamp));
-            System.out.println("token: " + token);
-            XLog.d("doUploadBreakpointEx 1111");
-            Response<BaseResponse> response =
-                    RetrofitClient.getInstance()
-                            .doUploadFile(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,
-                                    filePart, getContentRange(startPos, datas, total)).execute();
-            BaseResponse baseResponse = response.body();
-            if (baseResponse != null && baseResponse.status == 0) {
-                return true;
-            }
-        } catch (Exception e) {
-            XLog.e(e);
-            e.printStackTrace();
+        long timestamp = System.currentTimeMillis();
+        String token = Utils.getToken(params, String.valueOf(timestamp));
+        System.out.println("token: " + token);
+        XLog.d("doUploadBreakpointEx 1111");
+        Response<BaseResponse> response =
+                RetrofitClient.getInstance()
+                        .doUploadFile(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,
+                                filePart, getContentRange(startPos, datas, total)).execute();
+        BaseResponse baseResponse = response.body();
+        if (baseResponse != null && baseResponse.status == 0) {
+            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     private static String getContentRange(long startPos, byte[] datas, long total) {

@@ -76,8 +76,8 @@ public class RxMqttService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
+            XLog.d("onStartCommand map.size=" + map.size());
             params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
             try {
                 looperQueen();

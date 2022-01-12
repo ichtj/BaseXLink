@@ -1,7 +1,5 @@
 package com.future.xlink.utils;
 
-import android.util.Log;
-
 import com.elvishew.xlog.XLog;
 import com.future.xlink.api.response.BaseResponse;
 import com.future.xlink.api.retrofit.RetrofitClient;
@@ -41,9 +39,9 @@ public class FileUpload {
                 XLog.d("readAndUpload failed==>" + startPos);
                 throw new Throwable("uploadBreakpoint error");
             }
-            XLog.d("readAndUpload success==>" + startPos);
             startPos += datas.length;
         }
+        XLog.d("readAndUpload success upload finish");
     }
 
     private static boolean uploadBreakpoint(String fileName, long startPos, byte[] datas, long total, InitParams params) throws Exception {
@@ -68,8 +66,6 @@ public class FileUpload {
 
         long timestamp = System.currentTimeMillis();
         String token = Utils.getToken(params, String.valueOf(timestamp));
-        System.out.println("token: " + token);
-        XLog.d("doUploadBreakpointEx 1111");
         Response<BaseResponse> response =
                 RetrofitClient.getInstance()
                         .doUploadFile(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,

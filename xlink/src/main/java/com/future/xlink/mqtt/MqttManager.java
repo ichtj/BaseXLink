@@ -22,6 +22,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -97,12 +98,18 @@ public class MqttManager implements MqttCallbackExtended {
         connAndListener(context);
     }
 
+    /**
+     * 连接完成
+     */
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
         XLog.d("connectComplete reconnect ==" + reconnect + "     serverURI==" + serverURI);
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, reconnect ? ConnectType.RECONNECT_SUCCESS : ConnectType.CONNECT_SUCCESS));
     }
 
+    /**
+     * 连接丢失
+     */
     @Override
     public void connectionLost(Throwable cause) {
         Throwable newCause = new Throwable("连接丢失,请尝试重启应用！");
@@ -110,18 +117,28 @@ public class MqttManager implements MqttCallbackExtended {
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause != null ? cause : newCause));
     }
 
+    /**
+     * 这里是消息从平台下发完成
+     */
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        XLog.d("messageArrived" + topic + "====" + message.toString());
+        XLog.d("messageArrived topic=" + topic + "====" + message.toString());
         XBus.post(new Carrier(Carrier.TYPE_REMOTE_RX, topic, message));
     }
 
+    /**
+     * 这里是消息交互完成
+     */
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {
         try {
             boolean isComplete = token.isComplete();
             XLog.d("deliveryComplete token isComplete=" + isComplete + ",errMeg=" + (isComplete ? "" : token.getException().toString()));
-            XLog.d("deliveryComplete token message=" + token.getMessage().toString());
+            JSONObject tokenMeg = new JSONObject(token.getMessage().toString());
+            if(tokenMeg!=null){
+                String iid= tokenMeg.getString("iid");
+                XLog.d("deliveryComplete token iid=" + iid+",");
+            }
         } catch (Exception e) {
             XLog.e(e);
         }

@@ -3,7 +3,6 @@ package com.future.xlink.utils;
 import com.elvishew.xlog.XLog;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 

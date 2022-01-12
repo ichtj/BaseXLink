@@ -1,7 +1,8 @@
 package com.future.xlink.api.retrofit;
 
 import android.text.TextUtils;
-import com.elvishew.xlog.XLog;
+import android.util.Log;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -51,12 +52,12 @@ final class OkHttpSingleton {
                 String params = getParameters(request.body());
                 String urlStr = request.url().toString();
                 if (TextUtils.isEmpty(params)) {
-                    XLog.d(urlStr);
+                    Log.d(TAG,urlStr);
                 } else {
-                    XLog.d(urlStr + "&" + params);
+                    Log.d(TAG,urlStr + "&" + params);
                 }
             } catch (Throwable e) {
-                XLog.e(e);
+                Log.e(TAG,"LoggingInterceptor",e);
             }
             return chain.proceed(request);
         }
@@ -85,7 +86,7 @@ final class OkHttpSingleton {
                 return parameter;
             }
         } catch (Throwable e) {
-            XLog.e(e);
+            Log.e(TAG, "getParameters: ", e);
         }
         return "";
     }

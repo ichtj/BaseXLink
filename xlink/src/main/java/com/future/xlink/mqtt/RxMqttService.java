@@ -301,7 +301,7 @@ public class RxMqttService extends Service {
             mcuprotocal.iid = protocal.iid;
             mcuprotocal.time = System.currentTimeMillis();
             mcuprotocal.act = "cmd";//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
-            mcuprotocal.ack = "svr/" + Utils.getSerialInfo();//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
+            mcuprotocal.ack = "svr/" + params.sn;//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
         }
         if (type == Carrier.TYPE_REMOTE_TX_SERVICE) {
             mcuprotocal.act = "upload";

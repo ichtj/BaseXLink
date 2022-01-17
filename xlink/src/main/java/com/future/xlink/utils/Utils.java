@@ -57,12 +57,4 @@ public class Utils {
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         return networkInfo.isAvailable() && networkInfo.isConnected();
     }
-
-    /**
-     * 获取SN号
-     */
-    public static String getSerialInfo(){
-        return Build.VERSION.SDK_INT>=30?Build.getSerial():Build.SERIAL;
-    }
-
 }

@@ -79,7 +79,7 @@ public class XLink {
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         String pkgName = Utils.getPackageName(context);
         GlobalConfig.PROPERT_URL = GlobalConfig.SYS_ROOT_PATH + pkgName + "/" + params.sn + "/";
-        createPropertiesLogFile(pkgName);//创建info,error日志的存储路径和.log文件my.properties文件
+        createPropertiesLogFile(pkgName, params.sn);//创建info,error日志的存储路径和.log文件my.properties文件
         this.context = context;
         this.listener = listener;
         Intent intent = new Intent(context, RxMqttService.class);
@@ -92,7 +92,7 @@ public class XLink {
     /**
      * 初始化时创建配置文件
      */
-    private void createPropertiesLogFile(String pkgName) {
+    private void createPropertiesLogFile(String pkgName,String sn) {
         //创建err文件夹
         File errLogFile = new File(GlobalConfig.PROPERT_URL);
         if (!errLogFile.exists()) {
@@ -115,7 +115,7 @@ public class XLink {
                 //.enableBorder()         // 允许打印日志边框，默认禁止
                 .build();
 
-        String xlogPath=GlobalConfig.SYS_ROOT_PATH+pkgName+ "/"+ Utils.getSerialInfo()+"/"+"xlink-log/";
+        String xlogPath=GlobalConfig.SYS_ROOT_PATH+pkgName+ "/"+ sn+"/"+"xlink-log/";
         Printer androidPrinter = new AndroidPrinter(true);// 通过 android.util.Log 打印日志的打印器
         //Printer consolePrinter = new ConsolePrinter();            // 通过 System.out 打印日志到控制台的打印器
         Printer filePrinter = new FilePrinter                       // 打印日志到文件的打印器

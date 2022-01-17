@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
@@ -55,6 +56,13 @@ public class Utils {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService("connectivity");
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         return networkInfo.isAvailable() && networkInfo.isConnected();
+    }
+
+    /**
+     * 获取SN号
+     */
+    public static String getSerialInfo(){
+        return Build.VERSION.SDK_INT>=30?Build.getSerial():Build.SERIAL;
     }
 
 }

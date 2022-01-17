@@ -115,7 +115,7 @@ public class XLink {
                 //.enableBorder()         // 允许打印日志边框，默认禁止
                 .build();
 
-        String xlogPath=GlobalConfig.SYS_ROOT_PATH+pkgName+ "/"+ Build.SERIAL+"/"+"xlink-log/";
+        String xlogPath=GlobalConfig.SYS_ROOT_PATH+pkgName+ "/"+ Utils.getSerialInfo()+"/"+"xlink-log/";
         Printer androidPrinter = new AndroidPrinter(true);// 通过 android.util.Log 打印日志的打印器
         //Printer consolePrinter = new ConsolePrinter();            // 通过 System.out 打印日志到控制台的打印器
         Printer filePrinter = new FilePrinter                       // 打印日志到文件的打印器

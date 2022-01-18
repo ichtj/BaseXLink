@@ -227,7 +227,7 @@ public class MqttManager implements MqttCallbackExtended {
 
         @Override
         public void onFailure(IMqttToken arg0, Throwable arg1) {
-            XLog.d("onFailure onFailure-->" + arg1.getMessage());
+            XLog.e("IMqttActionListener onFailure-->" ,arg1);
             if (params.automaticReconnect) {
                 //只在客户端主动创建初始化连接时回调
                 if (isInitconnect) {
@@ -240,7 +240,7 @@ public class MqttManager implements MqttCallbackExtended {
                             boolean isDel = new File(path).delete();
                             XLog.d("onFailure: isDel my.properties=" + isDel);
                         } catch (Exception e) {
-                            XLog.e(e);
+                            XLog.e("IMqttActionListener ",e);
                         }
                     } else {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));

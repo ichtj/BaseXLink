@@ -46,11 +46,6 @@ public class MqttManager implements MqttCallbackExtended {
     private MqttConnectOptions conOpt;
     private Context context;
     private InitParams params;
-    //连接过程的阻塞
-    private boolean isBlockStart = false;
-    //是否正在连接中 此时防止重复进行连接操作
-    public boolean isConnStatus = false;
-    private Disposable mConnDisposable;
     /**
      * 是否初始化重连
      */
@@ -89,7 +84,6 @@ public class MqttManager implements MqttCallbackExtended {
             String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
             boolean isDel = new File(path).delete();
             XLog.d("creatConnect: isDel my.properties=" + isDel);
-            isConnStatus=false;
             return;
         }
         String clientId= params.sn+System.currentTimeMillis();
@@ -150,45 +144,57 @@ public class MqttManager implements MqttCallbackExtended {
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
     public void connAndListener(Context context) throws Throwable {
-        if (!isConnect()) {
-            IMqttToken itoken = client.connect(conOpt, context, iMqttActionListener);
-            XLog.d("Waiting for connection to finish！");
-            mConnDisposable = Observable.
-                    interval(0, 2, TimeUnit.SECONDS)
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(new Consumer<Long>() {
-                        @Override
-                        public void accept(Long aLong) throws Exception {
-                            //循环检测连接是否完成
-                            if (!isBlockStart && isConnect()) {
-                                XLog.d("connAndListener Connected to " + client.getServerURI() + " with client ID " + client.getClientId() + " connected==" + isConnect());
-                                closeDisposable();
-                            } else {
-                                if (aLong >= 8) {
-                                    XLog.d("The specified connection timeout period is reached");
-                                    closeDisposable();
-                                    //反馈连接超时
-                                    XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_RESPONSE_TIMEOUT));
+        boolean isConnect=isConnect();
+        XLog.d("isConnect="+isConnect);
+        if (!isConnect) {
+            IMqttToken itoken = client.connect(conOpt, context, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken arg0) {
+                    XLog.d("onSuccess connection onSuccess");
+                    try {
+                        DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                        disconnectedBufferOptions.setBufferEnabled(params.bufferEnable);
+                        disconnectedBufferOptions.setBufferSize(params.bufferSize);
+                        disconnectedBufferOptions.setPersistBuffer(false);
+                        disconnectedBufferOptions.setDeleteOldestMessages(false);
+                        if (client != null) {
+                            client.setBufferOpts(disconnectedBufferOptions);
+                        }
+                    }catch (Exception e){
+                        XLog.e(e);
+                    }
+                }
+
+                @Override
+                public void onFailure(IMqttToken arg0, Throwable arg1) {
+                    XLog.e("IMqttActionListener onFailure-->" ,arg1);
+                    if (params.automaticReconnect) {
+                        //只在客户端主动创建初始化连接时回调
+                        if (isInitconnect) {
+                            if (arg1.getMessage().contains("无权连接")) {
+                                try {
+                                    //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
+                                    XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
+                                    //删除配置文件
+                                    String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
+                                    boolean isDel = new File(path).delete();
+                                    XLog.d("onFailure: isDel my.properties=" + isDel);
+                                } catch (Exception e) {
+                                    XLog.e("IMqttActionListener ",e);
                                 }
+                            } else {
+                                XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                             }
                         }
-                    });
-            //标记开始阻塞
-            isBlockStart = true;
+                    } else {
+                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
+                    }
+                }
+            });
+            XLog.d("Waiting for connection to finish！");
             //阻止当前线程，直到该令牌关联的操作完成
             itoken.waitForCompletion();
-            //代表阻塞结束 也能说明连接过程完毕
-            isBlockStart = false;
         }
-    }
-
-    /**
-     * 关闭检测连接阻塞后 的连接状态检测
-     */
-    public void closeDisposable() {
-        mConnDisposable.dispose();
-        mConnDisposable = null;
-        isConnStatus = false;
     }
 
     /**
@@ -197,52 +203,6 @@ public class MqttManager implements MqttCallbackExtended {
     public boolean isConnect() {
         return client != null && client.isConnected();
     }
-
-    private IMqttActionListener iMqttActionListener = new IMqttActionListener() {
-
-        @Override
-        public void onSuccess(IMqttToken arg0) {
-            XLog.d("onSuccess connection onSuccess");
-            try {
-                DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                disconnectedBufferOptions.setBufferEnabled(params.bufferEnable);
-                disconnectedBufferOptions.setBufferSize(params.bufferSize);
-                disconnectedBufferOptions.setPersistBuffer(false);
-                disconnectedBufferOptions.setDeleteOldestMessages(false);
-                if (client != null) {
-                    client.setBufferOpts(disconnectedBufferOptions);
-                }
-            }catch (Exception e){
-                XLog.e(e);
-            }
-        }
-
-        @Override
-        public void onFailure(IMqttToken arg0, Throwable arg1) {
-            XLog.e("IMqttActionListener onFailure-->" ,arg1);
-            if (params.automaticReconnect) {
-                //只在客户端主动创建初始化连接时回调
-                if (isInitconnect) {
-                    if (arg1.getMessage().contains("无权连接")) {
-                        try {
-                            //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
-                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
-                            //删除配置文件
-                            String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
-                            boolean isDel = new File(path).delete();
-                            XLog.d("onFailure: isDel my.properties=" + isDel);
-                        } catch (Exception e) {
-                            XLog.e("IMqttActionListener ",e);
-                        }
-                    } else {
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
-                    }
-                }
-            } else {
-                XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
-            }
-        }
-    };
 
     /**
      * Publish / send a message to an MQTT server
@@ -267,7 +227,7 @@ public class MqttManager implements MqttCallbackExtended {
 
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        XLog.d("public message onFailure");
+                        XLog.e("public message onFailure");
                     }
                 });
             } catch (Throwable e) {

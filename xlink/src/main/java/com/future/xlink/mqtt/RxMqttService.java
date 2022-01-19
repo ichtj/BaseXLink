@@ -161,7 +161,7 @@ public class RxMqttService extends Service {
      * @param initState 初始化状态
      */
     public void toInit(InitState initState) {
-        XLog.d("onEvent： TYPE_MODE_INIT_RX initState="+initState.getValue());
+        XLog.d("onEvent： TYPE_MODE_INIT_RX initState=" + initState.getValue());
         //获取初始化参数状态
         if (XLink.getInstance().getListener() != null) {
             XLink.getInstance().getListener().initState(initState);
@@ -172,25 +172,19 @@ public class RxMqttService extends Service {
      * 去执行连接
      */
     public void toConnect() {
-        boolean isConning=MqttManager.getInstance().isConnStatus;
-        XLog.d("toConnect: isConning="+isConning);
-        if(!isConning){
-            //标记正在连接中
-            MqttManager.getInstance().isConnStatus=true;
-            XLog.d("onEvent： TYPE_MODE_CONNECT");
-            map.clear();//创建连接时清除之前的消息队列
-            boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
-            XLog.d("onEvent: isNetOk=" + isNetOk);
-            if (!isNetOk) {
-                connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
-            } else {
-                Register register = PropertiesUtil.getProperties(RxMqttService.this);
-                try {
-                    XLog.d("toConnect: register="+register.toString());
-                    createConect(register);
-                } catch (Throwable e) {
-                    connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
-                }
+        XLog.d("onEvent： TYPE_MODE_CONNECT");
+        map.clear();//创建连接时清除之前的消息队列
+        boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
+        XLog.d("onEvent: isNetOk=" + isNetOk);
+        if (!isNetOk) {
+            connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
+        } else {
+            Register register = PropertiesUtil.getProperties(RxMqttService.this);
+            try {
+                XLog.d("toConnect: register=" + register.toString());
+                createConect(register);
+            } catch (Throwable e) {
+                connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
             }
         }
     }
@@ -229,7 +223,7 @@ public class RxMqttService extends Service {
                 //断开操作
                 if (mqttManager != null) {
                     mqttManager.disConnect();
-                    mqttManager=null;
+                    mqttManager = null;
                 }
                 //连接断开时,清理集合中的消息
                 map.clear();
@@ -258,7 +252,6 @@ public class RxMqttService extends Service {
      * @param cause 异常信息
      */
     private void connLostCallBack(ConnectLostType type, Throwable cause) {
-        MqttManager.getInstance().isConnStatus=false;
         MessageListener listener = XLink.getInstance().getListener();
         if (listener != null) {//回调连接丢失以及异常信息
             listener.connectionLost(type, cause);
@@ -523,7 +516,7 @@ public class RxMqttService extends Service {
                                     connLostCallBack(type, new Throwable(type.getValue()));
                                     stopCheckReconnect();
                                     mqttManager.disConnect();
-                                    mqttManager=null;
+                                    mqttManager = null;
                                 } else {
                                     if (timeout == 0) {
                                         //记录当前的超时

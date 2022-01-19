@@ -92,7 +92,8 @@ public class MqttManager implements MqttCallbackExtended {
             isConnStatus=false;
             return;
         }
-        client = new MqttAndroidClient(context, register.mqttBroker, params.sn, dataStore);
+        String clientId= params.sn+System.currentTimeMillis();
+        client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
         XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         client.setCallback(this);
         connAndListener(context);
@@ -113,7 +114,7 @@ public class MqttManager implements MqttCallbackExtended {
     @Override
     public void connectionLost(Throwable cause) {
         Throwable newCause = new Throwable("连接丢失,请尝试重启应用！");
-        XLog.d("connectionLost " + ((cause != null) ? cause.getMessage() : newCause.getMessage()));
+        XLog.d("MqttCallback connectionLost " + ((cause != null) ? cause.getMessage() : newCause.getMessage()));
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause != null ? cause : newCause));
     }
 
@@ -190,19 +191,6 @@ public class MqttManager implements MqttCallbackExtended {
         isConnStatus = false;
     }
 
-    public void doConntect(Context context, InitParams params, Register register) throws Throwable {
-        if (client == null) {
-            XLog.d("doConntect: client == null");
-            //client为空时代表需要重新建立连接
-            creatNewConnect(context, params, register);
-        } else {
-            XLog.d("doConntect: client != null");
-            //client不为空时表明 利用原有的连接信息
-            this.context = context;
-            connAndListener(context);
-        }
-    }
-
     /**
      * 判断mqtt是否连接完成
      */
@@ -215,13 +203,17 @@ public class MqttManager implements MqttCallbackExtended {
         @Override
         public void onSuccess(IMqttToken arg0) {
             XLog.d("onSuccess connection onSuccess");
-            DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-            disconnectedBufferOptions.setBufferEnabled(params.bufferEnable);
-            disconnectedBufferOptions.setBufferSize(params.bufferSize);
-            disconnectedBufferOptions.setPersistBuffer(false);
-            disconnectedBufferOptions.setDeleteOldestMessages(false);
-            if (client != null) {
-                client.setBufferOpts(disconnectedBufferOptions);
+            try {
+                DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                disconnectedBufferOptions.setBufferEnabled(params.bufferEnable);
+                disconnectedBufferOptions.setBufferSize(params.bufferSize);
+                disconnectedBufferOptions.setPersistBuffer(false);
+                disconnectedBufferOptions.setDeleteOldestMessages(false);
+                if (client != null) {
+                    client.setBufferOpts(disconnectedBufferOptions);
+                }
+            }catch (Exception e){
+                XLog.e(e);
             }
         }
 
@@ -263,11 +255,21 @@ public class MqttManager implements MqttCallbackExtended {
         //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
         isInitconnect = false;
         if (isConnect()) {
-            // Create and configure a message
-            MqttMessage message = new MqttMessage(payload);
-            message.setQos(qos);
             try {
-                client.publish(topicName, message);
+                // Create and configure a message
+                MqttMessage message = new MqttMessage(payload);
+                message.setQos(qos);
+                client.publish(topicName, message, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        XLog.d("public message successful");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        XLog.d("public message onFailure");
+                    }
+                });
             } catch (Throwable e) {
                 XLog.e(e);
             }

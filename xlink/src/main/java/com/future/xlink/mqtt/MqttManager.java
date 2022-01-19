@@ -231,7 +231,7 @@ public class MqttManager implements MqttCallbackExtended {
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                         boolean isNetOk=PingUtils.checkNetWork();
-                        XLog.e("publish","public message onFailure isNetOk="+isNetOk+",exception="+exception.getMessage());
+                        XLog.e("public message onFailure isNetOk="+isNetOk+",exception="+exception.getMessage());
                     }
                 });
             } catch (Throwable e) {

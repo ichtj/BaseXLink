@@ -4,11 +4,14 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.elvishew.xlog.XLog;
+import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
+import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
 import com.future.xlink.utils.GlobalConfig;
+import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
@@ -227,7 +230,8 @@ public class MqttManager implements MqttCallbackExtended {
 
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        XLog.e("public message onFailure");
+                        boolean isNetOk=PingUtils.checkNetWork();
+                        XLog.e("public message onFailure isNetOk="+isNetOk);
                     }
                 });
             } catch (Throwable e) {

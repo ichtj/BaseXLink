@@ -1,0 +1,134 @@
+/ **
+*客户端在等待服务器响应时超时。
+*服务器不再响应keep-alive消息。
+* /
+public static final short  REASON_CODE_CLIENT_TIMEOUT = 32000；
+
+
+
+/ **
+*内部错误，因为没有新的有效消息ID。
+* /
+public static final short REASON_CODE_NO_MESSAGE_IDS_AVAILABLE = 32001；
+
+
+
+/ **
+*客户端在等待将消息写入服务器时超时。
+* /
+public static final short REASON_CODE_WRITE_TIMEOUT = 32002；
+
+
+
+/ **
+*客户端已经连接（重复登录）。
+* /
+public static final short REASON_CODE_CLIENT_CONNECTED = 32100；
+
+
+
+/ **
+*客户端已经断开连接。
+* /
+public static final short REASON_CODE_CLIENT_ALREADY_DISCONNECTED = 32101；
+
+
+/ **
+*客户端当前正在断开连接，无法接受任何新工作。
+*当等待token，然后断开与客户端的连接时，可能会发生这种情况。
+*如果消息传递没有在静止超时时间内完成，那么等待token时将收到异常通知
+* /
+public static final short REASON_CODE_CLIENT_DISCONNECTING = 32102;
+
+
+
+/** 无法连接到服务器 */
+public static final short REASON_CODE_SERVER_CONNECT_ERROR = 32103;
+
+
+
+/ **
+*客户端未连接到服务器。
+* /
+public static final short REASON_CODE_CLIENT_NOT_CONNECTED = 32104;
+
+
+
+/ **
+*服务器URI与提供的<code> SocketFactory </ code>不匹配。
+*以<code> tcp：// </ code>开头的URI必须使用<code> javax.net.SocketFactory </ code>，
+*和以<code> ssl：// </ code>开头的URI必须使用<code> javax.net.ssl.SSLSocketFactory </ code>。
+* /
+public static final short REASON_CODE_SOCKET_FACTORY_MISMATCH = 32105;
+
+
+
+/ **
+* SSL配置错误。
+* /
+public static final short REASON_CODE_SSL_CONFIG_ERROR = 32106;
+
+
+
+/ **
+*在{@link MqttCallback}上的方法中尝试调用{@link MqttClient#disconnect（）}时引发。
+
+*这些方法由客户端线程调用，不能用于控制断开连接。
+* /
+public static final short REASON_CODE_CLIENT_DISCONNECT_PROHIBITED = 32107;
+
+
+
+/ **
+*协议错误：消息未被识别为有效的MQTT数据包。
+*可能的原因包括连接到非MQTT服务器，或者在客户机不使用SSL时连接到SSL服务器端口。
+* /
+public static final short REASON_CODE_INVALID_MESSAGE = 32108；
+
+
+
+/ **
+*客户端已与服务器断开连接。
+* /
+public static final short REASON_CODE_CONNECTION_LOST = 32109；
+
+
+
+/ **
+*连接操作正在进行中，一次只能进行一个连接。
+* /
+public static final short REASON_CODE_CONNECT_IN_PROGRESS = 32110；
+
+
+
+/ **
+*客户端已关闭-在此状态下，不允许对客户端执行任何操作。新建一个新客户以继续。
+* /
+public static final short REASON_CODE_CLIENT_CLOSED = 32111；
+
+
+
+/ **
+*请求使用已与另一个操作关联的token。
+*如果操作完成，则可以对token调用reset()，以使其可以重用
+* /
+public static final short REASON_CODE_TOKEN_INUSE = 32201;
+
+
+
+/ **
+*一个请求发送消息，但发送中的消息已达到最大数量
+*一旦移动了一条或多条消息，然后可以发送新消息
+* /
+public static final short REASON_CODE_MAX_INFLIGHT = 32202;
+
+
+
+/ **
+*客户端已尝试在启用断开连接的发布处于“休息”/脱机状态时发布消息，但是缓冲区已满且已禁用deleteOldestMessages，
+* 因此在客户端重新连接或应用程序手动删除缓冲消息之前，无法发布更多的消息
+* /
+public static final short REASON_CODE_DISCONNECTED_BUFFER_FULL = 32203;
+————————————————
+版权声明：本文为CSDN博主「MK  乘风破浪~」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/u012134942/article/details/111274904

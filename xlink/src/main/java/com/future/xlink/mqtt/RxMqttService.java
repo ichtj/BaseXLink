@@ -371,7 +371,6 @@ public class RxMqttService extends Service {
      * 消息中转处理判断
      */
     private void executeQueen() {
-        int mapErrCount = 0;//代表map集合中未正常处理的消息错误的计数
         for (Map.Entry<String, McuProtocal> entry : map.entrySet()) {
             McuProtocal protocal = entry.getValue();
             if (protocal.isOverTime()) {
@@ -404,18 +403,9 @@ public class RxMqttService extends Service {
                             judgeMethod(protocal);
                             map.remove(protocal.iid);
                         }
-                        if (protocal.isTimeoutSeconds()) {
-                            //判断消息是否超过了2分钟
-                            mapErrCount++;
-                        }
                     }
                 }
             }
-        }
-        if (mapErrCount >= 5) {
-            XLog.d("executeQueen: Heartbeat events failed to be reported for many times！");
-            //主动关闭连接
-            XLink.getInstance().disconnect();
         }
     }
 
@@ -467,7 +457,6 @@ public class RxMqttService extends Service {
                 mqttManager.publish(msg.ack, 2, dataJson.getBytes());
             }
         } catch (Throwable e) {
-            //7消息发送异常
             XLog.e(e);
         }
     }

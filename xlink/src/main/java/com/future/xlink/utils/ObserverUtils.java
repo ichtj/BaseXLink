@@ -69,7 +69,7 @@ public class ObserverUtils {
 
                         @Override
                         public void onFailure(Call<BaseResponse> call, Throwable t) {
-                            XLog.e(t);
+                            XLog.e("getUploadLogUrl1",t);
 
                         }
                     });
@@ -79,7 +79,7 @@ public class ObserverUtils {
             @Override
             public void onError(Throwable e) {
                 super.onError(e);
-                XLog.e(e);
+                XLog.e("getUploadLogUrl2",e);
             }
         });
     }
@@ -177,7 +177,7 @@ public class ObserverUtils {
 
             @Override
             public void onError(Throwable e) {
-                XLog.e(e);
+                XLog.e("registerRequest",e);
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_ERR));
             }
         });

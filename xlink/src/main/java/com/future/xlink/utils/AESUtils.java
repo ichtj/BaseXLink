@@ -96,6 +96,6 @@ public class AESUtils {
      * 处理异常
      */
     private static void handleException(String methodName, Exception e) {
-        XLog.e(e);
+        XLog.e("handleException",e);
     }
 }

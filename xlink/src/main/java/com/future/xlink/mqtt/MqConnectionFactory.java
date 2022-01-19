@@ -32,7 +32,7 @@ public class MqConnectionFactory {
             conOpt.setServerURIs(new String[]{register.mqttBroker});
             conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
         } catch (Throwable e) {
-            XLog.e(e);
+            XLog.e("getMqttConnectOptions",e);
         }
         return conOpt;
     }

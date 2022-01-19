@@ -138,7 +138,7 @@ public class MqttManager implements MqttCallbackExtended {
                 XLog.d("deliveryComplete token iid=" + iid+",");
             }
         } catch (Exception e) {
-            XLog.e(e);
+            XLog.e("deliveryComplete",e);
         }
     }
 
@@ -163,8 +163,8 @@ public class MqttManager implements MqttCallbackExtended {
                         if (client != null) {
                             client.setBufferOpts(disconnectedBufferOptions);
                         }
-                    }catch (Exception e){
-                        XLog.e(e);
+                    }catch (Throwable e){
+                        XLog.e("connAndListener",e);
                     }
                 }
 
@@ -231,11 +231,11 @@ public class MqttManager implements MqttCallbackExtended {
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                         boolean isNetOk=PingUtils.checkNetWork();
-                        XLog.e("public message onFailure isNetOk="+isNetOk);
+                        XLog.e("publish","public message onFailure isNetOk="+isNetOk+",exception="+exception.getMessage());
                     }
                 });
             } catch (Throwable e) {
-                XLog.e(e);
+                XLog.e("publish",e);
             }
         } else {
             XLog.d("publish: client == null && isConnected=false || !isConnectIsNormal(context)");
@@ -261,7 +261,7 @@ public class MqttManager implements MqttCallbackExtended {
             try {
                 client.subscribe(topicName, qos);
             } catch (Throwable e) {
-                XLog.e(e);
+                XLog.e("subscribe",e);
             }
         }
     }
@@ -277,13 +277,13 @@ public class MqttManager implements MqttCallbackExtended {
                     client.disconnect();
                 }
             } catch (Exception e) {
-                XLog.e(e);
+                XLog.e("disConnect1",e);
             }
             try {
                 client.unregisterResources();
                 client.close();
             } catch (Throwable e) {
-                XLog.e(e);
+                XLog.e("disConnect2",e);
             }
             client = null;
         }

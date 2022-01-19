@@ -359,7 +359,7 @@ public class RxMqttService extends Service {
                             lock.wait(50);
                         } catch (Throwable e) {
                             //数据处理异常5
-                            XLog.e(e);
+                            XLog.e("looperQueen",e);
                         }
                     }
                 }
@@ -457,7 +457,7 @@ public class RxMqttService extends Service {
                 mqttManager.publish(msg.ack, 2, dataJson.getBytes());
             }
         } catch (Throwable e) {
-            XLog.e(e);
+            XLog.e("sendRxMsg",e);
         }
     }
 
@@ -520,7 +520,7 @@ public class RxMqttService extends Service {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        XLog.e(throwable);
+                        XLog.e("checkReconnect",throwable);
                     }
                 }));
     }
@@ -548,7 +548,7 @@ public class RxMqttService extends Service {
             mqttManager = null;
         } catch (Throwable e) {
             //停止服务异常2
-            XLog.e(e);
+            XLog.e("onDestroy",e);
         }
     }
 }

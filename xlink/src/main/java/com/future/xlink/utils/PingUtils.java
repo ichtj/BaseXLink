@@ -58,7 +58,7 @@ public class PingUtils {
             XLog.d("ping exec finished.");
             append(stringBuffer, "exec finished.");
         } catch (Throwable e) {
-            XLog.e(e);
+            XLog.e("ping",e);
         } finally {
             if (process != null) {
                 process.destroy();

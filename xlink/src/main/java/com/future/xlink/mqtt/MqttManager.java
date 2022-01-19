@@ -4,11 +4,9 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.elvishew.xlog.XLog;
-import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
-import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
 import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.PingUtils;
@@ -22,18 +20,11 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
-
-import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
 
 /**
  * 管理mqtt的连接,发布,订阅,断开连接, 断开重连等操作
@@ -47,7 +38,6 @@ public class MqttManager implements MqttCallbackExtended {
      */
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
-    private Context context;
     private InitParams params;
     /**
      * 是否初始化重连
@@ -73,7 +63,6 @@ public class MqttManager implements MqttCallbackExtended {
      * 创建Mqtt 连接
      */
     public void creatNewConnect(Context context, InitParams params, Register register) throws Throwable {
-        this.context = context;
         this.params = params;
         isInitconnect = true;
         String tmpDir = System.getProperty("java.io.tmpdir");

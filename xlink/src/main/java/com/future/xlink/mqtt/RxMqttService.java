@@ -2,7 +2,6 @@ package com.future.xlink.mqtt;
 
 import android.app.Service;
 import android.content.Intent;
-import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
 
@@ -30,7 +29,6 @@ import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.PropertiesUtil;
 import com.future.xlink.utils.ThreadPool;
-import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import org.eclipse.paho.client.mqttv3.MqttException;

@@ -196,10 +196,6 @@ public class RxMqttService extends Service {
      */
     public void connectLost(Throwable error) {
         XLog.d("onEvent： TYPE_MODE_CONNECT_LOST");
-        //连接丢失
-        if (params.automaticReconnect) {
-            checkReconnect();//开始重连状态检测
-        }
         connLostCallBack(ConnectLostType.LOST_TYPE_0, error);
     }
 

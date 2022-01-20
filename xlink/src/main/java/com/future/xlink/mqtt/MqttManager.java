@@ -266,11 +266,10 @@ public class MqttManager implements MqttCallbackExtended {
                 if (client.isConnected()) {
                     client.disconnect();
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 XLog.e("disConnect1", e);
             }
             try {
-                client.unregisterResources();
                 client.close();
             } catch (Throwable e) {
                 XLog.e("disConnect2", e);

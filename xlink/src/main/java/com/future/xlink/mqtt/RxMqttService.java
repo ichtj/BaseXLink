@@ -209,12 +209,11 @@ public class RxMqttService extends Service {
                 subscrible();
                 break;
             case CONNECT_DISCONNECT://连接断开
-                //断开操作
                 if (mqttManager != null) {
                     mqttManager.disConnect();
                     mqttManager = null;
                 }
-                //连接断开时,清理集合中的消息
+                threadTerminated=true;
                 map.clear();
                 break;
         }

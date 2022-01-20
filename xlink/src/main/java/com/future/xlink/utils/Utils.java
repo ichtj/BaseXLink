@@ -12,6 +12,7 @@ import android.telephony.TelephonyManager;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
+
 import java.util.UUID;
 
 /**
@@ -19,6 +20,7 @@ import java.util.UUID;
  */
 public class Utils {
     private static final String TAG = "Utils";
+
     public static String getToken(InitParams params, String time) {
         String token = "Basic " + AESUtils.encrypt(params.key, params.sn + ":" + params.secret + ":" + time);
         return token;
@@ -50,11 +52,15 @@ public class Utils {
 
 
     /**
-     * 判断网络是否正常
+     * 判断是否有网络连接
      */
-    public static boolean isNetNormal(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService("connectivity");
+    public static boolean isNetConnect(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
-        return networkInfo.isAvailable() && networkInfo.isConnected();
+        if (networkInfo != null) {
+            return networkInfo.isAvailable() && networkInfo.isConnected();
+        } else {
+            return false;
+        }
     }
 }

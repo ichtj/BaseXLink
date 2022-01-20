@@ -29,6 +29,7 @@ import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.PropertiesUtil;
 import com.future.xlink.utils.ThreadPool;
+import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -265,7 +266,7 @@ public class RxMqttService extends Service {
      */
     private void subscrible() {
         //添加#进行匹配
-        mqttManager.subscribe("dev/" + params.sn + "/#", 2);
+        mqttManager.subscribe("dev/" + params.sn + "/#", 2, RxMqttService.this);
     }
 
     /**
@@ -276,14 +277,14 @@ public class RxMqttService extends Service {
         if (protocal == null || TextUtils.isEmpty(protocal.iid)) {
             //抛出异常消息id为空，空指针异常3
             protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_IID_LOST.getTye(), RespType.RESP_IID_LOST.getValue()));
-            sendTxMsg(protocal);
+            arrivedMsgCallback(protocal);
             return;
         }
         //iid消息重复
         if (TextUtils.isEmpty(protocal.rx) && map.containsKey(protocal.iid)) {
             //抛出异常，消息iid重复发送4
             protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_IID_REPEAT.getTye(), RespType.RESP_IID_REPEAT.getValue()));
-            sendTxMsg(protocal);
+            arrivedMsgCallback(protocal);
             return;
         }
 
@@ -369,7 +370,7 @@ public class RxMqttService extends Service {
                 }
                 XLog.d("iid=[" + protocal.iid + "],rx=[" + protocal.tx + "];Message processing timeout！");
                 //超时两端都需要汇报
-                sendTxMsg(protocal);
+                arrivedMsgCallback(protocal);
                 sendRxMsg(protocal);
                 map.remove(protocal.iid);
             } else {
@@ -397,8 +398,8 @@ public class RxMqttService extends Service {
             //消息上报
             sendRxMsg(protocal);
         } else if (protocal.type == Carrier.TYPE_REMOTE_RX) {
-            //消息接收
-            sendTxMsg(protocal);
+            //消息回调
+            arrivedMsgCallback(protocal);
         }
     }
 
@@ -417,7 +418,7 @@ public class RxMqttService extends Service {
     /**
      * 转发消息到调用端
      */
-    private void sendTxMsg(Protocal msg) {
+    private void arrivedMsgCallback(Protocal msg) {
         MessageListener listener = XLink.getInstance().getListener();
         if (listener != null) {
             listener.messageArrived(msg);
@@ -428,19 +429,13 @@ public class RxMqttService extends Service {
      * 发送消息到服务端
      */
     private void sendRxMsg(McuProtocal msg) {
-        try {
-            if (mqttManager.isConnect()) {
-                Response response = new Response();
-                response.act = msg.act;
-                response.iid = msg.iid;
-                response.payload = msg.tx;
-                String dataJson = GsonUtils.toJsonWtihNullField(response);
-                XLog.d("sendRxMsg: dataJson=" + dataJson);
-                mqttManager.publish(msg.ack, 2, dataJson.getBytes());
-            }
-        } catch (Throwable e) {
-            XLog.e("sendRxMsg", e);
-        }
+        Response response = new Response();
+        response.act = msg.act;
+        response.iid = msg.iid;
+        response.payload = msg.tx;
+        String dataJson = GsonUtils.toJsonWtihNullField(response);
+        XLog.d("sendRxMsg: dataJson=" + dataJson);
+        mqttManager.publish(msg.ack, 2, dataJson.getBytes(), RxMqttService.this);
     }
 
     int timeout = 0;

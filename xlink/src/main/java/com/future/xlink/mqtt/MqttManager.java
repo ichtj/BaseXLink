@@ -203,25 +203,30 @@ public class MqttManager implements MqttCallbackExtended {
      * @param qos       the quality of service to delivery the message at (0,1,2)
      * @param payload   the set of bytes to send to the MQTT server
      */
-    public void publish(String topicName, int qos, byte[] payload) {
+    public void publish(String topicName, int qos, byte[] payload,Context context) {
         try {
-            //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
-            isInitconnect = false;
-            // Create and configure a message
-            MqttMessage message = new MqttMessage(payload);
-            message.setQos(qos);
-            client.publish(topicName, message, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    XLog.d("public message successful");
-                }
+            boolean isMqttConnect = isConnect();
+            boolean isNetConnect = Utils.isNetConnect(context);
+            XLog.d("isMqttConnect="+isMqttConnect+",isNetConnect="+isNetConnect);
+            if (isMqttConnect && isNetConnect) {
+                //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
+                isInitconnect = false;
+                // Create and configure a message
+                MqttMessage message = new MqttMessage(payload);
+                message.setQos(qos);
+                client.publish(topicName, message, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        XLog.d("public message successful");
+                    }
 
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    boolean isNetOk = PingUtils.checkNetWork();
-                    XLog.e("public message onFailure isNetOk=" + isNetOk + ",exception=" + exception.getMessage());
-                }
-            });
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        boolean isNetOk = PingUtils.checkNetWork();
+                        XLog.e("public message onFailure isNetOk=" + isNetOk + ",exception=" + exception.getMessage());
+                    }
+                });
+            }
         } catch (Throwable e) {
             XLog.e("publish", e);
         }
@@ -240,8 +245,8 @@ public class MqttManager implements MqttCallbackExtended {
      * @param topicName to subscribe to (can be wild carded)
      * @param qos       the maximum quality of service to receive messages at for this subscription
      */
-    public void subscribe(String topicName, int qos) {
-        if (isConnect()) {
+    public void subscribe(String topicName, int qos,Context context) {
+        if (isConnect()&&Utils.isNetConnect(context)) {
             XLog.d("subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);

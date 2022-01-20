@@ -147,17 +147,16 @@ public class RxMqttService extends Service {
                 connStatusChange((ConnectType) msg.obj);
                 break;
             case Carrier.TYPE_MODE_CONNECT_LOST://连接丢失
-                connectLost((Throwable) msg.obj);
+                connLostCallBack(ConnectLostType.LOST_TYPE_0, (Throwable) msg.obj);
                 break;
             case Carrier.TYPE_REMOTE_RX://代理服务器下发消息
                 MqttMessage mqttMessage = (MqttMessage) msg.obj;
-                Request request = GsonUtils.fromJson(mqttMessage.toString(), Request.class);
-                arriveData(msg.type, request);
+                arriveMsgToMap(msg.type, GsonUtils.fromJson(mqttMessage.toString(), Request.class));
                 break;
             case Carrier.TYPE_REMOTE_TX_EVENT:
             case Carrier.TYPE_REMOTE_TX_SERVICE:
             case Carrier.TYPE_REMOTE_TX:
-                reportData(msg.type, (Protocal) msg.obj);
+                reportMsgToMap(msg.type, (Protocal) msg.obj);
                 break;
             default:
                 break;
@@ -171,7 +170,6 @@ public class RxMqttService extends Service {
      */
     public void toInit(InitState initState) {
         XLog.d("onEvent： TYPE_MODE_INIT_RX initState=" + initState.getValue());
-        //获取初始化参数状态
         if (XLink.getInstance().getListener() != null) {
             XLink.getInstance().getListener().initState(initState);
         }
@@ -197,16 +195,6 @@ public class RxMqttService extends Service {
     }
 
     /**
-     * 连接丢失
-     *
-     * @param error 连接异常信息
-     */
-    public void connectLost(Throwable error) {
-        XLog.d("onEvent： TYPE_MODE_CONNECT_LOST");
-        connLostCallBack(ConnectLostType.LOST_TYPE_0, error);
-    }
-
-    /**
      * 连接状态，连接结果变更
      *
      * @param type 状态
@@ -214,9 +202,7 @@ public class RxMqttService extends Service {
      *             主动断开
      */
     public void connStatusChange(ConnectType type) {
-        //连接状态
         XLog.d("onEvent： TYPE_MODE_CONNECT_RESULT value=" + type.getValue());
-        stopCheckReconnect();//停止网络状态检测
         switch (type) {
             case CONNECT_SUCCESS://连接完成
             case RECONNECT_SUCCESS://重连成功
@@ -255,6 +241,7 @@ public class RxMqttService extends Service {
      * @param cause 异常信息
      */
     private void connLostCallBack(ConnectLostType type, Throwable cause) {
+        XLog.e(type.getValue(),cause);
         MessageListener listener = XLink.getInstance().getListener();
         if (listener != null) {//回调连接丢失以及异常信息
             listener.connectionLost(type, cause);
@@ -272,7 +259,7 @@ public class RxMqttService extends Service {
     /**
      * 解析客户端上报的消息，添加到消息map集合中
      **/
-    private synchronized void reportData(int type, Protocal protocal) {
+    private synchronized void reportMsgToMap(int type, Protocal protocal) {
         //消息iid为上传判断
         if (protocal == null || TextUtils.isEmpty(protocal.iid)) {
             //抛出异常消息id为空，空指针异常3
@@ -323,13 +310,13 @@ public class RxMqttService extends Service {
     /**
      * 解析代理服务器下发的消息，添加到消息map集合中
      **/
-    private synchronized void arriveData(int type, Request request) {
+    private synchronized void arriveMsgToMap(int type, Request request) {
         McuProtocal protocal;
         if (map.containsKey(request.iid)) {
             protocal = map.get(request.iid);
             //如果接收到代理服务端下发的重复数据，还没有处理，需要过滤掉
             if (protocal.tx == null) {
-                XLog.d("parseData 重复数据下发-->" + request.iid);
+                XLog.d("arriveMsgToMap 重复数据下发-->" + request.iid);
                 return;
             }
             protocal.status = protocal.status + 1;
@@ -371,7 +358,7 @@ public class RxMqttService extends Service {
                 XLog.d("iid=[" + protocal.iid + "],rx=[" + protocal.tx + "];Message processing timeout！");
                 //超时两端都需要汇报
                 arrivedMsgCallback(protocal);
-                sendRxMsg(protocal);
+                reportRxMsg(protocal);
                 map.remove(protocal.iid);
             } else {
                 if (protocal.status == 0) {
@@ -395,10 +382,8 @@ public class RxMqttService extends Service {
     private void judgeMethod(McuProtocal protocal) {
         //非超时处理
         if (protocal.type == Carrier.TYPE_REMOTE_TX || protocal.type == Carrier.TYPE_REMOTE_TX_EVENT || protocal.type == Carrier.TYPE_REMOTE_TX_SERVICE) {
-            //消息上报
-            sendRxMsg(protocal);
+            reportRxMsg(protocal);
         } else if (protocal.type == Carrier.TYPE_REMOTE_RX) {
-            //消息回调
             arrivedMsgCallback(protocal);
         }
     }
@@ -428,88 +413,14 @@ public class RxMqttService extends Service {
     /**
      * 发送消息到服务端
      */
-    private void sendRxMsg(McuProtocal msg) {
+    private void reportRxMsg(McuProtocal msg) {
         Response response = new Response();
         response.act = msg.act;
         response.iid = msg.iid;
         response.payload = msg.tx;
         String dataJson = GsonUtils.toJsonWtihNullField(response);
-        XLog.d("sendRxMsg: dataJson=" + dataJson);
+        XLog.d("reportRxMsg: dataJson=" + dataJson);
         mqttManager.publish(msg.ack, 2, dataJson.getBytes(), RxMqttService.this);
-    }
-
-    int timeout = 0;
-
-    /**
-     * 网络重连状态检测
-     */
-    public void checkReconnect() {
-        timeout = 0;//重置记录超时后 网络正常的时间
-        int outtime = params.reconnectTime * 60 / 10;//超时时间
-        SubscriberSingleton.add(TAG, Observable.interval(1, 10, TimeUnit.SECONDS).
-                observeOn(AndroidSchedulers.mainThread()).
-                subscribe(aLong -> {
-                    boolean isConnect = mqttManager.isConnect();//mqtt连接是断开的
-                    boolean isNetOk = PingUtils.checkNetWork();
-                    int nowValue = aLong.intValue();//当前的计时
-                    if (!isConnect) {
-                        ConnectLostType type;
-                        if (nowValue == outtime) {
-                            //时间刚好达到超时时间
-                            XLog.d("checkReconnect: next ");
-                            if (isNetOk) {
-                                //114能ping通，说明网络通讯正常；
-                                boolean state2 = PingUtils.ping(GlobalConfig.HTTP_SERVER);
-                                if (state2) {
-                                    //网络和代理连接正常，但服务无法正常连接
-                                    type = ConnectLostType.LOST_TYPE_1;
-                                } else {
-                                    //网络正常，代理服务异常2
-                                    type = ConnectLostType.LOST_TYPE_2;
-                                }
-                            } else {
-                                //本地网络异常，只记录一次
-                                type = ConnectLostType.LOST_TYPE_3;
-                            }
-                            connLostCallBack(type, new Throwable(type.getValue()));
-                        } else if (nowValue > outtime) {
-                            //超过指定时间后的处理
-                            if (isNetOk) { //网络正常 需要尝试去重连
-                                if (timeout != 0 && nowValue >= timeout + (60 / 10)) {
-                                    //超过指定重连的时间并且加两分钟还未成功
-                                    //那么网络应该正常但是 网络或者连接已经重置
-                                    type = ConnectLostType.LOST_TYPE_5;
-                                    connLostCallBack(type, new Throwable(type.getValue()));
-                                    stopCheckReconnect();
-                                    mqttManager.disConnect();
-                                    mqttManager = null;
-                                } else {
-                                    if (timeout == 0) {
-                                        //记录当前的超时
-                                        timeout = nowValue;
-                                        type = ConnectLostType.LOST_TYPE_4;
-                                        connLostCallBack(type, new Throwable(type.getValue()));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        XLog.e("checkReconnect", throwable);
-                    }
-                }));
-    }
-
-    /**
-     * 停止网络状态检测
-     **/
-    private void stopCheckReconnect() {
-        //重置记录超时后 网络正常的时间
-        timeout = 0;
-        XLog.d("stopCheckReconnect map.size=" + map.size());
-        SubscriberSingleton.clear(TAG);
     }
 
     @Override
@@ -519,12 +430,10 @@ public class RxMqttService extends Service {
             XLog.d("onDestroy stop service");
             XBus.unregister(this);
             map.clear();
-            stopCheckReconnect();
             threadTerminated = true;
             mqttManager.disConnect();
             mqttManager = null;
         } catch (Throwable e) {
-            //停止服务异常2
             XLog.e("onDestroy", e);
         }
     }

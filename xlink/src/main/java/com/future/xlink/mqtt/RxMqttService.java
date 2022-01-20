@@ -150,16 +150,13 @@ public class RxMqttService extends Service {
                 break;
             case Carrier.TYPE_REMOTE_RX://代理服务器下发消息
                 MqttMessage mqttMessage = (MqttMessage) msg.obj;
-                String temp = mqttMessage.toString();
-                Request request = GsonUtils.fromJson(temp, Request.class);
-                parseData(msg.type, request);
+                Request request = GsonUtils.fromJson(mqttMessage.toString(), Request.class);
+                arriveData(msg.type, request);
                 break;
             case Carrier.TYPE_REMOTE_TX_EVENT:
             case Carrier.TYPE_REMOTE_TX_SERVICE:
             case Carrier.TYPE_REMOTE_TX:
-                //事件，服务属性上报
-                Protocal protocal = (Protocal) msg.obj;
-                parseData(msg.type, protocal);
+                reportData(msg.type, (Protocal) msg.obj);
                 break;
             default:
                 break;
@@ -274,7 +271,7 @@ public class RxMqttService extends Service {
     /**
      * 解析客户端上报的消息，添加到消息map集合中
      **/
-    private synchronized void parseData(int type, Protocal protocal) {
+    private synchronized void reportData(int type, Protocal protocal) {
         //消息iid为上传判断
         if (protocal == null || TextUtils.isEmpty(protocal.iid)) {
             //抛出异常消息id为空，空指针异常3
@@ -302,12 +299,15 @@ public class RxMqttService extends Service {
             mcuprotocal.ack = "svr/" + params.sn;//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
         }
         if (type == Carrier.TYPE_REMOTE_TX_SERVICE) {
+            //服务属性上报
             mcuprotocal.act = "upload";
             mcuprotocal.ack = MsgType.MSG_PRO.getTye() + "/" + getSsid();
         } else if (type == Carrier.TYPE_REMOTE_TX_EVENT) {
+            //事件上报
             mcuprotocal.act = "event";
             mcuprotocal.ack = MsgType.MSG_EVENT.getTye() + "/" + getSsid();
         } else if (type == Carrier.TYPE_REMOTE_TX) {
+            //消息上报
             if (!mcuprotocal.act.contains(RESP)) {
                 mcuprotocal.act = mcuprotocal.act + RESP;
             } else if (mcuprotocal.act.contains(RESP)) {
@@ -322,7 +322,7 @@ public class RxMqttService extends Service {
     /**
      * 解析代理服务器下发的消息，添加到消息map集合中
      **/
-    private synchronized void parseData(int type, Request request) {
+    private synchronized void arriveData(int type, Request request) {
         McuProtocal protocal;
         if (map.containsKey(request.iid)) {
             protocal = map.get(request.iid);

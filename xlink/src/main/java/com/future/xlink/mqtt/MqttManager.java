@@ -99,9 +99,14 @@ public class MqttManager implements MqttCallbackExtended {
      */
     @Override
     public void connectionLost(Throwable cause) {
-        Throwable newCause = new Throwable("连接丢失,请尝试重启应用！");
-        XLog.d("MqttCallback connectionLost " + ((cause != null) ? cause.getMessage() : newCause.getMessage()));
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause != null ? cause : newCause));
+        XLog.d("MqttCallback connectionLost ",cause);
+        if(cause!=null){
+            //这里为mqtt定义的异常,可以得到异常信息
+            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
+        }else{
+            //这里为其他异常
+            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_DISCONNECT));
+        }
     }
 
     /**

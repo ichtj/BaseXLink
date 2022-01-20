@@ -78,7 +78,7 @@ public class MqttManager implements MqttCallbackExtended {
             XLog.d("creatConnect: isDel my.properties=" + isDel);
             return;
         }
-        String clientId= params.sn+System.currentTimeMillis();
+        String clientId = params.sn + System.currentTimeMillis();
         client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
         XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         client.setCallback(this);
@@ -122,12 +122,12 @@ public class MqttManager implements MqttCallbackExtended {
             boolean isComplete = token.isComplete();
             XLog.d("deliveryComplete token isComplete=" + isComplete + ",errMeg=" + (isComplete ? "" : token.getException().toString()));
             JSONObject tokenMeg = new JSONObject(token.getMessage().toString());
-            if(tokenMeg!=null){
-                String iid= tokenMeg.getString("iid");
-                XLog.d("deliveryComplete token iid=" + iid+",");
+            if (tokenMeg != null) {
+                String iid = tokenMeg.getString("iid");
+                XLog.d("deliveryComplete token iid=" + iid + ",");
             }
         } catch (Exception e) {
-            XLog.e("deliveryComplete",e);
+            XLog.e("deliveryComplete", e);
         }
     }
 
@@ -136,8 +136,8 @@ public class MqttManager implements MqttCallbackExtended {
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
     public void connAndListener(Context context) throws Throwable {
-        boolean isConnect=isConnect();
-        XLog.d("isConnect="+isConnect);
+        boolean isConnect = isConnect();
+        XLog.d("isConnect=" + isConnect);
         if (!isConnect) {
             IMqttToken itoken = client.connect(conOpt, context, new IMqttActionListener() {
                 @Override
@@ -152,14 +152,14 @@ public class MqttManager implements MqttCallbackExtended {
                         if (client != null) {
                             client.setBufferOpts(disconnectedBufferOptions);
                         }
-                    }catch (Throwable e){
-                        XLog.e("connAndListener",e);
+                    } catch (Throwable e) {
+                        XLog.e("connAndListener", e);
                     }
                 }
 
                 @Override
                 public void onFailure(IMqttToken arg0, Throwable arg1) {
-                    XLog.e("IMqttActionListener onFailure-->" ,arg1);
+                    XLog.e("IMqttActionListener onFailure-->", arg1);
                     if (params.automaticReconnect) {
                         //只在客户端主动创建初始化连接时回调
                         if (isInitconnect) {
@@ -172,7 +172,7 @@ public class MqttManager implements MqttCallbackExtended {
                                     boolean isDel = new File(path).delete();
                                     XLog.d("onFailure: isDel my.properties=" + isDel);
                                 } catch (Exception e) {
-                                    XLog.e("IMqttActionListener ",e);
+                                    XLog.e("IMqttActionListener ", e);
                                 }
                             } else {
                                 XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
@@ -204,30 +204,26 @@ public class MqttManager implements MqttCallbackExtended {
      * @param payload   the set of bytes to send to the MQTT server
      */
     public void publish(String topicName, int qos, byte[] payload) {
-        //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
-        isInitconnect = false;
-        if (isConnect()) {
-            try {
-                // Create and configure a message
-                MqttMessage message = new MqttMessage(payload);
-                message.setQos(qos);
-                client.publish(topicName, message, null, new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken asyncActionToken) {
-                        XLog.d("public message successful");
-                    }
+        try {
+            //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
+            isInitconnect = false;
+            // Create and configure a message
+            MqttMessage message = new MqttMessage(payload);
+            message.setQos(qos);
+            client.publish(topicName, message, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    XLog.d("public message successful");
+                }
 
-                    @Override
-                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        boolean isNetOk=PingUtils.checkNetWork();
-                        XLog.e("public message onFailure isNetOk="+isNetOk+",exception="+exception.getMessage());
-                    }
-                });
-            } catch (Throwable e) {
-                XLog.e("publish",e);
-            }
-        } else {
-            XLog.d("publish: client == null && isConnected=false || !isConnectIsNormal(context)");
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    boolean isNetOk = PingUtils.checkNetWork();
+                    XLog.e("public message onFailure isNetOk=" + isNetOk + ",exception=" + exception.getMessage());
+                }
+            });
+        } catch (Throwable e) {
+            XLog.e("publish", e);
         }
     }
 
@@ -250,7 +246,7 @@ public class MqttManager implements MqttCallbackExtended {
             try {
                 client.subscribe(topicName, qos);
             } catch (Throwable e) {
-                XLog.e("subscribe",e);
+                XLog.e("subscribe", e);
             }
         }
     }
@@ -266,13 +262,13 @@ public class MqttManager implements MqttCallbackExtended {
                     client.disconnect();
                 }
             } catch (Exception e) {
-                XLog.e("disConnect1",e);
+                XLog.e("disConnect1", e);
             }
             try {
                 client.unregisterResources();
                 client.close();
             } catch (Throwable e) {
-                XLog.e("disConnect2",e);
+                XLog.e("disConnect2", e);
             }
             client = null;
         }

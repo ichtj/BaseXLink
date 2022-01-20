@@ -65,40 +65,58 @@ public class RxMqttService extends Service {
     private MqttManager mqttManager;
     private ConcurrentHashMap<String, McuProtocal> map = new ConcurrentHashMap<String, McuProtocal>(); //消息存储
     private String ssid = null;
+    MessageHandlerThread messageHandlerThread;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        XLog.d("onCreate start service");
+        messageHandlerThread = new MessageHandlerThread();
+        messageHandlerThread.start();
+        XLog.d("start service and messageHandlerThread start");
         XBus.register(this);
+    }
+
+    /**
+     * 消息处理线程
+     */
+    class MessageHandlerThread extends Thread {
+        @Override
+        public void run() {
+            while (!threadTerminated) {
+                synchronized (lock) {
+                    try {
+                        executeQueen();
+                        lock.wait(50);
+                    } catch (Throwable e) {
+                        //数据处理异常5
+                        XLog.e("looperQueen", e);
+                    }
+                }
+            }
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
-            XLog.d("onStartCommand map.size=" + map.size());
             params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
-            try {
-                looperQueen();
-                if (TextUtils.isEmpty(params.key) ||
-                        TextUtils.isEmpty(params.secret) || TextUtils.isEmpty(params.pdid)) {
-                    //判断注册参数是否有误
-                    toInit(InitState.INIT_PARAMS_LOST);
+            if (params == null || TextUtils.isEmpty(params.key) ||
+                    TextUtils.isEmpty(params.secret) || TextUtils.isEmpty(params.pdid)) {
+                //判断注册参数是否有误
+                toInit(InitState.INIT_PARAMS_LOST);
+            } else {
+                //查看本地文件是否已经记录了注册参数
+                Register register = PropertiesUtil.getProperties(this);
+                if (register.isNull()) {
+                    XLog.d("No local registration was detected");
+                    //未注册过那么先获取代理服务器列表
+                    ObserverUtils.getAgentList(RxMqttService.this, params);
                 } else {
-                    //查看本地文件是否已经记录了注册参数
-                    Register register = PropertiesUtil.getProperties(this);
-                    if (register.isNull()) {
-                        XLog.d("No local registration was detected");
-                        //未注册过那么先获取代理服务器列表
-                        ObserverUtils.getAgentList(RxMqttService.this, params);
-                    } else {
-                        XLog.d("this devices has been registered");
-                        //直接提示已注册过
-                        toInit(InitState.INIT_SUCCESS);
-                    }
+                    XLog.d("this devices has been registered");
+                    //直接提示已注册过
+                    toInit(InitState.INIT_SUCCESS);
                 }
-            } catch (Throwable e) {
-                toInit(InitState.INIT_SERVICE_ERR);
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -109,14 +127,9 @@ public class RxMqttService extends Service {
      * 创建连接
      */
     private void createConect(Register register) throws Throwable {
+        XLog.d("toConnect: register=" + register.toString());
         mqttManager = MqttManager.getInstance();
         mqttManager.creatNewConnect(RxMqttService.this, params, register);
-    }
-
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
     }
 
 
@@ -170,16 +183,14 @@ public class RxMqttService extends Service {
      * 去执行连接
      */
     public void toConnect() {
-        XLog.d("onEvent： TYPE_MODE_CONNECT");
-        map.clear();//创建连接时清除之前的消息队列
         boolean isNetOk = PingUtils.checkNetWork();//判断网络是否正常
-        XLog.d("onEvent: isNetOk=" + isNetOk);
+        XLog.d("onEvent:TYPE_MODE_CONNECT isNetOk=" + isNetOk);
+        map.clear();//创建连接时清除之前的消息队列
         if (!isNetOk) {
             connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
         } else {
             Register register = PropertiesUtil.getProperties(RxMqttService.this);
             try {
-                XLog.d("toConnect: register=" + register.toString());
                 createConect(register);
             } catch (Throwable e) {
                 connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
@@ -339,29 +350,6 @@ public class RxMqttService extends Service {
     }
 
     /**
-     * 开启消息接收线程，轮询消息处理
-     */
-    private void looperQueen() {
-        threadTerminated = false;
-        ThreadPool.add(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (lock) {
-                    while (!threadTerminated) {
-                        try {
-                            executeQueen();
-                            lock.wait(50);
-                        } catch (Throwable e) {
-                            //数据处理异常5
-                            XLog.e("looperQueen",e);
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
      * 消息中转处理判断
      */
     private void executeQueen() {
@@ -441,7 +429,7 @@ public class RxMqttService extends Service {
      */
     private void sendRxMsg(McuProtocal msg) {
         try {
-            if (mqttManager != null && mqttManager.isConnect()) {
+            if (mqttManager.isConnect()) {
                 Response response = new Response();
                 response.act = msg.act;
                 response.iid = msg.iid;
@@ -451,7 +439,7 @@ public class RxMqttService extends Service {
                 mqttManager.publish(msg.ack, 2, dataJson.getBytes());
             }
         } catch (Throwable e) {
-            XLog.e("sendRxMsg",e);
+            XLog.e("sendRxMsg", e);
         }
     }
 
@@ -514,7 +502,7 @@ public class RxMqttService extends Service {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        XLog.e("checkReconnect",throwable);
+                        XLog.e("checkReconnect", throwable);
                     }
                 }));
     }
@@ -542,7 +530,12 @@ public class RxMqttService extends Service {
             mqttManager = null;
         } catch (Throwable e) {
             //停止服务异常2
-            XLog.e("onDestroy",e);
+            XLog.e("onDestroy", e);
         }
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }

@@ -4,9 +4,11 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.elvishew.xlog.XLog;
+import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
+import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
 import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.PingUtils;
@@ -99,13 +101,17 @@ public class MqttManager implements MqttCallbackExtended {
      */
     @Override
     public void connectionLost(Throwable cause) {
-        XLog.d("MqttCallback connectionLost ",cause);
         if(cause!=null){
+            XLog.d("MqttCallback connectionLost ",cause);
             //这里为mqtt定义的异常,可以得到异常信息
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
         }else{
+            XLog.d("MqttCallback connectionLost ","其他异常");
             //这里为其他异常
-            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_DISCONNECT));
+            MessageListener listener = XLink.getInstance().getListener();
+            if (listener != null) {
+                listener.connectState(ConnectType.CONNECT_DISCONNECT);
+            }
         }
     }
 

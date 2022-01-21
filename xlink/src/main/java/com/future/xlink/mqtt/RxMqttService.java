@@ -427,11 +427,11 @@ public class RxMqttService extends Service {
         super.onDestroy();
         try {
             XLog.d("onDestroy stop service");
-            XBus.unregister(this);
             map.clear();
             threadTerminated = true;
             mqttManager.disConnect();
             mqttManager = null;
+            XBus.unregister(this);
         } catch (Throwable e) {
             XLog.e("onDestroy", e);
         }

@@ -68,7 +68,7 @@ public class FileUpload {
         String token = Utils.getToken(params, String.valueOf(timestamp));
         Response<BaseResponse> response =
                 RetrofitClient.getInstance()
-                        .doUploadFile(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,
+                        .doUploadFile(params.httpServer + GlobalConfig.UPLOAD_FILE, token, String.valueOf(timestamp), params.sn, data,
                                 filePart, getContentRange(startPos, datas, total)).execute();
         BaseResponse baseResponse = response.body();
         if (baseResponse != null && baseResponse.status == 0) {

@@ -9,6 +9,10 @@ import io.reactivex.annotations.NonNull;
  */
 public class InitParams implements Serializable {
     /**
+     * 服务器地址
+     */
+    public String httpServer;
+    /**
      * 根据后台申请参数匹配生成
      */
     public String token = "";
@@ -67,7 +71,8 @@ public class InitParams implements Serializable {
     @Override
     public String toString() {
         return "InitParams{" +
-                "token='" + token + '\'' +
+                "httpServer='" + httpServer + '\'' +
+                ", token='" + token + '\'' +
                 ", bufferEnable=" + bufferEnable +
                 ", automaticReconnect=" + automaticReconnect +
                 ", reconnectTime=" + reconnectTime +

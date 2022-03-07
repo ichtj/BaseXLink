@@ -50,7 +50,7 @@ public class ObserverUtils {
 
     public static void getUploadLogUrl(Context context, InitParams params, LogBean bean) {
         String time = String.valueOf(System.currentTimeMillis());
-        RetrofitClient.getInstance().getUploadLogUrl(GlobalConfig.HTTP_SERVER + GlobalConfig.UPLOAD_LOGURL, Utils.getToken(params, time), time, params.sn, bean)
+        RetrofitClient.getInstance().getUploadLogUrl(params.httpServer + GlobalConfig.UPLOAD_LOGURL, Utils.getToken(params, time), time, params.sn, bean)
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<LogPayload>>() {
             @Override
             public void onNext(BaseResponse<LogPayload> baseResponse) {
@@ -103,7 +103,7 @@ public class ObserverUtils {
     public static void getAgentList(Context context, InitParams params) {
         String time = String.valueOf(System.currentTimeMillis());
         String token = Utils.getToken(params, time);
-        RetrofitClient.getInstance().getAgentList(ApiService.AGENT_SERVER_LIST, token, time, params.sn)
+        RetrofitClient.getInstance().getAgentList(params.httpServer+GlobalConfig.AGENT_SERVER_LIST, token, time, params.sn)
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<Agents>>() {
             @Override
             public void onNext(BaseResponse<Agents> baseResponse) {
@@ -153,7 +153,7 @@ public class ObserverUtils {
         payload.isNew = true;
         body.payload = payload;
         String time = String.valueOf(System.currentTimeMillis());
-        RetrofitClient.getInstance().registerAgent(url + ApiService.AGENT_REGISTER, Utils.getToken(params, time), time, params.sn, body)
+        RetrofitClient.getInstance().registerAgent(url + GlobalConfig.AGENT_REGISTER, Utils.getToken(params, time), time, params.sn, body)
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<Register>>() {
             @Override
             public void onNext(BaseResponse<Register> registerBaseResponse) {

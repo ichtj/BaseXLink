@@ -19,8 +19,6 @@ import java.util.UUID;
  * @author chtj
  */
 public class Utils {
-    private static final String TAG = "Utils";
-
     public static String getToken(InitParams params, String time) {
         String token = "Basic " + AESUtils.encrypt(params.key, params.sn + ":" + params.secret + ":" + time);
         return token;

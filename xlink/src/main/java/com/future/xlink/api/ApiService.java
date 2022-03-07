@@ -28,23 +28,6 @@ import retrofit2.http.Url;
  * @author lee
  */
 public interface ApiService {
-
-
-    ///**
-    // * 获取代理服务地址列表
-    // */
-    //String AGENT_SERVER_LIST = GlobalConfig.HTTP_SERVER + GlobalConfig.AGENT_SERVER_LIST;
-    ///**
-    // * 注册代理服务器
-    // **/
-    //String AGENT_REGISTER =  GlobalConfig.AGENT_REGISTER;
-    ///**
-    // * 设备唯一性验证
-    // */
-    //public static final String PRODUCT_UNIQUE = GlobalConfig.HTTP_SERVER + GlobalConfig.PRODUCT_UNIQUE;
-
-
-
     @POST
     Observable <BaseResponse <Agents>> getAgentList(@Url String url,
                                                     @Header("Authorization") String token,

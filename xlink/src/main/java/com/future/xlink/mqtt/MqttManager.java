@@ -80,7 +80,7 @@ public class MqttManager implements MqttCallbackExtended {
             XLog.d("creatConnect: isDel my.properties=" + isDel);
             return;
         }
-        String clientId = params.sn + System.currentTimeMillis();
+        String clientId = params.sn/* + System.currentTimeMillis()*/;
         client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
         XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         client.setCallback(this);

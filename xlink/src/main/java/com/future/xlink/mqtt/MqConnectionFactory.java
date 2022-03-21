@@ -27,8 +27,9 @@ public class MqConnectionFactory {
             // 用户名
             XLog.d("getMqttConnectOptions: start>>> key:" + params.key + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
             String userName = AESUtils.decrypt(params.key, register.mqttUsername);
-            char[] password = AESUtils.decrypt(params.key, register.mqttPassword).toCharArray();
-            XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + Arrays.toString(password));
+            String pwd=AESUtils.decrypt(params.key, register.mqttPassword);
+            char[] password = pwd.toCharArray();
+            XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
             conOpt.setUserName(userName);
             conOpt.setPassword(password);
             conOpt.setServerURIs(new String[]{register.mqttBroker});

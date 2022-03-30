@@ -2,7 +2,6 @@ package com.future.xlink.api.response;
 
 public class BaseResponse <T>{
     public  String description;
-//    public  long respTime;
     public  long status;
     public  T payload;
     public boolean isSuccessNonNull() {

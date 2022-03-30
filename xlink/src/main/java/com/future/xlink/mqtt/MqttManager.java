@@ -74,10 +74,6 @@ public class MqttManager implements MqttCallbackExtended {
         boolean pwdIsNull = conOpt.getPassword() == null || conOpt.getPassword().length == 0;
         if (TextUtils.isEmpty(conOpt.getUserName()) || pwdIsNull) {
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
-            //删除配置文件
-            String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
-            boolean isDel = new File(path).delete();
-            XLog.d("creatConnect: isDel my.properties=" + isDel);
             return;
         }
         String clientId = params.sn/* + System.currentTimeMillis()*/;
@@ -172,10 +168,6 @@ public class MqttManager implements MqttCallbackExtended {
                                 try {
                                     //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
                                     XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
-                                    //删除配置文件
-                                    String path = GlobalConfig.SYS_ROOT_PATH + Utils.getPackageName(context) + File.separator + params.sn + File.separator + GlobalConfig.MY_PROPERTIES;
-                                    boolean isDel = new File(path).delete();
-                                    XLog.d("onFailure: isDel my.properties=" + isDel);
                                 } catch (Exception e) {
                                     XLog.e("IMqttActionListener ", e);
                                 }

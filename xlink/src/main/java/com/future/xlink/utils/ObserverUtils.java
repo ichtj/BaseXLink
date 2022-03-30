@@ -148,7 +148,6 @@ public class ObserverUtils {
         Payload payload = new Payload();
         payload.did = params.sn;
         payload.pdid = params.pdid;
-        //PropertiesUtil util = PropertiesUtil.getInstance(context).init();
         Register register=params.register;
         payload.oldMqttBroker = register==null?"":register.mqttBroker;
         payload.isNew = true;
@@ -161,10 +160,6 @@ public class ObserverUtils {
                 super.onNext(registerBaseResponse);
                 XLog.d("registerRequest onNext status:" + registerBaseResponse.status);
                 if (registerBaseResponse.isSuccess() && registerBaseResponse.isSuccessNonNull()) {
-                    //mqtt连接
-                    //Register register = registerBaseResponse.payload;
-                    //PropertiesUtil.saveProperties(context, register);
-                    //Register readFileregister = PropertiesUtil.getProperties(context);
                     params.register=registerBaseResponse.payload;
                     XLog.d("registerRequest onNext get register:" + params.register.toString());
                     if (!params.register.isNull()) {

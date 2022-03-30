@@ -107,17 +107,7 @@ public class RxMqttService extends Service {
                 //判断注册参数是否有误
                 toInit(InitState.INIT_PARAMS_LOST);
             } else {
-                //查看本地文件是否已经记录了注册参数
-                //Register register = PropertiesUtil.getProperties(this);
-                //if (register.isNull()) {
-                //XLog.d("No local registration was detected");
-                //未注册过那么先获取代理服务器列表
                 ObserverUtils.getAgentList(RxMqttService.this, params);
-                //} else {
-                //    XLog.d("this devices has been registered");
-                //    //直接提示已注册过
-                //    toInit(InitState.INIT_SUCCESS);
-                //}
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -392,10 +382,6 @@ public class RxMqttService extends Service {
      * 获取ssid
      */
     private String getSsid() {
-        /*if (TextUtils.isEmpty(ssid)) {
-            PropertiesUtil propertiesUtil = PropertiesUtil.getInstance(RxMqttService.this).init();
-            ssid = propertiesUtil.readString(Constants.SSID, "");
-        }*/
         return params.register.ssid;
     }
 

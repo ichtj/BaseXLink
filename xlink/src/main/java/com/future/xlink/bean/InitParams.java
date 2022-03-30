@@ -89,6 +89,7 @@ public class InitParams implements Serializable {
                 ", key='" + key + '\'' +
                 ", iv_key='" + iv_key + '\'' +
                 ", pdid='" + pdid + '\'' +
+                ", register=" + register.toString() +
                 '}';
     }
 }

@@ -4,12 +4,10 @@ import android.content.Context;
 import android.os.Environment;
 
 import com.elvishew.xlog.XLog;
-import com.future.xlink.api.ApiService;
 import com.future.xlink.api.response.BaseResponse;
 import com.future.xlink.api.retrofit.RetrofitClient;
 import com.future.xlink.api.subscribe.SelfObserver;
 import com.future.xlink.bean.Agents;
-import com.future.xlink.bean.Constants;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.LogBean;
 import com.future.xlink.bean.LogPayload;

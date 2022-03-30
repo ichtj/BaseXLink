@@ -98,15 +98,6 @@ public class XLink {
         if (!errLogFile.exists()) {
             errLogFile.mkdirs();
         }
-        //创建配置文件
-        //File configBySn = new File(GlobalConfig.PROPERT_URL, GlobalConfig.MY_PROPERTIES);
-        //if (!configBySn.exists()) {
-        //    try {
-        //        configBySn.createNewFile();
-        //    } catch (Throwable e) {
-        //        e.printStackTrace();
-        //    }
-        //}
         LogConfiguration config = new LogConfiguration.Builder()
                 .logLevel(LogLevel.ALL)   // 指定日志级别，低于该级别的日志将不会被打印，默认为 LogLevel.ALL
                 .tag("XLink")             // 指定 TAG，默认为 "X-LOG"

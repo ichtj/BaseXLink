@@ -8,8 +8,6 @@ import com.future.xlink.utils.AESUtils;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 
-import java.util.Arrays;
-
 /**
  * @author chtj
  */

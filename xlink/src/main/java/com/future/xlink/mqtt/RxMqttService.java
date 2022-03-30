@@ -7,8 +7,6 @@ import android.text.TextUtils;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.XLink;
-import com.future.xlink.api.SubscriberSingleton;
-import com.future.xlink.bean.Constants;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.McuProtocal;
 import com.future.xlink.bean.Protocal;
@@ -23,13 +21,9 @@ import com.future.xlink.bean.mqtt.RespStatus;
 import com.future.xlink.bean.mqtt.Response;
 import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
-import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
 import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
-/*import com.future.xlink.utils.PropertiesUtil;*/
-import com.future.xlink.utils.ThreadPool;
-import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -40,11 +34,6 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
-import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Consumer;
 
 import static com.future.xlink.bean.common.ConnectType.CONNECT_NO_NETWORK;
 

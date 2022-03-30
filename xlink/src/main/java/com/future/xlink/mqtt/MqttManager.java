@@ -10,7 +10,6 @@ import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
 import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
-import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
@@ -25,8 +24,6 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.json.JSONObject;
-
-import java.io.File;
 
 /**
  * 管理mqtt的连接,发布,订阅,断开连接, 断开重连等操作

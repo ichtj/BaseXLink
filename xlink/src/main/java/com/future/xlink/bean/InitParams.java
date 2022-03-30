@@ -68,6 +68,10 @@ public class InitParams implements Serializable {
     @NonNull
     public String pdid = "";
 
+    @NonNull
+    public Register register;
+
+
     @Override
     public String toString() {
         return "InitParams{" +

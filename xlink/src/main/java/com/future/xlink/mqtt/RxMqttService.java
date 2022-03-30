@@ -27,7 +27,7 @@ import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
 import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
-import com.future.xlink.utils.PropertiesUtil;
+/*import com.future.xlink.utils.PropertiesUtil;*/
 import com.future.xlink.utils.ThreadPool;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
@@ -108,16 +108,16 @@ public class RxMqttService extends Service {
                 toInit(InitState.INIT_PARAMS_LOST);
             } else {
                 //查看本地文件是否已经记录了注册参数
-                Register register = PropertiesUtil.getProperties(this);
-                if (register.isNull()) {
-                    XLog.d("No local registration was detected");
-                    //未注册过那么先获取代理服务器列表
-                    ObserverUtils.getAgentList(RxMqttService.this, params);
-                } else {
-                    XLog.d("this devices has been registered");
-                    //直接提示已注册过
-                    toInit(InitState.INIT_SUCCESS);
-                }
+                //Register register = PropertiesUtil.getProperties(this);
+                //if (register.isNull()) {
+                //XLog.d("No local registration was detected");
+                //未注册过那么先获取代理服务器列表
+                ObserverUtils.getAgentList(RxMqttService.this, params);
+                //} else {
+                //    XLog.d("this devices has been registered");
+                //    //直接提示已注册过
+                //    toInit(InitState.INIT_SUCCESS);
+                //}
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -185,9 +185,9 @@ public class RxMqttService extends Service {
         if (!isNetOk) {
             connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
         } else {
-            Register register = PropertiesUtil.getProperties(RxMqttService.this);
+            //Register register = PropertiesUtil.getProperties(RxMqttService.this);
             try {
-                createConect(register);
+                createConect(params.register);
             } catch (Throwable e) {
                 connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
             }
@@ -213,7 +213,7 @@ public class RxMqttService extends Service {
                     mqttManager.disConnect();
                     mqttManager = null;
                 }
-                threadTerminated=true;
+                threadTerminated = true;
                 map.clear();
                 break;
         }
@@ -240,7 +240,7 @@ public class RxMqttService extends Service {
      * @param cause 异常信息
      */
     private void connLostCallBack(ConnectLostType type, Throwable cause) {
-        XLog.e(type.getValue(),cause);
+        XLog.e(type.getValue(), cause);
         MessageListener listener = XLink.getInstance().getListener();
         if (listener != null) {//回调连接丢失以及异常信息
             listener.connectionLost(type, cause);
@@ -392,11 +392,11 @@ public class RxMqttService extends Service {
      * 获取ssid
      */
     private String getSsid() {
-        if (TextUtils.isEmpty(ssid)) {
+        /*if (TextUtils.isEmpty(ssid)) {
             PropertiesUtil propertiesUtil = PropertiesUtil.getInstance(RxMqttService.this).init();
             ssid = propertiesUtil.readString(Constants.SSID, "");
-        }
-        return ssid;
+        }*/
+        return params.register.ssid;
     }
 
     /**

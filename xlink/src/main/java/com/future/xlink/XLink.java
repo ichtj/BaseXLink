@@ -25,7 +25,7 @@ import com.future.xlink.utils.DataFormatFileInfo;
 import com.future.xlink.utils.DefaultFlattenerInfo;
 import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
-import com.future.xlink.utils.PropertiesUtil;
+/*import com.future.xlink.utils.PropertiesUtil;*/
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
@@ -153,7 +153,7 @@ public class XLink {
     public void unInit() {
         context.stopService(new Intent(context, RxMqttService.class));
         // 清空保存在文件夹中的数据
-        PropertiesUtil.getInstance(context).clearProperties(context);
+        //PropertiesUtil.getInstance(context).clearProperties(context);
         this.listener = null;
         this.context = null;
     }

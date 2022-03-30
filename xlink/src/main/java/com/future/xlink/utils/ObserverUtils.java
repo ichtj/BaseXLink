@@ -148,8 +148,8 @@ public class ObserverUtils {
         Payload payload = new Payload();
         payload.did = params.sn;
         payload.pdid = params.pdid;
-        PropertiesUtil util = PropertiesUtil.getInstance(context).init();
-        payload.oldMqttBroker = util.readString(Constants.MQTTBROKER, "");
+        //PropertiesUtil util = PropertiesUtil.getInstance(context).init();
+        payload.oldMqttBroker = /*util.readString(Constants.MQTTBROKER, "")*/params.register.mqttBroker;
         payload.isNew = true;
         body.payload = payload;
         String time = String.valueOf(System.currentTimeMillis());
@@ -161,11 +161,12 @@ public class ObserverUtils {
                 XLog.d("registerRequest onNext status:" + registerBaseResponse.status);
                 if (registerBaseResponse.isSuccess() && registerBaseResponse.isSuccessNonNull()) {
                     //mqtt连接
-                    Register register = registerBaseResponse.payload;
-                    XLog.d("registerRequest onNext get register:" + register.toString());
-                    PropertiesUtil.saveProperties(context, register);
-                    Register readFileregister = PropertiesUtil.getProperties(context);
-                    if (!readFileregister.isNull()) {
+                    //Register register = registerBaseResponse.payload;
+                    //PropertiesUtil.saveProperties(context, register);
+                    //Register readFileregister = PropertiesUtil.getProperties(context);
+                    params.register=registerBaseResponse.payload;
+                    XLog.d("registerRequest onNext get register:" + params.register.toString());
+                    if (!params.register.isNull()) {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
                     } else {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_CACHE_NOEXIST));

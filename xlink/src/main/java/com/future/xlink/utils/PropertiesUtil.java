@@ -1,3 +1,4 @@
+/*
 package com.future.xlink.utils;
 
 import android.content.Context;
@@ -126,9 +127,11 @@ public class PropertiesUtil {
 		mProp.commit();
 	}
 
-	/**
+	*/
+/**
 	 * 清除保存的缓存数据
-	 * */
+	 * *//*
+
 	public void clearProperties(Context mContext){
 		PropertiesUtil mProp = PropertiesUtil.getInstance(mContext).init();
 
@@ -150,4 +153,4 @@ public class PropertiesUtil {
 		return register;
 
 	}
-}
+}*/

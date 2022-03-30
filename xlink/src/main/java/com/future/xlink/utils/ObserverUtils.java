@@ -149,7 +149,8 @@ public class ObserverUtils {
         payload.did = params.sn;
         payload.pdid = params.pdid;
         //PropertiesUtil util = PropertiesUtil.getInstance(context).init();
-        payload.oldMqttBroker = /*util.readString(Constants.MQTTBROKER, "")*/params.register.mqttBroker;
+        Register register=params.register;
+        payload.oldMqttBroker = register==null?"":register.mqttBroker;
         payload.isNew = true;
         body.payload = payload;
         String time = String.valueOf(System.currentTimeMillis());

@@ -95,6 +95,7 @@ public class RxMqttService extends Service {
             String readProperties= Utils.readFileData(GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES);
             InitParams initedParams=GsonUtils.fromJson(readProperties,InitParams.class);
             if(initedParams!=null){
+                params=initedParams;
                 //代表已经注册过 那么直接提示注册成功 但这里也会有另一个问题 参数是否会过期 多次次连接失败是否应该重置该参数
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
             }else{

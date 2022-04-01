@@ -25,6 +25,7 @@ import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
 import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
+import com.future.xlink.utils.ThreadPool;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
@@ -51,18 +52,15 @@ public class RxMqttService extends Service {
     private static final String RESP = "-resp"; //消息回应后缀
     public static final String INIT_PARAM = "initparams";
     private final Object lock = new Object();
-    private boolean threadTerminated = false; //线程控制器
 
     InitParams params = null;
     private ConcurrentHashMap<String, McuProtocal> map = new ConcurrentHashMap<String, McuProtocal>(); //消息存储
     private String ssid = null;
-    MessageHandlerThread messageHandlerThread;
+
 
     @Override
     public void onCreate() {
         super.onCreate();
-        messageHandlerThread = new MessageHandlerThread();
-        messageHandlerThread.start();
         XLog.d("start service and messageHandlerThread start");
         XBus.register(this);
     }
@@ -73,7 +71,7 @@ public class RxMqttService extends Service {
     class MessageHandlerThread extends Thread {
         @Override
         public void run() {
-            while (!threadTerminated) {
+            while (true) {
                 synchronized (lock) {
                     try {
                         executeQueen();
@@ -91,13 +89,16 @@ public class RxMqttService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
-            String readProperties= Utils.readFileData(GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES);
-            InitParams initedParams=GsonUtils.fromJson(readProperties,InitParams.class);
-            if(initedParams!=null){
-                params=initedParams;
+            if (ThreadPool.isTaskEnd()) {
+                ThreadPool.execute(new MessageHandlerThread());
+            }
+            String readProperties = Utils.readFileData(GlobalConfig.PROPERT_URL + GlobalConfig.MY_PROPERTIES);
+            InitParams initedParams = GsonUtils.fromJson(readProperties, InitParams.class);
+            if (initedParams != null) {
+                params = initedParams;
                 //代表已经注册过 那么直接提示注册成功 但这里也会有另一个问题 参数是否会过期 多次次连接失败是否应该重置该参数
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
-            }else{
+            } else {
                 //代表未注册过
                 params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
                 if (params == null || TextUtils.isEmpty(params.getKey()) ||
@@ -196,12 +197,12 @@ public class RxMqttService extends Service {
                 subscrible();
                 break;
             case CONNECT_DISCONNECT://连接断开
-                MqttManager.getInstance().disConnect();
-                threadTerminated = true;
                 map.clear();
+                MqttManager.getInstance().disConnect();
                 break;
             case CONNECT_UNINIT:
                 //删除原先保存的配置文件,解除旧的连接信息
+                map.clear();
                 GlobalConfig.delProperties();
                 MqttManager.getInstance().disConnect();
                 break;
@@ -413,7 +414,6 @@ public class RxMqttService extends Service {
         try {
             XLog.d("onDestroy stop service");
             map.clear();
-            threadTerminated = true;
             MqttManager.getInstance().disConnect();
             XBus.unregister(this);
         } catch (Throwable e) {

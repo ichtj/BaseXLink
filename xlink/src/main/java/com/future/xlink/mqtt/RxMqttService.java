@@ -203,6 +203,7 @@ public class RxMqttService extends Service {
             case CONNECT_UNINIT:
                 //删除原先保存的配置文件,解除旧的连接信息
                 GlobalConfig.delProperties();
+                MqttManager.getInstance().disConnect();
                 break;
         }
         //回调结果

@@ -124,11 +124,6 @@ public class XLink {
         if (!errLogFile.exists()) {
             errLogFile.mkdirs();
         }
-        //创建err文件夹
-        File myPropertiesFile = new File(GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES);
-        if (!myPropertiesFile.exists()) {
-            myPropertiesFile.mkdirs();
-        }
     }
 
     /**

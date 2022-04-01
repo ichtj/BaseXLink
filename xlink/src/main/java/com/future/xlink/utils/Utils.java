@@ -5,14 +5,14 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Build;
-import android.telephony.PhoneStateListener;
-import android.telephony.SignalStrength;
-import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.UUID;
 
 /**
@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 public class Utils {
     public static String getToken(InitParams params, String time) {
-        String token = "Basic " + AESUtils.encrypt(params.key, params.sn + ":" + params.secret + ":" + time);
+        String token = "Basic " + AESUtils.encrypt(params.getKey(), params.getSn() + ":" + params.getSecret() + ":" + time);
         return token;
     }
 
@@ -48,6 +48,71 @@ public class Utils {
         return null;
     }
 
+    /**
+     * 读取文件内容
+     *
+     * @param fileName 路径+文件名称
+     * @return 读取到的内容
+     */
+    public static String readFileData(String fileName) {
+        String result = "";
+        try {
+            File file = new File(fileName);
+            if (!file.exists()) {
+                return "";
+            }
+            FileInputStream fis = new FileInputStream(file);
+            //获取文件长度
+            int lenght = fis.available();
+            byte[] buffer = new byte[lenght];
+            fis.read(buffer);
+            if (fis != null) {
+                fis.close();
+            }
+            //将byte数组转换成指定格式的字符串
+            result = new String(buffer, "UTF-8");
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("Utils", "readFileData: ",e );
+        }
+        return result;
+    }
+
+    /**
+     * 写入数据
+     *
+     * @param filename 路径+文件名称
+     * @param content  写入的内容
+     * @param isCover  是否覆盖文件的内容 true 覆盖原文件内容  | flase 追加内容在最后
+     * @return 是否成功 true|false
+     */
+    public static boolean writeFileData(String filename, String content, boolean isCover) {
+        FileOutputStream fos = null;
+        try {
+            File file = new File(filename);
+            //如果文件不存在
+            if (!file.exists()) {
+                //重新创建文件
+                file.createNewFile();
+            }
+            fos = new FileOutputStream(file, !isCover);
+            byte[] bytes = content.getBytes();
+            fos.write(bytes);//将byte数组写入文件
+            fos.flush();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("Utils", "writeFileData: " + e.getMessage());
+        } finally {
+            try {
+                fos.close();//关闭文件输出流
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e("Utils", "errMeg:" + e.getMessage());
+            }
+        }
+        return false;
+    }
 
     /**
      * 判断是否有网络连接

@@ -16,16 +16,16 @@ public class MqConnectionFactory {
         MqttConnectOptions conOpt = new MqttConnectOptions();
         try {
             // 清除缓存
-            conOpt.setCleanSession(params.cleanSession);
+            conOpt.setCleanSession(params.isCleanSession());
             // 设置超时时间，单位：秒
-            conOpt.setConnectionTimeout(params.outTime);
+            conOpt.setConnectionTimeout(params.getOutTime());
             // 心跳包发送间隔，单位：秒
-            conOpt.setKeepAliveInterval(params.keepAliveTime);
-            conOpt.setAutomaticReconnect(params.automaticReconnect);
+            conOpt.setKeepAliveInterval(params.getKeepAliveTime());
+            conOpt.setAutomaticReconnect(params.isAutomaticReconnect());
             // 用户名
-            XLog.d("getMqttConnectOptions: start>>> key:" + params.key + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
-            String userName = AESUtils.decrypt(params.key, register.mqttUsername);
-            String pwd=AESUtils.decrypt(params.key, register.mqttPassword);
+            XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
+            String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
+            String pwd=AESUtils.decrypt(params.getKey(), register.mqttPassword);
             char[] password = pwd.toCharArray();
             XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
             conOpt.setUserName(userName);

@@ -78,8 +78,8 @@ public class XLink {
      */
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         String pkgName = Utils.getPackageName(context);
-        GlobalConfig.PROPERT_URL = GlobalConfig.SYS_ROOT_PATH + pkgName + "/" + params.sn + "/";
-        createPropertiesLogFile(pkgName, params.sn);//创建info,error日志的存储路径和.log文件my.properties文件
+        GlobalConfig.PROPERT_URL = GlobalConfig.SYS_ROOT_PATH + pkgName + "/" + params.getSn() + "/";
+        createAndInitXLog(pkgName, params.getSn());//创建info,error日志的存储路径和.log文件my.properties文件
         this.context = context;
         this.listener = listener;
         Intent intent = new Intent(context, RxMqttService.class);
@@ -92,12 +92,8 @@ public class XLink {
     /**
      * 初始化时创建配置文件
      */
-    private void createPropertiesLogFile(String pkgName,String sn) {
-        //创建err文件夹
-        File errLogFile = new File(GlobalConfig.PROPERT_URL);
-        if (!errLogFile.exists()) {
-            errLogFile.mkdirs();
-        }
+    private void createAndInitXLog(String pkgName,String sn) {
+        creatFile();
         LogConfiguration config = new LogConfiguration.Builder()
                 .logLevel(LogLevel.ALL)   // 指定日志级别，低于该级别的日志将不会被打印，默认为 LogLevel.ALL
                 .tag("XLink")             // 指定 TAG，默认为 "X-LOG"
@@ -122,6 +118,18 @@ public class XLink {
                 //consolePrinter,
                 filePrinter);
     }
+    private void creatFile(){
+        //创建err文件夹
+        File errLogFile = new File(GlobalConfig.PROPERT_URL);
+        if (!errLogFile.exists()) {
+            errLogFile.mkdirs();
+        }
+        //创建err文件夹
+        File myPropertiesFile = new File(GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES);
+        if (!myPropertiesFile.exists()) {
+            myPropertiesFile.mkdirs();
+        }
+    }
 
     /**
      * 创建连接函数
@@ -143,6 +151,7 @@ public class XLink {
      */
     public void unInit() {
         context.stopService(new Intent(context, RxMqttService.class));
+        GlobalConfig.delProperties();
         this.listener = null;
         this.context = null;
     }

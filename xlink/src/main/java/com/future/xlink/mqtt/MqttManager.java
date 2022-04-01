@@ -61,9 +61,10 @@ public class MqttManager implements MqttCallbackExtended {
     /**
      * 创建Mqtt 连接
      */
-    public void creatNewConnect(Context context, InitParams params, Register register) throws Throwable {
+    public void creatNewConnect(Context context, InitParams params) throws Throwable {
         this.params = params;
         isInitconnect = true;
+        Register register= params.getRegister();
         String tmpDir = System.getProperty("java.io.tmpdir");
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
         conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
@@ -73,7 +74,7 @@ public class MqttManager implements MqttCallbackExtended {
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
             return;
         }
-        String clientId = params.sn/* + System.currentTimeMillis()*/;
+        String clientId = params.getSn();
         client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
         XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
         client.setCallback(this);
@@ -143,8 +144,8 @@ public class MqttManager implements MqttCallbackExtended {
                     XLog.d("onSuccess connection onSuccess");
                     try {
                         DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                        disconnectedBufferOptions.setBufferEnabled(params.bufferEnable);
-                        disconnectedBufferOptions.setBufferSize(params.bufferSize);
+                        disconnectedBufferOptions.setBufferEnabled(params.isBufferEnable());
+                        disconnectedBufferOptions.setBufferSize(params.getBufferSize());
                         disconnectedBufferOptions.setPersistBuffer(false);
                         disconnectedBufferOptions.setDeleteOldestMessages(false);
                         if (client != null) {
@@ -158,7 +159,7 @@ public class MqttManager implements MqttCallbackExtended {
                 @Override
                 public void onFailure(IMqttToken arg0, Throwable arg1) {
                     XLog.e("IMqttActionListener onFailure-->", arg1);
-                    if (params.automaticReconnect) {
+                    if (params.isAutomaticReconnect()) {
                         //只在客户端主动创建初始化连接时回调
                         if (isInitconnect) {
                             if (arg1.getMessage().contains("无权连接")) {

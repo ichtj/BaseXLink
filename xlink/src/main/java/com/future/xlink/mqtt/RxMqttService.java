@@ -21,9 +21,11 @@ import com.future.xlink.bean.mqtt.RespStatus;
 import com.future.xlink.bean.mqtt.Response;
 import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
+import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
 import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
+import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -90,13 +92,21 @@ public class RxMqttService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
-            params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
-            if (params == null || TextUtils.isEmpty(params.key) ||
-                    TextUtils.isEmpty(params.secret) || TextUtils.isEmpty(params.pdid)) {
-                //判断注册参数是否有误
-                toInit(InitState.INIT_PARAMS_LOST);
-            } else {
-                ObserverUtils.getAgentList(RxMqttService.this, params);
+            String readProperties= Utils.readFileData(GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES);
+            InitParams initedParams=GsonUtils.fromJson(readProperties,InitParams.class);
+            if(initedParams!=null){
+                //代表已经注册过 那么直接提示注册成功 但这里也会有另一个问题 参数是否会过期 多次次连接失败是否应该重置该参数
+                XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
+            }else{
+                //代表未注册过
+                params = (InitParams) intent.getSerializableExtra(INIT_PARAM);
+                if (params == null || TextUtils.isEmpty(params.getKey()) ||
+                        TextUtils.isEmpty(params.getSecret()) || TextUtils.isEmpty(params.getPdid())) {
+                    //判断注册参数是否有误
+                    toInit(InitState.INIT_PARAMS_LOST);
+                } else {
+                    ObserverUtils.getAgentList(params);
+                }
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -106,10 +116,10 @@ public class RxMqttService extends Service {
     /**
      * 创建连接
      */
-    private void createConect(Register register) throws Throwable {
-        XLog.d("toConnect: register=" + register.toString());
+    private void createConect() throws Throwable {
+        XLog.d("toConnect: register=" + params.getRegister().toString());
         mqttManager = MqttManager.getInstance();
-        mqttManager.creatNewConnect(RxMqttService.this, params, register);
+        mqttManager.creatNewConnect(RxMqttService.this, params);
     }
 
 
@@ -164,9 +174,8 @@ public class RxMqttService extends Service {
         if (!isNetOk) {
             connTypeCallBack(CONNECT_NO_NETWORK);//回调网络不正常
         } else {
-            //Register register = PropertiesUtil.getProperties(RxMqttService.this);
             try {
-                createConect(params.register);
+                createConect();
             } catch (Throwable e) {
                 connTypeCallBack(ConnectType.CONNECT_RESPONSE_TIMEOUT);
             }
@@ -231,7 +240,7 @@ public class RxMqttService extends Service {
      */
     private void subscrible() {
         //添加#进行匹配
-        mqttManager.subscribe("dev/" + params.sn + "/#", 2, RxMqttService.this);
+        mqttManager.subscribe("dev/" + params.getSn() + "/#", 2, RxMqttService.this);
     }
 
     /**
@@ -262,7 +271,7 @@ public class RxMqttService extends Service {
             mcuprotocal.iid = protocal.iid;
             mcuprotocal.time = System.currentTimeMillis();
             mcuprotocal.act = "cmd";//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
-            mcuprotocal.ack = "svr/" + params.sn;//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
+            mcuprotocal.ack = "svr/" + params.getSn();//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
         }
         if (type == Carrier.TYPE_REMOTE_TX_SERVICE) {
             //服务属性上报
@@ -371,7 +380,7 @@ public class RxMqttService extends Service {
      * 获取ssid
      */
     private String getSsid() {
-        return params.register.ssid;
+        return params.getRegister().ssid;
     }
 
     /**

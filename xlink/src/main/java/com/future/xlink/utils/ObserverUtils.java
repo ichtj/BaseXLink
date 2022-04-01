@@ -48,7 +48,7 @@ public class ObserverUtils {
 
     public static void getUploadLogUrl(Context context, InitParams params, LogBean bean) {
         String time = String.valueOf(System.currentTimeMillis());
-        RetrofitClient.getInstance().getUploadLogUrl(params.httpServer + GlobalConfig.UPLOAD_LOGURL, Utils.getToken(params, time), time, params.sn, bean)
+        RetrofitClient.getInstance().getUploadLogUrl(params.getHttpServer() + GlobalConfig.UPLOAD_LOGURL, Utils.getToken(params, time), time, params.getSn(), bean)
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<LogPayload>>() {
             @Override
             public void onNext(BaseResponse<LogPayload> baseResponse) {
@@ -95,13 +95,12 @@ public class ObserverUtils {
     /**
      * 获取代理服务地址
      *
-     * @param context 上下文
      * @param params 必要参数
      */
-    public static void getAgentList(Context context, InitParams params) {
+    public static void getAgentList(InitParams params) {
         String time = String.valueOf(System.currentTimeMillis());
         String token = Utils.getToken(params, time);
-        RetrofitClient.getInstance().getAgentList(params.httpServer+GlobalConfig.AGENT_SERVER_LIST, token, time, params.sn)
+        RetrofitClient.getInstance().getAgentList(params.getHttpServer()+GlobalConfig.AGENT_SERVER_LIST, token, time, params.getSn())
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<Agents>>() {
             @Override
             public void onNext(BaseResponse<Agents> baseResponse) {
@@ -116,10 +115,10 @@ public class ObserverUtils {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
                     } else if (pinglist.size() == 1) {
                         //如果列表只有一个取消ping操作
-                        registerRequest(context, params, baseResponse.payload.servers.get(0));
+                        registerRequest(params, baseResponse.payload.servers.get(0));
                     } else {
                         //执行循环ping操作,找到最优的线路
-                        ObserverUtils.pingTest(pinglist, o -> registerRequest(context, params, o));
+                        ObserverUtils.pingTest(pinglist, o -> registerRequest(params, o));
                     }
                 } else {
                     if (baseResponse.description.equals("设备不存在")) {
@@ -140,27 +139,31 @@ public class ObserverUtils {
         });
     }
 
-    private static void registerRequest(Context context, InitParams params, String url) {
+    private static void registerRequest(InitParams params, String url) {
         Body body = new Body();
-        body.ack = "dev/" + params.sn;
+        body.ack = "dev/" + params.getSn();
         Payload payload = new Payload();
-        payload.did = params.sn;
-        payload.pdid = params.pdid;
-        Register register=params.register;
+        payload.did = params.getSn();
+        payload.pdid = params.getPdid();
+        Register register=params.getRegister();
         payload.oldMqttBroker = register==null?"":register.mqttBroker;
         payload.isNew = true;
         body.payload = payload;
         String time = String.valueOf(System.currentTimeMillis());
-        RetrofitClient.getInstance().registerAgent(url + GlobalConfig.AGENT_REGISTER, Utils.getToken(params, time), time, params.sn, body)
+        RetrofitClient.getInstance().registerAgent(url + GlobalConfig.AGENT_REGISTER, Utils.getToken(params, time), time, params.getSn(), body)
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<Register>>() {
             @Override
             public void onNext(BaseResponse<Register> registerBaseResponse) {
                 super.onNext(registerBaseResponse);
                 XLog.d("registerRequest onNext status:" + registerBaseResponse.status);
                 if (registerBaseResponse.isSuccess() && registerBaseResponse.isSuccessNonNull()) {
-                    params.register=registerBaseResponse.payload;
-                    XLog.d("registerRequest onNext get register:" + params.register.toString());
-                    if (!params.register.isNull()) {
+                    params.setRegister(registerBaseResponse.payload);
+                    XLog.d("registerRequest onNext get register:" + params.getRegister().toString());
+                    if (!params.getRegister().isNull()) {
+                        String configSave = JsonFormatTool.formatJson(GsonUtils.toJsonWtihNullField(params));
+                        boolean isWrite = Utils.writeFileData(
+                                GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES, configSave, true);
+                        XLog.d("isWrite="+isWrite);
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
                     } else {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_CACHE_NOEXIST));

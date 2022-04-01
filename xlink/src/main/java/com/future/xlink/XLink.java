@@ -145,8 +145,8 @@ public class XLink {
      * 注销函数，注销后，重连mqtt需要重新调用init()函数
      */
     public void unInit() {
-        context.stopService(new Intent(context, RxMqttService.class));
-        GlobalConfig.delProperties();
+        //通知连接关闭
+        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
         this.listener = null;
         this.context = null;
     }

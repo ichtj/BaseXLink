@@ -38,10 +38,8 @@ public class MqttManager implements MqttCallbackExtended {
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
     private InitParams params;
-    /**
-     * 是否初始化重连
-     */
-    private boolean isInitconnect = false;
+    /*异常连接次数*/
+    private int errConnCount;
 
     private MqttManager() {
     }
@@ -63,12 +61,11 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void creatNewConnect(Context context, InitParams params) throws Throwable {
         this.params = params;
-        isInitconnect = true;
-        Register register= params.getRegister();
+        Register register = params.getRegister();
         String tmpDir = System.getProperty("java.io.tmpdir");
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
         conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
-        //解析注册时服务器返回的用户名密码 如果解析异常 ，可能是无权限
+        //解析本地配置文件或者服务器返回的用户名密码 如果解析异常 ，可能是无权限
         boolean pwdIsNull = conOpt.getPassword() == null || conOpt.getPassword().length == 0;
         if (TextUtils.isEmpty(conOpt.getUserName()) || pwdIsNull) {
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
@@ -95,11 +92,11 @@ public class MqttManager implements MqttCallbackExtended {
      */
     @Override
     public void connectionLost(Throwable cause) {
-        if(cause!=null){
-            XLog.d("MqttCallback connectionLost ",cause);
+        if (cause != null) {
+            XLog.d("MqttCallback connectionLost ", cause);
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
-        }else{
-            XLog.d("MqttCallback connectionLost",new Throwable("Other exceptions"));
+        } else {
+            XLog.d("MqttCallback connectionLost", new Throwable("Other exceptions"));
             MessageListener listener = XLink.getInstance().getListener();
             listener.connectState(ConnectType.CONNECT_DISCONNECT);
         }
@@ -123,7 +120,7 @@ public class MqttManager implements MqttCallbackExtended {
             JSONObject tokenMeg = new JSONObject(token.getMessage().toString());
             if (tokenMeg != null) {
                 String iid = tokenMeg.getString("iid");
-                XLog.d("deliveryComplete token iid=" + iid + ",isComplete="+token.isComplete());
+                XLog.d("deliveryComplete token iid=" + iid + ",isComplete=" + token.isComplete());
             }
         } catch (Exception e) {
             XLog.e("deliveryComplete", e);
@@ -141,8 +138,9 @@ public class MqttManager implements MqttCallbackExtended {
             IMqttToken itoken = client.connect(conOpt, context, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken arg0) {
-                    XLog.d("onSuccess connection onSuccess");
                     try {
+                        errConnCount=0;
+                        XLog.d("onSuccess connection onSuccess errConnCount=0");
                         DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
                         disconnectedBufferOptions.setBufferEnabled(params.isBufferEnable());
                         disconnectedBufferOptions.setBufferSize(params.getBufferSize());
@@ -152,29 +150,27 @@ public class MqttManager implements MqttCallbackExtended {
                             client.setBufferOpts(disconnectedBufferOptions);
                         }
                     } catch (Throwable e) {
-                        XLog.e("connAndListener", e);
+                        XLog.e("connAndListener1", e);
                     }
                 }
 
                 @Override
                 public void onFailure(IMqttToken arg0, Throwable arg1) {
-                    XLog.e("IMqttActionListener onFailure-->", arg1);
-                    if (params.isAutomaticReconnect()) {
-                        //只在客户端主动创建初始化连接时回调
-                        if (isInitconnect) {
-                            if (arg1.getMessage().contains("无权连接")) {
-                                try {
-                                    //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
-                                    XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
-                                } catch (Exception e) {
-                                    XLog.e("IMqttActionListener ", e);
-                                }
-                            } else {
-                                XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
-                            }
+                    errConnCount++;
+                    if(errConnCount>=3){
+                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
+                        //发送完毕注销流程后，重置异常连接次数
+                        errConnCount=0;
+                    }else{
+                        XLog.e("errConnCount="+errConnCount+",IMqttActionListener onFailure-->", arg1);
+                        if (params.isAutomaticReconnect()) {
+                            //只在客户端主动创建初始化连接时回调
+                            //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
+                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, (arg1.getMessage().contains("无权连接")) ?
+                                    ConnectType.CONNECT_NO_PERMISSION : ConnectType.CONNECT_FAIL));
+                        } else {
+                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                         }
-                    } else {
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                     }
                 }
             });
@@ -198,14 +194,12 @@ public class MqttManager implements MqttCallbackExtended {
      * @param qos       the quality of service to delivery the message at (0,1,2)
      * @param payload   the set of bytes to send to the MQTT server
      */
-    public void publish(String topicName, int qos, byte[] payload,Context context) {
+    public void publish(String topicName, int qos, byte[] payload, Context context) {
         try {
             boolean isMqttConnect = isConnect();
             boolean isNetConnect = Utils.isNetConnect(context);
-            XLog.d("isMqttConnect="+isMqttConnect+",isNetConnect="+isNetConnect);
+            XLog.d("isMqttConnect=" + isMqttConnect + ",isNetConnect=" + isNetConnect);
             if (isMqttConnect && isNetConnect) {
-                //有消息发送之后，isInitconnect 状态设置为false,系统重连之后不再回调onFailure
-                isInitconnect = false;
                 // Create and configure a message
                 MqttMessage message = new MqttMessage(payload);
                 message.setQos(qos);
@@ -240,8 +234,8 @@ public class MqttManager implements MqttCallbackExtended {
      * @param topicName to subscribe to (can be wild carded)
      * @param qos       the maximum quality of service to receive messages at for this subscription
      */
-    public void subscribe(String topicName, int qos,Context context) {
-        if (isConnect()&&Utils.isNetConnect(context)) {
+    public void subscribe(String topicName, int qos, Context context) {
+        if (isConnect() && Utils.isNetConnect(context)) {
             XLog.d("subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);

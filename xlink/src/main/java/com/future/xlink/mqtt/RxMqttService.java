@@ -54,7 +54,6 @@ public class RxMqttService extends Service {
     private boolean threadTerminated = false; //线程控制器
 
     InitParams params = null;
-    private MqttManager mqttManager;
     private ConcurrentHashMap<String, McuProtocal> map = new ConcurrentHashMap<String, McuProtocal>(); //消息存储
     private String ssid = null;
     MessageHandlerThread messageHandlerThread;
@@ -119,8 +118,7 @@ public class RxMqttService extends Service {
      */
     private void createConect() throws Throwable {
         XLog.d("toConnect: register=" + params.getRegister().toString());
-        mqttManager = MqttManager.getInstance();
-        mqttManager.creatNewConnect(RxMqttService.this, params);
+        MqttManager.getInstance().creatNewConnect(RxMqttService.this, params);
     }
 
 
@@ -198,12 +196,13 @@ public class RxMqttService extends Service {
                 subscrible();
                 break;
             case CONNECT_DISCONNECT://连接断开
-                if (mqttManager != null) {
-                    mqttManager.disConnect();
-                    mqttManager = null;
-                }
+                MqttManager.getInstance().disConnect();
                 threadTerminated = true;
                 map.clear();
+                break;
+            case CONNECT_UNINIT:
+                //删除原先保存的配置文件,解除旧的连接信息
+                GlobalConfig.delProperties();
                 break;
         }
         //回调结果
@@ -241,7 +240,7 @@ public class RxMqttService extends Service {
      */
     private void subscrible() {
         //添加#进行匹配
-        mqttManager.subscribe("dev/" + params.getSn() + "/#", 2, RxMqttService.this);
+        MqttManager.getInstance().subscribe("dev/" + params.getSn() + "/#", 2, RxMqttService.this);
     }
 
     /**
@@ -404,7 +403,7 @@ public class RxMqttService extends Service {
         response.payload = msg.tx;
         String dataJson = GsonUtils.toJsonWtihNullField(response);
         XLog.d("reportRxMsg: dataJson=" + dataJson);
-        mqttManager.publish(msg.ack, 2, dataJson.getBytes(), RxMqttService.this);
+        MqttManager.getInstance().publish(msg.ack, 2, dataJson.getBytes(), RxMqttService.this);
     }
 
     @Override
@@ -414,8 +413,7 @@ public class RxMqttService extends Service {
             XLog.d("onDestroy stop service");
             map.clear();
             threadTerminated = true;
-            mqttManager.disConnect();
-            mqttManager = null;
+            MqttManager.getInstance().disConnect();
             XBus.unregister(this);
         } catch (Throwable e) {
             XLog.e("onDestroy", e);

@@ -28,6 +28,7 @@ import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.ThreadPool;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
+import com.google.gson.JsonSyntaxException;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -89,13 +90,19 @@ public class RxMqttService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
-            boolean isThreadEnd=ThreadPool.isTaskEnd();
-            XLog.d("isThreadEnd="+isThreadEnd);
+            boolean isThreadEnd = ThreadPool.isTaskEnd();
+            XLog.d("isThreadEnd=" + isThreadEnd);
             if (isThreadEnd) {
                 ThreadPool.execute(new MessageHandlerThread());
             }
-            String readProperties = Utils.readFileData(GlobalConfig.PROPERT_URL + GlobalConfig.MY_PROPERTIES);
-            InitParams initedParams = GsonUtils.fromJson(readProperties, InitParams.class);
+            //获取之前保存的配置参数 旧文件 和 新文件
+            InitParams initedParams=null;
+            try {
+                String readProperties = Utils.readFileData(GlobalConfig.PROPERT_URL + GlobalConfig.MY_PROPERTIES);
+                initedParams= GsonUtils.fromJson(readProperties, InitParams.class);
+            } catch (JsonSyntaxException e) {
+                XLog.e("initedParams errMeg", e);
+            }
             if (initedParams != null) {
                 params = initedParams;
                 //代表已经注册过 那么直接提示注册成功 但这里也会有另一个问题 参数是否会过期 多次次连接失败是否应该重置该参数
@@ -111,6 +118,8 @@ public class RxMqttService extends Service {
                     ObserverUtils.getAgentList(params);
                 }
             }
+
+
         }
         return super.onStartCommand(intent, flags, startId);
     }

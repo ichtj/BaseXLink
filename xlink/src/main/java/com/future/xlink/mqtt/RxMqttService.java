@@ -75,7 +75,7 @@ public class RxMqttService extends Service {
                 synchronized (lock) {
                     try {
                         executeQueen();
-                        lock.wait(50);
+                        lock.wait(55);
                     } catch (Throwable e) {
                         //数据处理异常5
                         XLog.e("looperQueen", e);
@@ -89,7 +89,9 @@ public class RxMqttService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
-            if (ThreadPool.isTaskEnd()) {
+            boolean isThreadEnd=ThreadPool.isTaskEnd();
+            XLog.d("isThreadEnd="+isThreadEnd);
+            if (isThreadEnd) {
                 ThreadPool.execute(new MessageHandlerThread());
             }
             String readProperties = Utils.readFileData(GlobalConfig.PROPERT_URL + GlobalConfig.MY_PROPERTIES);

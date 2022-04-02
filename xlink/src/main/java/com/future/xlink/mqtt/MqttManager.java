@@ -173,13 +173,13 @@ public class MqttManager implements MqttCallbackExtended {
 
                 @Override
                 public void onFailure(IMqttToken arg0, Throwable arg1) {
+                    XLog.e("errConnCount="+errConnCount+",connAndListener1", arg1);
                     errConnCount++;
                     if(errConnCount>=3){
                         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
                         //发送完毕注销流程后，重置异常连接次数
                         errConnCount=0;
                     }else{
-                        XLog.e("errConnCount="+errConnCount+",IMqttActionListener onFailure-->", arg1);
                         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                     }
                 }

@@ -9,7 +9,7 @@ public enum ConnectType {
     CONNECT_NO_NETWORK(2003, "没有网络信号"),
     RECONNECT_SUCCESS(2004, "重连成功"),
     CONNECT_RESPONSE_TIMEOUT(2005, "连接服务器无响应"),
-    CONNECT_NO_PERMISSION(2006, "无权在此产品连接"),
+    CONNECT_SESSION_ERR(2006, "连接会话异常"),
     CONNECT_DISCONNECT(2007, "连接断开"),
     CONNECT_UNINIT(2008, "连接注销");
 

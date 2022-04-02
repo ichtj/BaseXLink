@@ -9,6 +9,7 @@ import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
 import com.future.xlink.listener.MessageListener;
+import com.future.xlink.utils.AESUtils;
 import com.future.xlink.utils.Carrier;
 import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.Utils;
@@ -64,18 +65,34 @@ public class MqttManager implements MqttCallbackExtended {
         Register register = params.getRegister();
         String tmpDir = System.getProperty("java.io.tmpdir");
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
-        conOpt = MqConnectionFactory.getMqttConnectOptions(params, register);
-        //解析本地配置文件或者服务器返回的用户名密码 如果解析异常 ，可能是无权限
-        boolean pwdIsNull = conOpt.getPassword() == null || conOpt.getPassword().length == 0;
-        if (TextUtils.isEmpty(conOpt.getUserName()) || pwdIsNull) {
-            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_NO_PERMISSION));
-            return;
+        conOpt = new MqttConnectOptions();
+        try {
+            // 清除缓存
+            conOpt.setCleanSession(params.isCleanSession());
+            // 设置超时时间，单位：秒
+            conOpt.setConnectionTimeout(params.getOutTime());
+            // 心跳包发送间隔，单位：秒
+            conOpt.setKeepAliveInterval(params.getKeepAliveTime());
+            conOpt.setAutomaticReconnect(params.isAutomaticReconnect());
+            // 用户名
+            XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
+            String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
+            String pwd=AESUtils.decrypt(params.getKey(), register.mqttPassword);
+            char[] password = pwd.toCharArray();
+            XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
+            conOpt.setUserName(userName);
+            conOpt.setPassword(password);
+            conOpt.setServerURIs(new String[]{register.mqttBroker});
+            conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+            String clientId = params.getSn();
+            client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
+            XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
+            client.setCallback(this);
+            connAndListener(context);
+        } catch (Throwable e) {
+            XLog.e("getMqttConnectOptions",e);
+            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
         }
-        String clientId = params.getSn();
-        client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
-        XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
-        client.setCallback(this);
-        connAndListener(context);
     }
 
     /**
@@ -163,14 +180,7 @@ public class MqttManager implements MqttCallbackExtended {
                         errConnCount=0;
                     }else{
                         XLog.e("errConnCount="+errConnCount+",IMqttActionListener onFailure-->", arg1);
-                        if (params.isAutomaticReconnect()) {
-                            //只在客户端主动创建初始化连接时回调
-                            //1.可能是此设备在其他产品中 2.或者设备已被删除 3.该sn未添加到平台
-                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, (arg1.getMessage().contains("无权连接")) ?
-                                    ConnectType.CONNECT_NO_PERMISSION : ConnectType.CONNECT_FAIL));
-                        } else {
-                            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
-                        }
+                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                     }
                 }
             });

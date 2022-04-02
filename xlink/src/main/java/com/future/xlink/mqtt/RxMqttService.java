@@ -118,7 +118,7 @@ public class RxMqttService extends Service {
      * 创建连接
      */
     private void createConect() throws Throwable {
-        XLog.d("toConnect: register=" + params.getRegister().toString());
+        XLog.d("createConect: params.register=" + params.getRegister().toString());
         MqttManager.getInstance().creatNewConnect(RxMqttService.this, params);
     }
 

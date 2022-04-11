@@ -151,14 +151,14 @@ public class XLink {
      * 创建连接函数
      */
     public void connect() {
-        XBus.post(new Carrier(Carrier.TYPE_MODE_TO_CONNECT));
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_TO_CONNECT));
     }
 
     /**
      * 断开连接
      */
     public void disconnect() {
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_DISCONNECT));
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_DISCONNECT));
     }
 
 
@@ -167,7 +167,7 @@ public class XLink {
      */
     public void unInit() {
         //通知连接关闭
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
         this.listener = null;
     }
 
@@ -177,7 +177,7 @@ public class XLink {
      * @param protocal 属性消息封装
      */
     public void upService(Protocal protocal) {
-        publish(Carrier.TYPE_REMOTE_TX_SERVICE, protocal);
+        publish(GlobalConfig.TYPE_REMOTE_TX_SERVICE, protocal);
     }
 
     /**
@@ -186,7 +186,7 @@ public class XLink {
      * @param protocal 事件消息封装
      */
     public void upEvent(Protocal protocal) {
-        publish(Carrier.TYPE_REMOTE_TX_EVENT, protocal);
+        publish(GlobalConfig.TYPE_REMOTE_TX_EVENT, protocal);
     }
 
     /**
@@ -194,7 +194,7 @@ public class XLink {
      *
      */
     public void upResponse(Protocal protocal) {
-        publish(Carrier.TYPE_REMOTE_TX, protocal);
+        publish(GlobalConfig.TYPE_REMOTE_TX, protocal);
     }
 
     private void publish(int type, Protocal protocal) {

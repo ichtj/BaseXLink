@@ -103,7 +103,7 @@ public class RxMqttService extends Service {
             if (localParams != null) {
                 customParams = localParams;
                 //代表已经注册过 那么直接提示注册成功 但这里也会有另一个问题 参数是否会过期 多次次连接失败是否应该重置该参数
-                XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
             } else {
                 //代表未注册过
                 if (customParams == null && Utils.checkIsNull(customParams.getKey(),
@@ -130,27 +130,27 @@ public class RxMqttService extends Service {
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onEvent(Carrier msg) throws MqttException, IOException {
-        switch (msg.type) {
-            case Carrier.TYPE_MODE_INIT_RX://初始化
-                XLink.initState((InitState) msg.obj);
+        switch (msg.getType()) {
+            case GlobalConfig.TYPE_MODE_INIT_RX://初始化
+                XLink.initState((InitState) msg.getObj());
                 break;
-            case Carrier.TYPE_MODE_TO_CONNECT://执行连接操作
+            case GlobalConfig.TYPE_MODE_TO_CONNECT://执行连接操作
                 toConnect();
                 break;
-            case Carrier.TYPE_MODE_CONNECT_RESULT://连接状态改变
-                connStatusChange((ConnectType) msg.obj);
+            case GlobalConfig.TYPE_MODE_CONNECT_RESULT://连接状态改变
+                connStatusChange((ConnectType) msg.getObj());
                 break;
-            case Carrier.TYPE_MODE_CONNECT_LOST://连接丢失
-                XLink.connectionLost(ConnectLostType.LOST_TYPE_0, (Throwable) msg.obj);
+            case GlobalConfig.TYPE_MODE_CONNECT_LOST://连接丢失
+                XLink.connectionLost(ConnectLostType.LOST_TYPE_0, (Throwable) msg.getObj());
                 break;
-            case Carrier.TYPE_REMOTE_RX://代理服务器下发消息
-                MqttMessage mqttMessage = (MqttMessage) msg.obj;
-                arriveMsgToMap(msg.type, GsonUtils.fromJson(mqttMessage.toString(), Request.class));
+            case GlobalConfig.TYPE_REMOTE_RX://代理服务器下发消息
+                MqttMessage mqttMessage = (MqttMessage) msg.getObj();
+                arriveMsgToMap(msg.getType(), GsonUtils.fromJson(mqttMessage.toString(), Request.class));
                 break;
-            case Carrier.TYPE_REMOTE_TX_EVENT:
-            case Carrier.TYPE_REMOTE_TX_SERVICE:
-            case Carrier.TYPE_REMOTE_TX:
-                reportMsgToMap(msg.type, (Protocal) msg.obj);
+            case GlobalConfig.TYPE_REMOTE_TX_EVENT:
+            case GlobalConfig.TYPE_REMOTE_TX_SERVICE:
+            case GlobalConfig.TYPE_REMOTE_TX:
+                reportMsgToMap(msg.getType(), (Protocal) msg.getObj());
                 break;
             default:
                 break;
@@ -236,15 +236,15 @@ public class RxMqttService extends Service {
             mcuprotocal.setAck("svr/" + customParams.getSn());//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
         }
         switch (type) {
-            case Carrier.TYPE_REMOTE_TX_SERVICE://服务属性上报
+            case GlobalConfig.TYPE_REMOTE_TX_SERVICE://服务属性上报
                 mcuprotocal.setAct("upload");
                 mcuprotocal.setAck(MsgType.MSG_PRO.getTye() + "/" + getSsid());
                 break;
-            case Carrier.TYPE_REMOTE_TX_EVENT://事件上报
+            case GlobalConfig.TYPE_REMOTE_TX_EVENT://事件上报
                 mcuprotocal.setAct("event");
                 mcuprotocal.setAck(MsgType.MSG_EVENT.getTye() + "/" + getSsid());
                 break;
-            case Carrier.TYPE_REMOTE_TX://消息上报
+            case GlobalConfig.TYPE_REMOTE_TX://消息上报
                 if (!mcuprotocal.getAct().contains(RESP)) {
                     mcuprotocal.setAct(mcuprotocal.getAct() + RESP);
                 } else if (mcuprotocal.getAct().contains(RESP)) {
@@ -298,14 +298,14 @@ public class RxMqttService extends Service {
                 RespStatus respStatus= new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue());
                 String jsonContent=GsonUtils.toJsonWtihNullField(respStatus);
                 switch (protocal.getType()) {
-                    case Carrier.TYPE_REMOTE_RX://消息接收
+                    case GlobalConfig.TYPE_REMOTE_RX://消息接收
                         if (protocal.getTx() == null) {
                             protocal.setTx(jsonContent);
                         }
                         break;
-                    case Carrier.TYPE_REMOTE_TX://消息上报
-                    case Carrier.TYPE_REMOTE_TX_EVENT://消息上报→事件
-                    case Carrier.TYPE_REMOTE_TX_SERVICE://消息上报→属性
+                    case GlobalConfig.TYPE_REMOTE_TX://消息上报
+                    case GlobalConfig.TYPE_REMOTE_TX_EVENT://消息上报→事件
+                    case GlobalConfig.TYPE_REMOTE_TX_SERVICE://消息上报→属性
                         if (TextUtils.isEmpty(protocal.getRx())) {
                             protocal.setRx(jsonContent);
                         }
@@ -338,12 +338,12 @@ public class RxMqttService extends Service {
      */
     private void judgeMethod(McuProtocal protocal) {
         switch (protocal.getType()) {
-            case Carrier.TYPE_REMOTE_TX://消息上报
-            case Carrier.TYPE_REMOTE_TX_EVENT://消息上报→事件
-            case Carrier.TYPE_REMOTE_TX_SERVICE://消息上报→属性
+            case GlobalConfig.TYPE_REMOTE_TX://消息上报
+            case GlobalConfig.TYPE_REMOTE_TX_EVENT://消息上报→事件
+            case GlobalConfig.TYPE_REMOTE_TX_SERVICE://消息上报→属性
                 reportRxMsg(protocal);
                 break;
-            case Carrier.TYPE_REMOTE_RX://消息接收
+            case GlobalConfig.TYPE_REMOTE_RX://消息接收
                 XLink.msgCallBack(protocal);
                 break;
         }

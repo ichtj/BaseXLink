@@ -112,7 +112,7 @@ public class ObserverUtils {
                     XLog.d("onNext pinglist:" + pinglist.toString());
                     if (pinglist == null || pinglist.size() == 0) {
                         //返回失败1
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
                     } else if (pinglist.size() == 1) {
                         //如果列表只有一个取消ping操作
                         registerRequest(customParams, baseResponse.payload.servers.get(0));
@@ -122,10 +122,10 @@ public class ObserverUtils {
                     }
                 } else {
                     if (baseResponse.description.equals("设备不存在")) {
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_DEVICE_NOT_EIXST_ERR));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_DEVICE_NOT_EIXST_ERR));
                     } else {
                         //获取代理服务器列表失败2
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
                     }
                 }
             }
@@ -133,7 +133,7 @@ public class ObserverUtils {
             @Override
             public void onError(Throwable e) {
                 super.onError(e);
-                XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_ERR));
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_ERR));
                 XLog.e("getAgentList", e);
             }
         });
@@ -164,19 +164,19 @@ public class ObserverUtils {
                         String configSave = JsonFormatTool.formatJson(GsonUtils.toJsonWtihNullField(customParams));
                         boolean isWrite = Utils.writeFileData(customParams.getConfigPath(), configSave, true);
                         XLog.d("isWrite=" + isWrite);
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
                     } else {
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_CACHE_NOEXIST));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_CACHE_NOEXIST));
                     }
                 } else {
-                    XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_FAIL));
+                    XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_FAIL));
                 }
             }
 
             @Override
             public void onError(Throwable e) {
                 XLog.e("registerRequest", e);
-                XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_ERR));
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_ERR));
             }
         });
     }

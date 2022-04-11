@@ -1,16 +1,14 @@
 package com.future.xlink.mqtt;
 
 import android.content.Context;
-import android.text.TextUtils;
-
 import com.elvishew.xlog.XLog;
 import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
-import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.AESUtils;
 import com.future.xlink.utils.Carrier;
+import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.PingUtils;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
@@ -91,7 +89,7 @@ public class MqttManager implements MqttCallbackExtended {
             connAndListener(context);
         } catch (Throwable e) {
             XLog.e("getMqttConnectOptions",e);
-            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
+            XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
         }
     }
 
@@ -101,7 +99,7 @@ public class MqttManager implements MqttCallbackExtended {
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
         XLog.d("connectComplete reconnect=" + reconnect + ",serverURI=" + serverURI);
-        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, reconnect ? ConnectType.RECONNECT_SUCCESS : ConnectType.CONNECT_SUCCESS));
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, reconnect ? ConnectType.RECONNECT_SUCCESS : ConnectType.CONNECT_SUCCESS));
     }
 
     /**
@@ -111,7 +109,7 @@ public class MqttManager implements MqttCallbackExtended {
     public void connectionLost(Throwable cause) {
         if (cause != null) {
             XLog.d("MqttCallback connectionLost ", cause);
-            XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
+            XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_LOST, cause));
         } else {
             XLog.d("MqttCallback connectionLost", new Throwable("Other exceptions"));
             XLink.connectState(ConnectType.CONNECT_DISCONNECT);
@@ -124,7 +122,7 @@ public class MqttManager implements MqttCallbackExtended {
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         XLog.d("messageArrived topic=" + topic + ",message=" + message.toString());
-        XBus.post(new Carrier(Carrier.TYPE_REMOTE_RX, topic, message));
+        XBus.post(new Carrier(GlobalConfig.TYPE_REMOTE_RX, topic, message));
     }
 
     /**
@@ -175,11 +173,11 @@ public class MqttManager implements MqttCallbackExtended {
                     XLog.e("errConnCount="+errConnCount+",connAndListener1", arg1);
                     errConnCount++;
                     if(errConnCount>=3){
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
                         //发送完毕注销流程后，重置异常连接次数
                         errConnCount=0;
                     }else{
-                        XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
                     }
                 }
             });

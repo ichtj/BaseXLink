@@ -47,6 +47,7 @@ public class XLink {
      * 消息回调接口
      */
     private MessageListener listener;
+    private String sn;
 
     private XLink() {
 
@@ -108,7 +109,6 @@ public class XLink {
         this.listener = listener;
         String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/";
         params.setConfigPath(configFolder+GlobalConfig.MY_PROPERTIES);
-        initXLog(configFolder+"xlink-log/");
         Intent intent = new Intent(context, RxMqttService.class);
         intent.putExtra(RxMqttService.INIT_PARAM, params);
         context.startService(intent);
@@ -119,7 +119,7 @@ public class XLink {
     /**
      * 初始化时创建配置文件
      */
-    private void initXLog(String xlogPath) {
+    public static void initResetXLog(String xlogPath) {
         LogConfiguration config = new LogConfiguration.Builder()
                 .logLevel(LogLevel.ALL)   // 指定日志级别，低于该级别的日志将不会被打印，默认为 LogLevel.ALL
                 .tag("XLink")             // 指定 TAG，默认为 "X-LOG"

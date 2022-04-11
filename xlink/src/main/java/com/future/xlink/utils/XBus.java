@@ -7,7 +7,6 @@ import com.elvishew.xlog.XLog;
 import org.greenrobot.eventbus.EventBus;
 
 public final class XBus {
-    private static final String TAG = "XBus";
     public static void post(Carrier event) {
         EventBus.getDefault().post(event);
     }

@@ -39,9 +39,6 @@ import io.reactivex.annotations.NonNull;
  * @author chtj
  */
 public class XLink {
-    //代表1天1L * 24L * 60L * 60L * 1000L
-    //代表30天1L * 24L * 60L * 60L * 1000L
-    private static final long MAX_TIME=1L * 24L * 60L * 60L * 1000L;
     /**
      * 单例
      */
@@ -132,11 +129,13 @@ public class XLink {
                 .build();
         Printer androidPrinter = new AndroidPrinter(true);// 通过 android.util.Log 打印日志的打印器
         //Printer consolePrinter = new ConsolePrinter();            // 通过 System.out 打印日志到控制台的打印器
+        //代表1天1L * 24L * 60L * 60L * 1000L
+        //代表30天1L * 24L * 60L * 60L * 1000L
         Printer filePrinter = new FilePrinter                       // 打印日志到文件的打印器
                 .Builder(xlogPath)                                  // 指定保存日志文件的路径
                 .fileNameGenerator(new DataFormatFileInfo())        // 指定日志文件名生成器，默认为 ChangelessFileNameGenerator("log")
                 .backupStrategy(new NeverBackupStrategy())          // 指定日志文件备份策略，默认为 FileSizeBackupStrategy(1024 * 1024)
-                .cleanStrategy(new FileLastModifiedCleanStrategy(MAX_TIME))     // 指定日志文件清除策略，默认为 NeverCleanStrategy()
+                .cleanStrategy(new FileLastModifiedCleanStrategy(1L * 24L * 60L * 60L * 1000L))     // 指定日志文件清除策略，默认为 NeverCleanStrategy()
                 .flattener(new DefaultFlattenerInfo())
                 .build();
         XLog.init(                                                  // 初始化 XLog

@@ -14,7 +14,9 @@ import com.elvishew.xlog.printer.file.backup.NeverBackupStrategy;
 import com.elvishew.xlog.printer.file.clean.FileLastModifiedCleanStrategy;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Protocal;
+import com.future.xlink.bean.common.ConnectLostType;
 import com.future.xlink.bean.common.ConnectType;
+import com.future.xlink.bean.common.InitState;
 import com.future.xlink.bean.common.RespType;
 import com.future.xlink.bean.mqtt.RespStatus;
 import com.future.xlink.listener.MessageListener;
@@ -45,10 +47,6 @@ public class XLink {
      */
     private static XLink mInstance = null;
     /**
-     * 上下文参数
-     */
-    private Context context;
-    /**
      * 消息回调接口
      */
     private MessageListener listener;
@@ -58,8 +56,41 @@ public class XLink {
     }
 
 
-    public MessageListener getListener() {
+    private MessageListener getListener() {
         return listener;
+    }
+
+    public static void connectState(ConnectType type) {
+        MessageListener listener=  getInstance().getListener();
+        if(listener!=null){
+            listener.connectState(type);
+        }
+    }
+
+    public static void connectionLost(ConnectLostType type,Throwable throwable) {
+        MessageListener listener=  getInstance().getListener();
+        if(listener!=null){
+            listener.connectionLost(type,throwable);
+        }
+    }
+
+    public static void initState(InitState initState) {
+        MessageListener listener=  getInstance().getListener();
+        if(listener!=null){
+            listener.initState(initState);
+        }
+    }
+
+    /**
+     * 消息回调
+     * 包括本地消息处理 平台下发的消息处理
+     * @param msg 数据内容
+     */
+    public static void msgCallBack(Protocal msg) {
+        MessageListener listener=  getInstance().getListener();
+        if(listener!=null){
+            listener.messageArrived(msg);
+        }
     }
 
     public static XLink getInstance() {
@@ -77,11 +108,10 @@ public class XLink {
      * @param listener 初始化回调函数
      */
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
-        String pkgName = Utils.getPackageName(context);
-        GlobalConfig.PROPERT_URL = GlobalConfig.SYS_ROOT_PATH + pkgName + "/" + params.getSn() + "/";
-        createAndInitXLog(pkgName, params.getSn());//创建info,error日志的存储路径和.log文件my.properties文件
-        this.context = context;
         this.listener = listener;
+        String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/";
+        params.setConfigPath(configFolder+GlobalConfig.MY_PROPERTIES);
+        initXLog(configFolder+"xlink-log/");
         Intent intent = new Intent(context, RxMqttService.class);
         intent.putExtra(RxMqttService.INIT_PARAM, params);
         context.startService(intent);
@@ -92,8 +122,7 @@ public class XLink {
     /**
      * 初始化时创建配置文件
      */
-    private void createAndInitXLog(String pkgName,String sn) {
-        creatFile();
+    private void initXLog(String xlogPath) {
         LogConfiguration config = new LogConfiguration.Builder()
                 .logLevel(LogLevel.ALL)   // 指定日志级别，低于该级别的日志将不会被打印，默认为 LogLevel.ALL
                 .tag("XLink")             // 指定 TAG，默认为 "X-LOG"
@@ -101,8 +130,6 @@ public class XLink {
                 //.enableStackTrace(2)      // 允许打印深度为 2 的调用栈信息，默认禁止
                 //.enableBorder()         // 允许打印日志边框，默认禁止
                 .build();
-
-        String xlogPath=GlobalConfig.SYS_ROOT_PATH+pkgName+ "/"+ sn+"/"+"xlink-log/";
         Printer androidPrinter = new AndroidPrinter(true);// 通过 android.util.Log 打印日志的打印器
         //Printer consolePrinter = new ConsolePrinter();            // 通过 System.out 打印日志到控制台的打印器
         Printer filePrinter = new FilePrinter                       // 打印日志到文件的打印器
@@ -117,13 +144,7 @@ public class XLink {
                 androidPrinter,                                     // 添加任意多的打印器。如果没有添加任何打印器，会默认使用 AndroidPrinter(Android)/ConsolePrinter(java)
                 //consolePrinter,
                 filePrinter);
-    }
-    private void creatFile(){
-        //创建err文件夹
-        File errLogFile = new File(GlobalConfig.PROPERT_URL);
-        if (!errLogFile.exists()) {
-            errLogFile.mkdirs();
-        }
+        XLog.d("XLink>>>initXLog");
     }
 
     /**
@@ -148,7 +169,6 @@ public class XLink {
         //通知连接关闭
         XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
         this.listener = null;
-        this.context = null;
     }
 
     /**

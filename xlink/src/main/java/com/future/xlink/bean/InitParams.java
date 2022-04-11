@@ -71,6 +71,16 @@ public class InitParams implements Serializable {
     @NonNull
     private Register register;
 
+    private String configPath;
+
+    public String getConfigPath() {
+        return configPath;
+    }
+
+    public void setConfigPath(String configPath) {
+        this.configPath = configPath;
+    }
+
     public String getHttpServer() {
         return httpServer;
     }

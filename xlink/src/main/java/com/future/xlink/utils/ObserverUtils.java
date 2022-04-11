@@ -53,7 +53,7 @@ public class ObserverUtils {
             @Override
             public void onNext(BaseResponse<LogPayload> baseResponse) {
                 super.onNext(baseResponse);
-                XLog.d("getUploadLogUrl "+GsonUtils.toJsonWtihNullField(baseResponse));
+                XLog.d("getUploadLogUrl " + GsonUtils.toJsonWtihNullField(baseResponse));
                 if (baseResponse.status == 0) {
                     //日志上传接口请求成功，上传文件
                     String path = Environment.getExternalStorageDirectory().getPath() + File.separator + bean.filename;
@@ -67,7 +67,7 @@ public class ObserverUtils {
 
                         @Override
                         public void onFailure(Call<BaseResponse> call, Throwable t) {
-                            XLog.e("getUploadLogUrl1",t);
+                            XLog.e("getUploadLogUrl1", t);
 
                         }
                     });
@@ -77,7 +77,7 @@ public class ObserverUtils {
             @Override
             public void onError(Throwable e) {
                 super.onError(e);
-                XLog.e("getUploadLogUrl2",e);
+                XLog.e("getUploadLogUrl2", e);
             }
         });
     }
@@ -95,30 +95,30 @@ public class ObserverUtils {
     /**
      * 获取代理服务地址
      *
-     * @param params 必要参数
+     * @param customParams 必要参数
      */
-    public static void getAgentList(InitParams params) {
+    public static void getAgentList(InitParams customParams) {
         String time = String.valueOf(System.currentTimeMillis());
-        String token = Utils.getToken(params, time);
-        RetrofitClient.getInstance().getAgentList(params.getHttpServer()+GlobalConfig.AGENT_SERVER_LIST, token, time, params.getSn())
+        String token = Utils.getToken(customParams, time);
+        RetrofitClient.getInstance().getAgentList(customParams.getHttpServer() + GlobalConfig.AGENT_SERVER_LIST, token, time, customParams.getSn())
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<Agents>>() {
             @Override
             public void onNext(BaseResponse<Agents> baseResponse) {
                 super.onNext(baseResponse);
-                XLog.d("getAgentList: baseResponse="+baseResponse.toString());
+                XLog.d("getAgentList: baseResponse=" + baseResponse.toString());
                 if (baseResponse.isSuccessNonNull()) {
                     //获取服务器列表成功，进行ping操作，获得最佳连接链路
                     List<String> pinglist = baseResponse.payload.servers;
-                    XLog.d("onNext pinglist:"+ pinglist.toString());
+                    XLog.d("onNext pinglist:" + pinglist.toString());
                     if (pinglist == null || pinglist.size() == 0) {
                         //返回失败1
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_GETAGENT_FAIL));
                     } else if (pinglist.size() == 1) {
                         //如果列表只有一个取消ping操作
-                        registerRequest(params, baseResponse.payload.servers.get(0));
+                        registerRequest(customParams, baseResponse.payload.servers.get(0));
                     } else {
                         //执行循环ping操作,找到最优的线路
-                        ObserverUtils.pingTest(pinglist, o -> registerRequest(params, o));
+                        ObserverUtils.pingTest(pinglist, o -> registerRequest(customParams, o));
                     }
                 } else {
                     if (baseResponse.description.equals("设备不存在")) {
@@ -139,31 +139,31 @@ public class ObserverUtils {
         });
     }
 
-    private static void registerRequest(InitParams params, String url) {
+    private static void registerRequest(InitParams customParams, String url) {
         Body body = new Body();
-        body.ack = "dev/" + params.getSn();
+        body.ack = "dev/" + customParams.getSn();
         Payload payload = new Payload();
-        payload.did = params.getSn();
-        payload.pdid = params.getPdid();
-        Register register=params.getRegister();
-        payload.oldMqttBroker = register==null?"":register.mqttBroker;
+        payload.did = customParams.getSn();
+        payload.pdid = customParams.getPdid();
+        Register register = customParams.getRegister();
+        payload.oldMqttBroker = register == null ? "" : register.mqttBroker;
         payload.isNew = true;
         body.payload = payload;
         String time = String.valueOf(System.currentTimeMillis());
-        RetrofitClient.getInstance().registerAgent(url + GlobalConfig.AGENT_REGISTER, Utils.getToken(params, time), time, params.getSn(), body)
+        RetrofitClient.getInstance().registerAgent(url + GlobalConfig.AGENT_REGISTER,
+                Utils.getToken(customParams, time), time, customParams.getSn(), body)
                 .subscribeOn(Schedulers.io()).subscribe(new SelfObserver<BaseResponse<Register>>() {
             @Override
             public void onNext(BaseResponse<Register> registerBaseResponse) {
                 super.onNext(registerBaseResponse);
                 XLog.d("registerRequest onNext status:" + registerBaseResponse.status);
                 if (registerBaseResponse.isSuccess() && registerBaseResponse.isSuccessNonNull()) {
-                    params.setRegister(registerBaseResponse.payload);
-                    XLog.d("registerRequest onNext get register:" + params.getRegister().toString());
-                    if (!params.getRegister().isNull()) {
-                        String configSave = JsonFormatTool.formatJson(GsonUtils.toJsonWtihNullField(params));
-                        boolean isWrite = Utils.writeFileData(
-                                GlobalConfig.PROPERT_URL+GlobalConfig.MY_PROPERTIES, configSave, true);
-                        XLog.d("isWrite="+isWrite);
+                    customParams.setRegister(registerBaseResponse.payload);
+                    XLog.d("registerRequest onNext get register:" + customParams.getRegister().toString());
+                    if (!customParams.getRegister().isNull()) {
+                        String configSave = JsonFormatTool.formatJson(GsonUtils.toJsonWtihNullField(customParams));
+                        boolean isWrite = Utils.writeFileData(customParams.getConfigPath(), configSave, true);
+                        XLog.d("isWrite=" + isWrite);
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
                     } else {
                         XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_CACHE_NOEXIST));
@@ -175,7 +175,7 @@ public class ObserverUtils {
 
             @Override
             public void onError(Throwable e) {
-                XLog.e("registerRequest",e);
+                XLog.e("registerRequest", e);
                 XBus.post(new Carrier(Carrier.TYPE_MODE_INIT_RX, InitState.INIT_REGISTER_AGENT_ERR));
             }
         });

@@ -114,8 +114,7 @@ public class MqttManager implements MqttCallbackExtended {
             XBus.post(new Carrier(Carrier.TYPE_MODE_CONNECT_LOST, cause));
         } else {
             XLog.d("MqttCallback connectionLost", new Throwable("Other exceptions"));
-            MessageListener listener = XLink.getInstance().getListener();
-            listener.connectState(ConnectType.CONNECT_DISCONNECT);
+            XLink.connectState(ConnectType.CONNECT_DISCONNECT);
         }
     }
 

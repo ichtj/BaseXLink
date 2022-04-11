@@ -4,7 +4,7 @@ package com.future.xlink.bean.common;
  * 初始化结果状态值枚举类型
  **/
 public enum InitState {
-    INIT_PARAMS_LOST(1007, "注册参数有误"),
+    INIT_PARAMS_ERR(1007, "注册参数有误"),
     INIT_GETAGENT_FAIL(1002, "获取代理服务器列表失败"),
     INIT_GETAGENT_ERR(500, "获取代理服务器列表异常"),
     INIT_REGISTER_AGENT_FAIL(1004, "注册代理服务器失败"),

@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.elvishew.xlog.XLog;
@@ -25,27 +26,22 @@ public class Utils {
     }
 
     /**
+     * 判断string数组是否存在空的参数
+     */
+    public static boolean checkIsNull(String... params){
+        for (int i = 0; i < params.length; i++) {
+            if(TextUtils.isEmpty(params[i])){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 创建消息数据唯一编号
      */
     public static String createIID() {
         return UUID.randomUUID().toString().replace("-", "");
-    }
-
-    /**
-     * [获取应用程序版本名称信息]
-     *
-     * @return 当前应用的版本名称
-     */
-    public static synchronized String getPackageName(Context context) {
-        try {
-            PackageManager packageManager = context.getPackageManager();
-            PackageInfo packageInfo = packageManager.getPackageInfo(
-                    context.getPackageName(), 0);
-            return packageInfo.packageName;
-        } catch (Throwable e) {
-            XLog.e(e);
-        }
-        return null;
     }
 
     /**

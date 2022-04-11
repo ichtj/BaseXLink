@@ -320,6 +320,7 @@ public class RxMqttService extends Service {
                 if (protocal.getStatus() == 0) {
                     //这里表示正在处理平台下发的操作
                     judgeMethod(protocal);
+                    protocal.setStatus(protocal.getStatus()+1);
                 } else {
                     //这里表示设备回复平台下发的操作
                     if (protocal.getTx() != null && !TextUtils.isEmpty(protocal.getRx())) {

@@ -184,7 +184,8 @@ public class XLink {
         } else {
             if (this.listener != null) {
                 //交互已经出现问题,回调该消息异常
-                protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_CONNECT_LOST.getTye(), RespType.RESP_CONNECT_LOST.getValue()));
+                protocal.setRx(GsonUtils.toJsonWtihNullField(
+                        new RespStatus(RespType.RESP_CONNECT_LOST.getTye(), RespType.RESP_CONNECT_LOST.getValue())));
                 this.listener.messageArrived(protocal);
             }
         }

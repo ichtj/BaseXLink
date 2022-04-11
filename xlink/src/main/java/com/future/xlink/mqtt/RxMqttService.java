@@ -205,7 +205,8 @@ public class RxMqttService extends Service {
         switch (type) {
             case CONNECT_SUCCESS://连接完成
             case RECONNECT_SUCCESS://重连成功
-                subscrible();
+                MqttManager.getInstance().
+                        subscribe("dev/" + params.getSn() + "/#", 2, this);
                 break;
             case CONNECT_DISCONNECT://连接断开
                 map.clear();
@@ -249,62 +250,55 @@ public class RxMqttService extends Service {
     }
 
     /**
-     * 订阅消息
-     */
-    private void subscrible() {
-        //添加#进行匹配
-        MqttManager.getInstance().subscribe("dev/" + params.getSn() + "/#", 2, RxMqttService.this);
-    }
-
-    /**
      * 解析客户端上报的消息，添加到消息map集合中
      **/
     private synchronized void reportMsgToMap(int type, Protocal protocal) {
         //消息iid为上传判断
-        if (protocal == null || TextUtils.isEmpty(protocal.iid)) {
+        if (protocal == null || TextUtils.isEmpty(protocal.getIid())) {
             //抛出异常消息id为空，空指针异常3
-            protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_IID_LOST.getTye(), RespType.RESP_IID_LOST.getValue()));
+            protocal.setRx(GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_IID_LOST.getTye(), RespType.RESP_IID_LOST.getValue())));
             arrivedMsgCallback(protocal);
             return;
         }
         //iid消息重复
-        if (TextUtils.isEmpty(protocal.rx) && map.containsKey(protocal.iid)) {
+        if (TextUtils.isEmpty(protocal.getRx()) && map.containsKey(protocal.getIid())) {
             //抛出异常，消息iid重复发送4
-            protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_IID_REPEAT.getTye(), RespType.RESP_IID_REPEAT.getValue()));
+            protocal.setRx(GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_IID_REPEAT.getTye(), RespType.RESP_IID_REPEAT.getValue())));
             arrivedMsgCallback(protocal);
             return;
         }
 
         McuProtocal mcuprotocal;
-        if (map.containsKey(protocal.iid)) {
-            mcuprotocal = map.get(protocal.iid);
-            mcuprotocal.status = mcuprotocal.status + 1;
+        if (map.containsKey(protocal.getIid())) {
+            mcuprotocal = map.get(protocal.getIid());
+            mcuprotocal.setStatus( mcuprotocal.getStatus() + 1);
         } else {
             mcuprotocal = new McuProtocal();
-            mcuprotocal.iid = protocal.iid;
-            mcuprotocal.time = System.currentTimeMillis();
-            mcuprotocal.act = "cmd";//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
-            mcuprotocal.ack = "svr/" + params.getSn();//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
+            mcuprotocal.setIid(protocal.getIid());
+            mcuprotocal.setTime(System.currentTimeMillis());
+            mcuprotocal.setAct("cmd");//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
+            mcuprotocal.setAck("svr/" + params.getSn());//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
         }
-        if (type == Carrier.TYPE_REMOTE_TX_SERVICE) {
-            //服务属性上报
-            mcuprotocal.act = "upload";
-            mcuprotocal.ack = MsgType.MSG_PRO.getTye() + "/" + getSsid();
-        } else if (type == Carrier.TYPE_REMOTE_TX_EVENT) {
-            //事件上报
-            mcuprotocal.act = "event";
-            mcuprotocal.ack = MsgType.MSG_EVENT.getTye() + "/" + getSsid();
-        } else if (type == Carrier.TYPE_REMOTE_TX) {
-            //消息上报
-            if (!mcuprotocal.act.contains(RESP)) {
-                mcuprotocal.act = mcuprotocal.act + RESP;
-            } else if (mcuprotocal.act.contains(RESP)) {
-                mcuprotocal.status = mcuprotocal.status + 1;
-            }
+        switch (type){
+            case Carrier.TYPE_REMOTE_TX_SERVICE://服务属性上报
+                mcuprotocal.setAct("upload");
+                mcuprotocal.setAck(MsgType.MSG_PRO.getTye() + "/" + getSsid());
+                break;
+            case Carrier.TYPE_REMOTE_TX_EVENT://事件上报
+                mcuprotocal.setAct("event");
+                mcuprotocal.setAck(MsgType.MSG_EVENT.getTye() + "/" + getSsid());
+                break;
+            case Carrier.TYPE_REMOTE_TX://消息上报
+                if (!mcuprotocal.getAct().contains(RESP)) {
+                    mcuprotocal.setAct(mcuprotocal.getAct() + RESP);
+                } else if (mcuprotocal.getAct().contains(RESP)) {
+                    mcuprotocal.setStatus(mcuprotocal.getStatus() + 1);
+                }
+                break;
         }
-        mcuprotocal.type = type;
-        mcuprotocal.tx = protocal.tx;
-        map.put(mcuprotocal.iid, mcuprotocal);
+        mcuprotocal.setType(type);
+        mcuprotocal.setTx(protocal.getTx());
+        map.put(mcuprotocal.getIid(), mcuprotocal);
     }
 
     /**
@@ -315,24 +309,25 @@ public class RxMqttService extends Service {
         if (map.containsKey(request.iid)) {
             protocal = map.get(request.iid);
             //如果接收到代理服务端下发的重复数据，还没有处理，需要过滤掉
-            if (protocal.tx == null) {
+            if (protocal.getTx() == null) {
                 XLog.d("arriveMsgToMap 重复数据下发-->" + request.iid);
                 return;
             }
-            protocal.status = protocal.status + 1;
+            protocal.setStatus(protocal.getStatus() + 1);
         } else {
             protocal = new McuProtocal();
-            protocal.ack = request.ack;
-            protocal.iid = request.iid;
-            protocal.act = request.act;
-            protocal.time = System.currentTimeMillis();
+            protocal.setAck(request.ack);
+            protocal.setIid(request.iid);
+            protocal.setAct(request.act);
+            protocal.setTime(System.currentTimeMillis());
         }
-        protocal.type = type;
+        protocal.setType(type);
         String rx = GsonUtils.toJsonWtihNullField(request.inputs);
         if (!TextUtils.isEmpty(request.act) && request.act.contains(RESP)) {
-            protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_SUCCESS.getTye(), RespType.RESP_SUCCESS.getValue()));
+            protocal.setRx(GsonUtils.toJsonWtihNullField(
+                    new RespStatus(RespType.RESP_SUCCESS.getTye(), RespType.RESP_SUCCESS.getValue())));
         } else {
-            protocal.rx = rx;
+            protocal.setRx(rx);
         }
         map.put(request.iid, protocal);
     }
@@ -345,33 +340,37 @@ public class RxMqttService extends Service {
             McuProtocal protocal = entry.getValue();
             if (protocal.isOverTime()) {
                 //超时10分钟,服务器还没有
-                if (protocal.type == Carrier.TYPE_REMOTE_RX) {
-                    if (protocal.tx == null) {
-                        protocal.tx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
+                if (protocal.getType() == Carrier.TYPE_REMOTE_RX) {
+                    if (protocal.getTx() == null) {
+                        protocal.setTx(GsonUtils.toJsonWtihNullField(
+                                new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue())));
                     }
-                } else if (protocal.type == Carrier.TYPE_REMOTE_TX || protocal.type == Carrier.TYPE_REMOTE_TX_EVENT || protocal.type == Carrier.TYPE_REMOTE_TX_SERVICE) {
+                } else if (protocal.getType() == Carrier.TYPE_REMOTE_TX
+                        || protocal.getType() == Carrier.TYPE_REMOTE_TX_EVENT ||
+                        protocal.getType() == Carrier.TYPE_REMOTE_TX_SERVICE) {
                     //告知消息超时，发送消息到代理服务器
-                    if (TextUtils.isEmpty(protocal.rx)) {
-                        protocal.rx = GsonUtils.toJsonWtihNullField(new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue()));
+                    if (TextUtils.isEmpty(protocal.getRx())) {
+                        protocal.setRx(GsonUtils.toJsonWtihNullField(
+                                new RespStatus(RespType.RESP_OUTTIME.getTye(), RespType.RESP_OUTTIME.getValue())));
                     }
                 }
-                XLog.d("iid=[" + protocal.iid + "],rx=[" + protocal.tx + "];Message processing timeout！");
+                XLog.d("iid=[" + protocal.getIid() + "],rx=[" + protocal.getTx() + "];Message processing timeout！");
                 //超时两端都需要汇报
                 arrivedMsgCallback(protocal);
                 reportRxMsg(protocal);
-                map.remove(protocal.iid);
+                map.remove(protocal.getIid());
             } else {
-                if (protocal.status == 0) {
+                if (protocal.getStatus() == 0) {
                     //这里只是代表准备进行发送，至于又没有发送成功，不确定
                     judgeMethod(protocal);
                     //这里只是代表已处理
-                    protocal.status = protocal.status + 1;
+                    protocal.setStatus(protocal.getStatus() + 1);
                 } else {
-                    if (protocal.tx != null) {
-                        if (!TextUtils.isEmpty(protocal.rx)) {
+                    if (protocal.getTx() != null) {
+                        if (!TextUtils.isEmpty(protocal.getRx())) {
                             //这里表示已经接收到了服务器的回复
                             judgeMethod(protocal);
-                            map.remove(protocal.iid);
+                            map.remove(protocal.getIid());
                         }
                     }
                 }
@@ -381,9 +380,11 @@ public class RxMqttService extends Service {
 
     private void judgeMethod(McuProtocal protocal) {
         //非超时处理
-        if (protocal.type == Carrier.TYPE_REMOTE_TX || protocal.type == Carrier.TYPE_REMOTE_TX_EVENT || protocal.type == Carrier.TYPE_REMOTE_TX_SERVICE) {
+        if (protocal.getType() == Carrier.TYPE_REMOTE_TX ||
+                protocal.getType() == Carrier.TYPE_REMOTE_TX_EVENT ||
+                protocal.getType() == Carrier.TYPE_REMOTE_TX_SERVICE) {
             reportRxMsg(protocal);
-        } else if (protocal.type == Carrier.TYPE_REMOTE_RX) {
+        } else if (protocal.getType() == Carrier.TYPE_REMOTE_RX) {
             arrivedMsgCallback(protocal);
         }
     }
@@ -411,12 +412,12 @@ public class RxMqttService extends Service {
      */
     private void reportRxMsg(McuProtocal msg) {
         Response response = new Response();
-        response.act = msg.act;
-        response.iid = msg.iid;
-        response.payload = msg.tx;
+        response.setAct( msg.getAct());
+        response.setIid(msg.getIid());
+        response.setPayload(msg.getTx());
         String dataJson = GsonUtils.toJsonWtihNullField(response);
         XLog.d("reportRxMsg: dataJson=" + dataJson);
-        MqttManager.getInstance().publish(msg.ack, 2, dataJson.getBytes(), RxMqttService.this);
+        MqttManager.getInstance().publish(msg.getAck(), 2, dataJson.getBytes(), RxMqttService.this);
     }
 
     @Override

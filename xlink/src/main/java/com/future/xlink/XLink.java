@@ -107,7 +107,9 @@ public class XLink {
      */
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         this.listener = listener;
-        String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/";
+        String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/xlink-log/";
+        File configFile=new File(configFolder);
+        configFile.mkdirs();
         params.setConfigPath(configFolder+GlobalConfig.MY_PROPERTIES);
         Intent intent = new Intent(context, RxMqttService.class);
         intent.putExtra(RxMqttService.INIT_PARAM, params);

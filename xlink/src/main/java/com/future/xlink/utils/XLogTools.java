@@ -2,6 +2,7 @@ package com.future.xlink.utils;
 
 import com.elvishew.xlog.LogConfiguration;
 import com.elvishew.xlog.LogLevel;
+import com.elvishew.xlog.Logger;
 import com.elvishew.xlog.XLog;
 import com.elvishew.xlog.printer.AndroidPrinter;
 import com.elvishew.xlog.printer.Printer;
@@ -9,7 +10,11 @@ import com.elvishew.xlog.printer.file.FilePrinter;
 import com.elvishew.xlog.printer.file.backup.NeverBackupStrategy;
 import com.elvishew.xlog.printer.file.clean.FileLastModifiedCleanStrategy;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class XLogTools {
+    private static Map<String,Logger> loggerMap=new HashMap<>();
     /**
      * Log level for XLog.v.
      */
@@ -101,6 +106,46 @@ public class XLogTools {
                 break;
             case ERROR:
                 XLog.e(msg);
+                break;
+        }
+    }
+
+    public static void cd(String tag,Object msg){
+        custom(tag,msg,DEBUG);
+    }
+
+    public static void ce(String tag,Object msg){
+        custom(tag,msg,ERROR);
+    }
+    /**
+     * 自定义日志
+     * @param tag 标签
+     * @param msg 内容
+     * @param level 等级
+     */
+    public static void custom(String tag,Object msg,int level){
+        Logger logger =null;
+        if(loggerMap.containsKey(tag)){
+            logger=loggerMap.get(tag);
+        }else{
+            logger= XLog.tag(tag).build();
+            loggerMap.put(tag,logger);
+        }
+        switch (level) {
+            case VERBOSE:
+                logger.v(msg);
+                break;
+            case DEBUG:
+                logger.d(msg);
+                break;
+            case INFO:
+                logger.i(msg);
+                break;
+            case WARN:
+                XLog.w(msg);
+                break;
+            case ERROR:
+                logger.e(msg);
                 break;
         }
     }

@@ -128,8 +128,12 @@ public class XLogTools {
         if(loggerMap.containsKey(tag)){
             logger=loggerMap.get(tag);
         }else{
-            logger= XLog.tag(tag).build();
-            loggerMap.put(tag,logger);
+            if(XLog.assertInitialization()){
+                logger= XLog.tag(tag).build();
+                loggerMap.put(tag,logger);
+            }else{
+                return;
+            }
         }
         switch (level) {
             case VERBOSE:

@@ -23,7 +23,7 @@ ext {
     dependencies = [
             "rxjava"                  : "io.reactivex.rxjava3:rxjava:3.0.0-RC3",
             "rxandroid"               : "io.reactivex.rxjava2:rxandroid:2.1.1",
-            "xlog"                    : "com.elvishew:xlog:1.10.1",
+            "xlog"                    : "com.github.ichtj:XLog:1.0.3",
             //network
             "mqttv3"                  : "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0",
             "mqttv-service"           : "org.eclipse.paho:org.eclipse.paho.android.service:1.1.1",

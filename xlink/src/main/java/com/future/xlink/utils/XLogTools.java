@@ -62,20 +62,20 @@ public class XLogTools {
                 androidPrinter,                                     // 添加任意多的打印器。如果没有添加任何打印器，会默认使用 AndroidPrinter(Android)/ConsolePrinter(java)
                 //consolePrinter,
                 filePrinter);
-        XLog.d("XLink>>>initXLog");
+        d("XLink>>>initXLog");
     }
 
     /**
      * debug log
      */
-    public static void recordD(Object msg) {
+    public static void d(Object msg) {
         record(msg, DEBUG);
     }
 
     /**
      * error log
      */
-    public static void recordE(Object msg) {
+    public static void e(Object msg) {
         record(msg, ERROR);
     }
 

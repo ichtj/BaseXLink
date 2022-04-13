@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author chtj
@@ -23,6 +25,23 @@ public class Utils {
     public static String getToken(InitParams params, String time) {
         String token = "Basic " + AESUtils.encrypt(params.getKey(), params.getSn() + ":" + params.getSecret() + ":" + time);
         return token;
+    }
+
+    /**
+     * 获取字符串中的正则表达式
+     * @param str 字符串
+     * @return ip
+     */
+    public static String patternIp(String str){
+        String regular = "\\d{3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
+        if(!TextUtils.isEmpty(str)){
+            Pattern pattern = Pattern.compile(regular);
+            Matcher matcher = pattern.matcher(str);
+            if (matcher.find()){
+                return matcher.group();
+            }
+        }
+        return "";
     }
 
     /**

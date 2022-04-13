@@ -24,18 +24,15 @@ public class GlobalConfig {
     /**
      * 远程控制指令
      */
-    public static final int TYPE_REMOTE_RX = 2000;//消息接收
+    public static final int TYPE_REMOTE_RX           = 0x200;//消息接收
+    public static final int TYPE_REMOTE_TX           = 0x201;//消息上报
+    public static final int TYPE_REMOTE_TX_SERVICE   = 0x202;//属性服务上报
+    public static final int TYPE_REMOTE_TX_EVENT     = 0x203;//事件上报
 
-    public static final int TYPE_REMOTE_TX = 2001;//消息上报
-    public static final int TYPE_REMOTE_TX_SERVICE = 2009; //属性服务上报
-    public static final int TYPE_REMOTE_TX_EVENT = 20010; //事件上报
-
-    public static final int TYPE_REMOTE_TIME_OUT = 2002;
-    public static final int TYPE_MODE_INIT_RX = 2003;   //获取初始化参数
-    public static final int TYPE_MODE_TO_CONNECT = 2005;  //创建连接
-    public static final int TYPE_MODE_CONNECT_RESULT = 2004; //连接结果 变动的状态
-    public static final int TYPE_MODE_CONNECT_LOST = 2008; //连接异常
-    public static final int TYPE_TCP_SEND = 5000;
+    public static final int TYPE_MODE_INIT_RX        = 0x204;//获取初始化参数
+    public static final int TYPE_MODE_TO_CONNECT     = 0x205;//创建连接
+    public static final int TYPE_MODE_CONNECT_RESULT = 0x206;//连接结果 变动的状态
+    public static final int TYPE_MODE_CONNECT_LOST   = 0x207;//连接丢失
 
 
     public static void delProperties(String path){

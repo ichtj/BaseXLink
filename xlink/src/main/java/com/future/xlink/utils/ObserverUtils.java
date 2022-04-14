@@ -160,7 +160,7 @@ public class ObserverUtils {
                 if (registerBaseResponse.isSuccess() && registerBaseResponse.isSuccessNonNull()) {
                     customParams.setRegister(registerBaseResponse.payload);
                     XLog.d("registerRequest onNext get register:" + customParams.getRegister().toString());
-                    if (!customParams.getRegister().isNull()) {
+                    if (customParams.registerNotNull()) {
                         String configSave = JsonFormatTool.formatJson(GsonUtils.toJsonWtihNullField(customParams));
                         boolean isWrite = Utils.writeFileData(customParams.getConfigPath(), configSave, true);
                         XLog.d("isWrite=" + isWrite);

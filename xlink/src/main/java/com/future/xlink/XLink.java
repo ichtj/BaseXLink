@@ -56,6 +56,10 @@ public class XLink {
         return listener;
     }
 
+    /**
+     * 回调连接状态
+     * @param type 连接状态
+     */
     public static void connectState(ConnectType type) {
         MessageListener listener=  getInstance().getListener();
         if(listener!=null){
@@ -63,6 +67,10 @@ public class XLink {
         }
     }
 
+    /**
+     * 回调丢失状态
+     * @param type 丢失状态
+     */
     public static void connectionLost(ConnectLostType type,Throwable throwable) {
         MessageListener listener=  getInstance().getListener();
         if(listener!=null){
@@ -70,6 +78,10 @@ public class XLink {
         }
     }
 
+    /**
+     * 回调初始化状态
+     * @param initState 初始化状态
+     */
     public static void initState(InitState initState) {
         MessageListener listener=  getInstance().getListener();
         if(listener!=null){

@@ -106,12 +106,11 @@ public class RxMqttService extends Service {
                 XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
             } else {
                 //代表未注册过
-                if (customParams == null && Utils.checkIsNull(customParams.getKey(),
-                        customParams.getSecret(), customParams.getPdid(), customParams.getConfigPath())) {
+                if (customParams!= null&&customParams.productNotNull()) {
+                    ObserverUtils.getAgentList(customParams);
+                } else {
                     //判断注册参数是否有误
                     XLink.initState(InitState.INIT_PARAMS_ERR);
-                } else {
-                    ObserverUtils.getAgentList(customParams);
                 }
             }
         }
@@ -122,7 +121,7 @@ public class RxMqttService extends Service {
     /**
      * 创建连接
      */
-    private void createConect() throws Throwable {
+    private void createConect(){
         XLog.d("createConect: params.register=" + customParams.getRegister().toString());
         MqttManager.getInstance().creatNewConnect(RxMqttService.this, customParams);
     }
@@ -188,10 +187,14 @@ public class RxMqttService extends Service {
         if (!isNetOk) {
             XLink.connectState(CONNECT_NO_NETWORK);//回调网络不正常
         } else {
-            try {
+            //尝试ping mqtt服务地址是否正常
+            String mqttBroker=customParams.getRegister().mqttBroker;
+            boolean isPingService=PingUtils.ping(Utils.patternIp(mqttBroker),2,200);
+            if(isPingService){
+                //mqtt服务能够正常连接 那么直接去连接
                 createConect();
-            } catch (Throwable e) {
-                XLink.connectState(ConnectType.CONNECT_RESPONSE_TIMEOUT);
+            }else{
+                XLink.connectState(ConnectType.CONNECT_AGENT_FAIL);
             }
         }
     }
@@ -215,14 +218,14 @@ public class RxMqttService extends Service {
                 map.clear();
                 MqttManager.getInstance().disConnect();
                 break;
-            case CONNECT_UNINIT:
-                //删除原先保存的配置文件,解除旧的连接信息
+            case CONNECT_UNINIT://解除注册
+            case CONNECT_AGENT_FAIL://代理服务器连接异常
+            case CONNECT_VOUCHER_ERR://凭证异常
                 map.clear();
                 GlobalConfig.delProperties(customParams.getConfigPath());
                 MqttManager.getInstance().disConnect();
                 break;
         }
-        //回调结果
         XLink.connectState(type);
     }
 

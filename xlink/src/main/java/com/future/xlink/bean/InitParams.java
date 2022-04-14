@@ -1,5 +1,7 @@
 package com.future.xlink.bean;
 
+import android.text.TextUtils;
+
 import java.io.Serializable;
 
 import io.reactivex.annotations.NonNull;
@@ -200,4 +202,25 @@ public class InitParams implements Serializable {
     public void setRegister(Register register) {
         this.register = register;
     }
+
+    /**
+     * 检查产品信息是否为空
+     * @return
+     */
+    public boolean productNotNull(){
+        if(!TextUtils.isEmpty(pdid)&&!TextUtils.isEmpty(secret)&&!TextUtils.isEmpty(key)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * 检查注册参数是否为空
+     */
+    public  boolean registerNotNull(){
+        return register!=null&&!TextUtils.isEmpty(register.ssid)&&!TextUtils.isEmpty(register.mqttBroker)&&
+                !TextUtils.isEmpty(register.mqttUsername)&&!TextUtils.isEmpty(register.mqttPassword);
+    }
+
 }

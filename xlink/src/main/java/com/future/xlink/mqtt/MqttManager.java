@@ -1,8 +1,9 @@
 package com.future.xlink.mqtt;
 
 import android.content.Context;
+import android.text.TextUtils;
+
 import com.elvishew.xlog.XLog;
-import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnectType;
@@ -37,8 +38,6 @@ public class MqttManager implements MqttCallbackExtended {
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
     private InitParams params;
-    /*异常连接次数*/
-    private int errConnCount;
 
     private MqttManager() {
     }
@@ -58,13 +57,13 @@ public class MqttManager implements MqttCallbackExtended {
     /**
      * 创建Mqtt 连接
      */
-    public void creatNewConnect(Context context, InitParams params) throws Throwable {
-        this.params = params;
-        Register register = params.getRegister();
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
-        conOpt = new MqttConnectOptions();
+    public void creatNewConnect(Context context, InitParams params){
         try {
+            this.params = params;
+            Register register = params.getRegister();
+            String tmpDir = System.getProperty("java.io.tmpdir");
+            MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
+            conOpt = new MqttConnectOptions();
             // 清除缓存
             conOpt.setCleanSession(params.isCleanSession());
             // 设置超时时间，单位：秒
@@ -76,17 +75,23 @@ public class MqttManager implements MqttCallbackExtended {
             XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
             String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
             String pwd=AESUtils.decrypt(params.getKey(), register.mqttPassword);
-            char[] password = pwd.toCharArray();
-            XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
-            conOpt.setUserName(userName);
-            conOpt.setPassword(password);
-            conOpt.setServerURIs(new String[]{register.mqttBroker});
-            conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
-            String clientId = params.getSn();
-            client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
-            XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
-            client.setCallback(this);
-            connAndListener(context);
+            //解码凭证是否正常
+            if(!TextUtils.isEmpty(userName)&&!TextUtils.isEmpty(pwd)){
+                char[] password = pwd.toCharArray();
+                XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
+                conOpt.setUserName(userName);
+                conOpt.setPassword(password);
+                conOpt.setServerURIs(new String[]{register.mqttBroker});
+                conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+                String clientId = params.getSn();
+                client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
+                XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
+                client.setCallback(this);
+                connAndListener(context);
+            }else{
+                //凭证异常
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_VOUCHER_ERR));
+            }
         } catch (Throwable e) {
             XLog.e("getMqttConnectOptions",e);
             XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
@@ -151,7 +156,6 @@ public class MqttManager implements MqttCallbackExtended {
                 @Override
                 public void onSuccess(IMqttToken arg0) {
                     try {
-                        errConnCount=0;
                         XLog.d("onSuccess connection onSuccess errConnCount=0");
                         DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
                         disconnectedBufferOptions.setBufferEnabled(params.isBufferEnable());
@@ -168,15 +172,8 @@ public class MqttManager implements MqttCallbackExtended {
 
                 @Override
                 public void onFailure(IMqttToken arg0, Throwable arg1) {
-                    XLog.e("errConnCount="+errConnCount+",connAndListener1", arg1);
-                    errConnCount++;
-                    if(errConnCount>=3){
-                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
-                        //发送完毕注销流程后，重置异常连接次数
-                        errConnCount=0;
-                    }else{
-                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_FAIL));
-                    }
+                    XLog.e("connAndListener2", arg1);
+                    XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
                 }
             });
             XLog.d("Waiting for connection to finish！");

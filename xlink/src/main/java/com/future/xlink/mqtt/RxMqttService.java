@@ -215,6 +215,7 @@ public class RxMqttService extends Service {
                         subscribe("dev/" + customParams.getSn() + "/#", 2, this);
                 break;
             case CONNECT_DISCONNECT://连接断开
+            case CONNECT_SESSION_ERR://连接会话异常
                 map.clear();
                 MqttManager.getInstance().disConnect();
                 break;

@@ -255,6 +255,7 @@ public class MqttManager implements MqttCallbackExtended {
      */
     public void disConnect() {
         if (client != null) {
+            client.setCallback(null);
             XLog.d("release the mqtt connection");
             try {
                 if (client.isConnected()) {

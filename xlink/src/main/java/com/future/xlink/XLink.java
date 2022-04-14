@@ -30,6 +30,7 @@ import com.future.xlink.utils.GsonUtils;
 /*import com.future.xlink.utils.PropertiesUtil;*/
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
+import com.future.xlink.utils.XLogTools;
 
 import java.io.File;
 
@@ -47,6 +48,7 @@ public class XLink {
      * 消息回调接口
      */
     private MessageListener listener;
+    private boolean isRecord;
 
     private XLink() {
     }
@@ -117,13 +119,24 @@ public class XLink {
      */
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         this.listener = listener;
-        String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/xlink-log/";
-        File configFile=new File(configFolder);
-        configFile.mkdirs();
-        params.setConfigPath(configFolder+GlobalConfig.MY_PROPERTIES);
+        String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/";
+        initCreateFile(configFolder, params.isLogRecord());
         Intent intent = new Intent(context, RxMqttService.class);
+        params.setConfigPath(configFolder+GlobalConfig.MY_PROPERTIES);
         intent.putExtra(RxMqttService.INIT_PARAM, params);
         context.startService(intent);
+    }
+
+    public void initCreateFile(String configFolder,boolean isRecord){
+        File configFile=new File(configFolder);
+        if(!configFile.exists()){
+            configFile.mkdirs();
+        }
+        if(isRecord){
+            //初始化Xlog
+            String xlogFolder= configFolder+"xlink-log/";
+            XLogTools.initResetXLog(xlogFolder);
+        }
     }
 
     /**

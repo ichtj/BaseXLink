@@ -57,44 +57,39 @@ public class MqttManager implements MqttCallbackExtended {
     /**
      * 创建Mqtt 连接
      */
-    public void creatNewConnect(Context context, InitParams params){
-        try {
-            this.params = params;
-            Register register = params.getRegister();
-            String tmpDir = System.getProperty("java.io.tmpdir");
-            MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
-            conOpt = new MqttConnectOptions();
-            // 清除缓存
-            conOpt.setCleanSession(params.isCleanSession());
-            // 设置超时时间，单位：秒
-            conOpt.setConnectionTimeout(params.getOutTime());
-            // 心跳包发送间隔，单位：秒
-            conOpt.setKeepAliveInterval(params.getKeepAliveTime());
-            conOpt.setAutomaticReconnect(params.isAutomaticReconnect());
-            // 用户名
-            XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
-            String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
-            String pwd=AESUtils.decrypt(params.getKey(), register.mqttPassword);
-            //解码凭证是否正常
-            if(!TextUtils.isEmpty(userName)&&!TextUtils.isEmpty(pwd)){
-                char[] password = pwd.toCharArray();
-                XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
-                conOpt.setUserName(userName);
-                conOpt.setPassword(password);
-                conOpt.setServerURIs(new String[]{register.mqttBroker});
-                conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
-                String clientId = params.getSn();
-                client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
-                XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
-                client.setCallback(this);
-                connAndListener(context);
-            }else{
-                //凭证异常
-                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_VOUCHER_ERR));
-            }
-        } catch (Throwable e) {
-            XLog.e("getMqttConnectOptions",e);
-            XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
+    public void creatNewConnect(Context context, InitParams params) {
+        this.params = params;
+        Register register = params.getRegister();
+        String tmpDir = System.getProperty("java.io.tmpdir");
+        MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
+        conOpt = new MqttConnectOptions();
+        // 清除缓存
+        conOpt.setCleanSession(params.isCleanSession());
+        // 设置超时时间，单位：秒
+        conOpt.setConnectionTimeout(params.getOutTime());
+        // 心跳包发送间隔，单位：秒
+        conOpt.setKeepAliveInterval(params.getKeepAliveTime());
+        conOpt.setAutomaticReconnect(params.isAutomaticReconnect());
+        // 用户名
+        XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
+        String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
+        String pwd = AESUtils.decrypt(params.getKey(), register.mqttPassword);
+        //解码凭证是否正常
+        if (!TextUtils.isEmpty(userName) && !TextUtils.isEmpty(pwd)) {
+            char[] password = pwd.toCharArray();
+            XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
+            conOpt.setUserName(userName);
+            conOpt.setPassword(password);
+            conOpt.setServerURIs(new String[]{register.mqttBroker});
+            conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+            String clientId = params.getSn();
+            client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
+            XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
+            client.setCallback(this);
+            connAndListener(context);
+        } else {
+            //凭证异常
+            XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_VOUCHER_ERR));
         }
     }
 
@@ -112,8 +107,8 @@ public class MqttManager implements MqttCallbackExtended {
      */
     @Override
     public void connectionLost(Throwable cause) {
-        if(cause==null){
-            cause=new Throwable("Other connectionLost exceptions");
+        if (cause == null) {
+            cause = new Throwable("Other connectionLost exceptions");
         }
         XLog.d("MqttCallback connectionLost ", cause);
         XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_LOST, cause));
@@ -148,37 +143,42 @@ public class MqttManager implements MqttCallbackExtended {
      * 建立连接 并监听连接回调
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
-    public void connAndListener(Context context) throws Throwable {
+    public void connAndListener(Context context) {
         boolean isConnect = isConnect();
         XLog.d("isConnect=" + isConnect);
         if (!isConnect) {
-            IMqttToken itoken = client.connect(conOpt, context, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken arg0) {
-                    try {
-                        XLog.d("onSuccess connection onSuccess errConnCount=0");
-                        DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                        disconnectedBufferOptions.setBufferEnabled(params.isBufferEnable());
-                        disconnectedBufferOptions.setBufferSize(params.getBufferSize());
-                        disconnectedBufferOptions.setPersistBuffer(false);
-                        disconnectedBufferOptions.setDeleteOldestMessages(false);
-                        if (client != null) {
-                            client.setBufferOpts(disconnectedBufferOptions);
+            try {
+                IMqttToken itoken = client.connect(conOpt, context, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken arg0) {
+                        try {
+                            XLog.d("onSuccess connection onSuccess errConnCount=0");
+                            DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                            disconnectedBufferOptions.setBufferEnabled(params.isBufferEnable());
+                            disconnectedBufferOptions.setBufferSize(params.getBufferSize());
+                            disconnectedBufferOptions.setPersistBuffer(false);
+                            disconnectedBufferOptions.setDeleteOldestMessages(false);
+                            if (client != null) {
+                                client.setBufferOpts(disconnectedBufferOptions);
+                            }
+                        } catch (Throwable arg1) {
+                            XLog.e("connAndListener1", arg1);
                         }
-                    } catch (Throwable e) {
-                        XLog.e("connAndListener1", e);
                     }
-                }
 
-                @Override
-                public void onFailure(IMqttToken arg0, Throwable arg1) {
-                    XLog.e("connAndListener2", arg1);
-                    XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
-                }
-            });
-            XLog.d("Waiting for connection to finish！");
-            //阻止当前线程，直到该令牌关联的操作完成
-            itoken.waitForCompletion();
+                    @Override
+                    public void onFailure(IMqttToken arg0, Throwable arg2) {
+                        XLog.e("connAndListener2", arg2);
+                        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
+                    }
+                });
+                XLog.d("Waiting for connection to finish！");
+                //阻止当前线程，直到该令牌关联的操作完成
+                itoken.waitForCompletion();
+            } catch (Throwable arg3) {
+                XLog.e("connAndListener3", arg3);
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_SESSION_ERR));
+            }
         }
     }
 

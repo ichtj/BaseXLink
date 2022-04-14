@@ -141,22 +141,7 @@ public class RxMqttService extends Service {
                 connStatusChange((ConnectType) msg.getObj());
                 break;
             case GlobalConfig.TYPE_MODE_CONNECT_LOST://连接丢失
-                boolean isNetwork=PingUtils.checkNetWork();
-                if(isNetwork){
-                    //访问外网正常,尝试访问mqtt服务端是否正常
-                    String ip=Utils.patternIp(customParams.getRegister().mqttBroker);
-                    //远程服务器ping结果
-                    boolean remoteServicePing=PingUtils.ping(ip,2,200);
-                    if(remoteServicePing){
-                        XLink.connectionLost(ConnectLostType.LOST_TYPE_1, (Throwable) msg.getObj());
-                    }else{
-                        XLink.connectionLost(ConnectLostType.LOST_TYPE_2, (Throwable) msg.getObj());
-                    }
-                }else{
-                    //访问外网异常
-                    XLink.connectionLost(ConnectLostType.LOST_TYPE_3, (Throwable) msg.getObj());
-                }
-                //XLink.connectionLost(ConnectLostType.LOST_TYPE_0, (Throwable) msg.getObj());
+                connLost(msg.getObj());
                 break;
             case GlobalConfig.TYPE_REMOTE_RX://代理服务器下发消息
                 MqttMessage mqttMessage = (MqttMessage) msg.getObj();
@@ -169,6 +154,27 @@ public class RxMqttService extends Service {
                 break;
             default:
                 break;
+        }
+    }
+
+    /**
+     * 连接丢失的判断
+     */
+    public void connLost(Object msg){
+        boolean isNetwork=PingUtils.checkNetWork();
+        if(isNetwork){
+            //访问外网正常,尝试访问mqtt服务端是否正常
+            String ip=Utils.patternIp(customParams.getRegister().mqttBroker);
+            //远程服务器ping结果
+            boolean remoteServicePing=PingUtils.ping(ip,2,200);
+            if(remoteServicePing){
+                XLink.connectionLost(ConnectLostType.LOST_TYPE_1, (Throwable) msg);
+            }else{
+                XLink.connectionLost(ConnectLostType.LOST_TYPE_2, (Throwable) msg);
+            }
+        }else{
+            //访问外网异常
+            XLink.connectionLost(ConnectLostType.LOST_TYPE_3, (Throwable)msg);
         }
     }
 

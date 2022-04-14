@@ -47,10 +47,8 @@ public class XLink {
      * 消息回调接口
      */
     private MessageListener listener;
-    private String sn;
 
     private XLink() {
-
     }
 
 

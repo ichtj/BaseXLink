@@ -135,7 +135,6 @@ public class XLink {
     public void unInit() {
         //通知连接关闭
         XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
-        this.listener = null;
     }
 
     /**

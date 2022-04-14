@@ -107,13 +107,11 @@ public class MqttManager implements MqttCallbackExtended {
      */
     @Override
     public void connectionLost(Throwable cause) {
-        if (cause != null) {
-            XLog.d("MqttCallback connectionLost ", cause);
-            XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_LOST, cause));
-        } else {
-            XLog.d("MqttCallback connectionLost", new Throwable("Other exceptions"));
-            XLink.connectState(ConnectType.CONNECT_DISCONNECT);
+        if(cause==null){
+            cause=new Throwable("Other connectionLost exceptions");
         }
+        XLog.d("MqttCallback connectionLost ", cause);
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_LOST, cause));
     }
 
     /**

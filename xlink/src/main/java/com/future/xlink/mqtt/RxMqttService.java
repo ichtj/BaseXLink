@@ -194,7 +194,7 @@ public class RxMqttService extends Service {
                 //mqtt服务能够正常连接 那么直接去连接
                 createConect();
             }else{
-                XLink.connectState(ConnectType.CONNECT_AGENT_FAIL);
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_AGENT_FAIL));
             }
         }
     }

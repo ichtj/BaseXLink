@@ -82,7 +82,7 @@ public class PingUtils {
         try {
             // ping 的地址，可以换成任何一种可靠的外网
             String ip = "114.114.114.114";
-            Process p = Runtime.getRuntime().exec("ping -c 1 -w 3 " + ip);// ping网址3次
+            Process p = Runtime.getRuntime().exec("ping -c 2 -W 1 " + ip);// ping网址1次
             // 读取ping的内容，可以不加
             InputStream input = p.getInputStream();
             BufferedReader in = new BufferedReader(new InputStreamReader(input));
@@ -138,7 +138,7 @@ public class PingUtils {
         int [] randomArray=randomCommon(0,PING_ADDR.length-1,3);
         for (int i = 0; i < randomArray.length; i++) {
             String pingAddr=PING_ADDR[randomArray[i]];
-            boolean isNetOk = ping(pingAddr, 1, 2);
+            boolean isNetOk = ping(pingAddr, 2, 1);
             if (!isNetOk) {
                 //If it is abnormal when entering the program network at the beginning, then only prompt once
                 continue;
@@ -149,9 +149,11 @@ public class PingUtils {
         return false;
     }
 
-    public static final boolean ping(String ip, int count, int time) {
+    public static final boolean ping(String ip, int count, int second) {
         try {
-            Process p = Runtime.getRuntime().exec("ping -c " + count + " -w " + time + " " + ip);
+            //-w 等待回复的时间，单位是毫秒。这个选项只在没有接到任何的回复的情况下有效，只要接到了一个回复，就将等待时间设置为两倍的RTT。如果没有设置，则等待时间设置为一个最大值
+            //-W 等待回复的时间，单位是毫秒
+            Process p = Runtime.getRuntime().exec("ping -c " + count + " -W " + second + " " + ip);
             InputStream input = p.getInputStream();
             BufferedReader in = new BufferedReader(new InputStreamReader(input));
             StringBuffer stringBuffer = new StringBuffer();
@@ -182,7 +184,7 @@ public class PingUtils {
                 url = host;
             }
             String[] pingHosts = url.split(":");
-            String command = "ping -c " + 3 + " " + pingHosts[0];
+            String command = "ping -c " + 2 + "-W 1 " + pingHosts[0];
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
                 XLog.d("ping ping fail:process is null.");

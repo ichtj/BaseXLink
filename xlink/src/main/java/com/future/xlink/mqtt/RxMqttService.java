@@ -165,7 +165,7 @@ public class RxMqttService extends Service {
             //访问外网正常,尝试访问mqtt服务端是否正常
             String ip=Utils.patternIp(customParams.getRegister().mqttBroker);
             //远程服务器ping结果
-            boolean remoteServicePing=PingUtils.ping(ip,2,200);
+            boolean remoteServicePing=PingUtils.ping(ip,1,1);
             if(remoteServicePing){
                 XLink.connectionLost(ConnectLostType.LOST_TYPE_1, (Throwable) msg);
             }else{
@@ -189,7 +189,7 @@ public class RxMqttService extends Service {
         } else {
             //尝试ping mqtt服务地址是否正常
             String mqttBroker=customParams.getRegister().mqttBroker;
-            boolean isPingService=PingUtils.ping(Utils.patternIp(mqttBroker),2,200);
+            boolean isPingService=PingUtils.ping(Utils.patternIp(mqttBroker),1,1);
             if(isPingService){
                 //mqtt服务能够正常连接 那么直接去连接
                 createConect();

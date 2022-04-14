@@ -140,7 +140,7 @@ public class RxMqttService extends Service {
                 connStatusChange((ConnectType) msg.getObj());
                 break;
             case GlobalConfig.TYPE_MODE_CONNECT_LOST://连接丢失
-                connLost(msg.getObj());
+                connLost((Throwable) msg.getObj());
                 break;
             case GlobalConfig.TYPE_REMOTE_RX://代理服务器下发消息
                 MqttMessage mqttMessage = (MqttMessage) msg.getObj();
@@ -159,7 +159,7 @@ public class RxMqttService extends Service {
     /**
      * 连接丢失的判断
      */
-    public void connLost(Object msg){
+    public void connLost(Throwable throwable){
         boolean isNetwork=PingUtils.checkNetWork();
         if(isNetwork){
             //访问外网正常,尝试访问mqtt服务端是否正常
@@ -167,14 +167,25 @@ public class RxMqttService extends Service {
             //远程服务器ping结果
             boolean remoteServicePing=PingUtils.ping(ip,1,1);
             if(remoteServicePing){
-                XLink.connectionLost(ConnectLostType.LOST_TYPE_1, (Throwable) msg);
+                XLink.connectionLost(ConnectLostType.LOST_TYPE_1, throwable);
             }else{
-                XLink.connectionLost(ConnectLostType.LOST_TYPE_2, (Throwable) msg);
+                disConnDelConfig();
+                //代理服务器连接出现问题 这里需要重置部分参数
+                XLink.connectionLost(ConnectLostType.LOST_TYPE_2, throwable);
             }
         }else{
             //访问外网异常
-            XLink.connectionLost(ConnectLostType.LOST_TYPE_3, (Throwable)msg);
+            XLink.connectionLost(ConnectLostType.LOST_TYPE_3, throwable);
         }
+    }
+
+    /**
+     * 断开mqtt并删除my.properties
+     */
+    private void disConnDelConfig(){
+        map.clear();
+        GlobalConfig.delProperties(customParams.getConfigPath());
+        MqttManager.getInstance().disConnect();
     }
 
     /**
@@ -222,9 +233,7 @@ public class RxMqttService extends Service {
             case CONNECT_UNINIT://解除注册
             case CONNECT_AGENT_FAIL://代理服务器连接异常
             case CONNECT_VOUCHER_ERR://凭证异常
-                map.clear();
-                GlobalConfig.delProperties(customParams.getConfigPath());
-                MqttManager.getInstance().disConnect();
+                disConnDelConfig();
                 break;
         }
         XLink.connectState(type);

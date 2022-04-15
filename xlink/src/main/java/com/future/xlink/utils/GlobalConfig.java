@@ -38,7 +38,7 @@ public class GlobalConfig {
     public static void delProperties(String path){
         try {
             boolean isDel=new File(path).delete();
-            String newPath=path.replace("/xlink","");
+            String newPath=path.replace("/xlink-log","");
             boolean isDel2=new File(newPath).delete();
             Log.d("GlobalConfig", "delProperties: isDel="+isDel+",isDel2="+isDel2);
         }catch (Exception e){

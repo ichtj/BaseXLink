@@ -48,7 +48,6 @@ public class XLink {
      * 消息回调接口
      */
     private MessageListener listener;
-    private boolean isRecord;
 
     private XLink() {
     }
@@ -127,7 +126,7 @@ public class XLink {
         context.startService(intent);
     }
 
-    public void initCreateFile(String configFolder){
+    private void initCreateFile(String configFolder){
         File configFile=new File(configFolder);
         if(!configFile.exists()){
             configFile.mkdirs();

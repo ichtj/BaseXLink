@@ -15,7 +15,6 @@ import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -32,12 +31,8 @@ import org.json.JSONObject;
  */
 public class MqttManager implements MqttCallbackExtended {
     private static MqttManager mInstance = null;
-    /**
-     * 回调
-     */
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
-    private InitParams params;
 
     private MqttManager() {
     }
@@ -58,7 +53,6 @@ public class MqttManager implements MqttCallbackExtended {
      * 创建Mqtt 连接
      */
     public void creatNewConnect(Context context, InitParams params) {
-        this.params = params;
         Register register = params.getRegister();
         String tmpDir = System.getProperty("java.io.tmpdir");
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);

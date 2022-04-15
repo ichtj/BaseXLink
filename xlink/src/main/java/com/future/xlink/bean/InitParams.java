@@ -75,16 +75,6 @@ public class InitParams implements Serializable {
 
     private String configPath;
 
-    private boolean isLogRecord;
-
-    public boolean isLogRecord() {
-        return isLogRecord;
-    }
-
-    public void setLogRecord(boolean logRecord) {
-        isLogRecord = logRecord;
-    }
-
     public String getConfigPath() {
         return configPath;
     }

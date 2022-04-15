@@ -120,22 +120,17 @@ public class XLink {
     public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         this.listener = listener;
         String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/";
-        initCreateFile(configFolder, params.isLogRecord());
+        initCreateFile(configFolder);
         Intent intent = new Intent(context, RxMqttService.class);
         params.setConfigPath(configFolder+GlobalConfig.MY_PROPERTIES);
         intent.putExtra(RxMqttService.INIT_PARAM, params);
         context.startService(intent);
     }
 
-    public void initCreateFile(String configFolder,boolean isRecord){
+    public void initCreateFile(String configFolder){
         File configFile=new File(configFolder);
         if(!configFile.exists()){
             configFile.mkdirs();
-        }
-        if(isRecord){
-            //初始化Xlog
-            String xlogFolder= configFolder+"xlink-log/";
-            XLogTools.initResetXLog(xlogFolder);
         }
     }
 

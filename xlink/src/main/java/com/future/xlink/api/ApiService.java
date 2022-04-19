@@ -5,7 +5,9 @@ import com.future.xlink.api.response.BaseResponse;
 import com.future.xlink.bean.Agents;
 import com.future.xlink.bean.LogBean;
 import com.future.xlink.bean.LogPayload;
+import com.future.xlink.bean.ProductInfo;
 import com.future.xlink.bean.Register;
+import com.future.xlink.bean.request.Payload;
 import com.future.xlink.utils.GlobalConfig;
 
 import java.util.Map;
@@ -47,6 +49,13 @@ public interface ApiService {
                                                      @Header("time") String timestamp,
                                                      @Header("SN") String sn,
                                                      @Body Map<String, Object> body);
+
+    @POST
+    Observable <BaseResponse<ProductInfo>> getDeviceInfo(@Url String url,
+                                                         @Header("Authorization") String token,
+                                                         @Header("time") String timestamp,
+                                                         @Header("SN") String sn,
+                                                         @Body Map<String, Object> body);
     @POST
     Observable <BaseResponse<LogPayload>>getUploadLogUrl(@Url String url, @Header("Authorization") String token,
                                                          @Header("time") String timestamp,

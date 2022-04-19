@@ -2,35 +2,21 @@ package com.future.xlink;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 
-import com.elvishew.xlog.LogConfiguration;
-import com.elvishew.xlog.LogLevel;
-import com.elvishew.xlog.XLog;
-import com.elvishew.xlog.printer.AndroidPrinter;
-import com.elvishew.xlog.printer.Printer;
-import com.elvishew.xlog.printer.file.FilePrinter;
-import com.elvishew.xlog.printer.file.backup.NeverBackupStrategy;
-import com.elvishew.xlog.printer.file.clean.FileLastModifiedCleanStrategy;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Protocal;
-import com.future.xlink.bean.common.ConnectLostType;
-import com.future.xlink.bean.common.ConnectType;
-import com.future.xlink.bean.common.InitState;
 import com.future.xlink.bean.common.RespType;
 import com.future.xlink.bean.mqtt.RespStatus;
 import com.future.xlink.listener.MessageListener;
 import com.future.xlink.mqtt.MqttManager;
 import com.future.xlink.mqtt.RxMqttService;
 import com.future.xlink.utils.Carrier;
-import com.future.xlink.utils.DataFormatFileInfo;
-import com.future.xlink.utils.DefaultFlattenerInfo;
 import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
 /*import com.future.xlink.utils.PropertiesUtil;*/
-import com.future.xlink.utils.Utils;
+import com.future.xlink.bean.common.ConnStatus;
+import com.future.xlink.bean.common.LostStatus;
 import com.future.xlink.utils.XBus;
-import com.future.xlink.utils.XLogTools;
 
 import java.io.File;
 
@@ -59,34 +45,22 @@ public class XLink {
 
     /**
      * 回调连接状态
-     * @param type 连接状态
+     * @param connStatus 连接状态
      */
-    public static void connectState(ConnectType type) {
+    public static void connStatus(ConnStatus connStatus) {
         MessageListener listener=  getInstance().getListener();
         if(listener!=null){
-            listener.connectState(type);
+            listener.connStatus(connStatus);
         }
     }
-
     /**
      * 回调丢失状态
-     * @param type 丢失状态
+     * @param lostStatus 丢失状态
      */
-    public static void connectionLost(ConnectLostType type,Throwable throwable) {
+    public static void lostStatus(LostStatus lostStatus) {
         MessageListener listener=  getInstance().getListener();
         if(listener!=null){
-            listener.connectionLost(type,throwable);
-        }
-    }
-
-    /**
-     * 回调初始化状态
-     * @param initState 初始化状态
-     */
-    public static void initState(InitState initState) {
-        MessageListener listener=  getInstance().getListener();
-        if(listener!=null){
-            listener.initState(initState);
+            listener.lostStatus(lostStatus);
         }
     }
 
@@ -116,7 +90,7 @@ public class XLink {
      * @param params   初始化参数类
      * @param listener 初始化回调函数
      */
-    public void init(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
+    public void connect(@NonNull Context context, @NonNull InitParams params, @NonNull MessageListener listener) {
         this.listener = listener;
         String configFolder=GlobalConfig.ROOT_PATH+context.getPackageName()+"/"+params.getSn()+"/";
         initCreateFile(configFolder);
@@ -134,17 +108,10 @@ public class XLink {
     }
 
     /**
-     * 创建连接函数
-     */
-    public void connect() {
-        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_TO_CONNECT));
-    }
-
-    /**
      * 断开连接
      */
     public void disconnect() {
-        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_DISCONNECT));
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_DISCONNECT));
     }
 
 
@@ -153,7 +120,7 @@ public class XLink {
      */
     public void unInit() {
         //通知连接关闭
-        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_UNINIT));
+        XBus.post(new Carrier(GlobalConfig.TYPE_MODE_UNINIT));
     }
 
     /**

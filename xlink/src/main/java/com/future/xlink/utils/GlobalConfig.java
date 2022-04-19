@@ -21,6 +21,14 @@ public class GlobalConfig {
     public static final String PRODUCT_UNIQUE = "api/iot/reg/device/unique"; //设备sn唯一性验证
     public static final int OVER_TIME = 10 * 60 * 1000; //消息处理超时，默认10分钟
 
+    public static final int STATUSCODE_SUCCESS=0;//成功
+    public static final int STATUSCODE_FAILED       =1;//失败
+    public static final int STATUSCODE_BAD_REQUEST  =400;//请求错误
+    public static final int STATUSCODE_UNAUTHORIZED =401;//授权失败
+    public static final int STATUSCODE_FORBIDDEN    =403;//没有权限
+    public static final int STATUSCODE_NOT_FOUND    =404;//不存在
+    public static final int STATUSCODE_SERVICE_ERROR=500;//服务异常
+
     /**
      * 远程控制指令
      */
@@ -29,10 +37,11 @@ public class GlobalConfig {
     public static final int TYPE_REMOTE_TX_SERVICE   = 0x202;//属性服务上报
     public static final int TYPE_REMOTE_TX_EVENT     = 0x203;//事件上报
 
-    public static final int TYPE_MODE_INIT_RX        = 0x204;//获取初始化参数
-    public static final int TYPE_MODE_TO_CONNECT     = 0x205;//创建连接
-    public static final int TYPE_MODE_CONNECT_RESULT = 0x206;//连接结果 变动的状态
-    public static final int TYPE_MODE_CONNECT_LOST   = 0x207;//连接丢失
+    public static final int TYPE_MODE_TO_CONNECT     = 0x204;//创建连接
+    public static final int TYPE_MODE_DISCONNECT     = 0x205;//断开连接
+    public static final int TYPE_MODE_UNINIT         = 0x206;//注销连接
+
+    public static final int TYPE_MODE_LOST_RESULT    = 0x207;//连接丢失参数
 
 
     public static void delProperties(String path){

@@ -6,29 +6,26 @@ import android.os.IBinder;
 import android.text.TextUtils;
 
 import com.elvishew.xlog.XLog;
+import com.future.xlink.R;
 import com.future.xlink.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.McuProtocal;
 import com.future.xlink.bean.Protocal;
-import com.future.xlink.bean.Register;
-import com.future.xlink.bean.common.ConnectLostType;
-import com.future.xlink.bean.common.ConnectType;
-import com.future.xlink.bean.common.InitState;
 import com.future.xlink.bean.common.MsgType;
 import com.future.xlink.bean.common.RespType;
 import com.future.xlink.bean.mqtt.Request;
 import com.future.xlink.bean.mqtt.RespStatus;
 import com.future.xlink.bean.mqtt.Response;
-import com.future.xlink.listener.MessageListener;
 import com.future.xlink.utils.Carrier;
 import com.future.xlink.utils.GlobalConfig;
 import com.future.xlink.utils.GsonUtils;
+import com.future.xlink.bean.common.LostStatus;
 import com.future.xlink.utils.ObserverUtils;
 import com.future.xlink.utils.PingUtils;
+import com.future.xlink.bean.common.ConnStatus;
 import com.future.xlink.utils.ThreadPool;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
-import com.google.gson.JsonSyntaxException;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -38,8 +35,6 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static com.future.xlink.bean.common.ConnectType.CONNECT_NO_NETWORK;
 
 
 /**
@@ -103,14 +98,15 @@ public class RxMqttService extends Service {
             if (localParams != null) {
                 customParams = localParams;
                 //代表已经注册过 那么直接提示注册成功 但这里也会有另一个问题 参数是否会过期 多次次连接失败是否应该重置该参数
-                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_INIT_RX, InitState.INIT_SUCCESS));
+                //XBus.post(new Results(GlobalConfig.TYPE_MODE_INIT_RESULT,GlobalConfig.STATUSCODE_SUCCESS,"注册成功"));
+                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_TO_CONNECT));
             } else {
                 //代表未注册过
                 if (customParams!= null&&customParams.productNotNull()) {
-                    ObserverUtils.getAgentList(customParams);
+                    ObserverUtils.getAgentList(this,customParams);
                 } else {
                     //判断注册参数是否有误
-                    XLink.initState(InitState.INIT_PARAMS_ERR);
+                    XLink.connStatus(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,getString(R.string.init_params_null)));
                 }
             }
         }
@@ -128,19 +124,28 @@ public class RxMqttService extends Service {
 
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    public void onEvent(Carrier msg) throws MqttException, IOException {
-        switch (msg.getType()) {
-            case GlobalConfig.TYPE_MODE_INIT_RX://初始化
-                XLink.initState((InitState) msg.getObj());
+    public void onStatus(ConnStatus msg) throws MqttException, IOException {
+        connStatusChange(msg);
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void onData(Carrier msg) throws MqttException, IOException {
+        switch (msg.getType()){
+            case GlobalConfig.TYPE_MODE_LOST_RESULT://连接丢失操作
+                connLost();
+                break;
+            case GlobalConfig.TYPE_MODE_UNINIT://执行注销操作
+                disConnDelConfig();
+                XLink.connStatus(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,getString(R.string.conn_uninit)));
                 break;
             case GlobalConfig.TYPE_MODE_TO_CONNECT://执行连接操作
                 toConnect();
                 break;
-            case GlobalConfig.TYPE_MODE_CONNECT_RESULT://连接状态改变
-                connStatusChange((ConnectType) msg.getObj());
-                break;
-            case GlobalConfig.TYPE_MODE_CONNECT_LOST://连接丢失
-                connLost((Throwable) msg.getObj());
+            case GlobalConfig.TYPE_MODE_DISCONNECT://执行断开
+                map.clear();
+                MqttManager.getInstance().disConnect();
+                XLink.connStatus(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,getString(R.string.conn_disconnect)));
                 break;
             case GlobalConfig.TYPE_REMOTE_RX://代理服务器下发消息
                 MqttMessage mqttMessage = (MqttMessage) msg.getObj();
@@ -151,15 +156,15 @@ public class RxMqttService extends Service {
             case GlobalConfig.TYPE_REMOTE_TX:
                 reportMsgToMap(msg.getType(), (Protocal) msg.getObj());
                 break;
-            default:
-                break;
         }
     }
+
+
 
     /**
      * 连接丢失的判断
      */
-    public void connLost(Throwable throwable){
+    public void connLost(){
         boolean isNetwork=PingUtils.checkNetWork();
         if(isNetwork){
             //访问外网正常,尝试访问mqtt服务端是否正常
@@ -167,15 +172,15 @@ public class RxMqttService extends Service {
             //远程服务器ping结果
             boolean remoteServicePing=PingUtils.ping(ip,1,1);
             if(remoteServicePing){
-                XLink.connectionLost(ConnectLostType.LOST_TYPE_1, throwable);
+                XLink.lostStatus(new LostStatus(true,getString(R.string.agent_succ_connerr)));
             }else{
                 disConnDelConfig();
                 //代理服务器连接出现问题 这里需要重置部分参数
-                XLink.connectionLost(ConnectLostType.LOST_TYPE_2, throwable);
+                XLink.lostStatus(new LostStatus(true,getString(R.string.agent_conn_err)));
             }
         }else{
             //访问外网异常
-            XLink.connectionLost(ConnectLostType.LOST_TYPE_3, throwable);
+            XLink.lostStatus(new LostStatus(false,getString(R.string.device_net_err)));
         }
     }
 
@@ -196,7 +201,7 @@ public class RxMqttService extends Service {
         XLog.d("onEvent:TYPE_MODE_CONNECT isNetOk=" + isNetOk);
         map.clear();//创建连接时清除之前的消息队列
         if (!isNetOk) {
-            XLink.connectState(CONNECT_NO_NETWORK);//回调网络不正常
+            XLink.connStatus(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,getString(R.string.device_net_err)));//回调网络不正常
         } else {
             //尝试ping mqtt服务地址是否正常
             String mqttBroker=customParams.getRegister().mqttBroker;
@@ -205,7 +210,7 @@ public class RxMqttService extends Service {
                 //mqtt服务能够正常连接 那么直接去连接
                 createConect();
             }else{
-                XBus.post(new Carrier(GlobalConfig.TYPE_MODE_CONNECT_RESULT, ConnectType.CONNECT_AGENT_FAIL));
+                XBus.post(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,getString(R.string.agent_conn_err)));
             }
         }
     }
@@ -213,30 +218,26 @@ public class RxMqttService extends Service {
     /**
      * 连接状态，连接结果变更
      *
-     * @param type 状态
+     * @param connStatus 状态
      *             结果从MqttManager的iMqttActionListener进行回调
      *             主动断开
      */
-    public void connStatusChange(ConnectType type) {
-        XLog.d("onEvent： TYPE_MODE_CONNECT_RESULT value=" + type.getValue());
-        switch (type) {
-            case CONNECT_SUCCESS://连接完成
-            case RECONNECT_SUCCESS://重连成功
+    public void connStatusChange(ConnStatus connStatus) {
+        XLog.d("onEvent： TYPE_MODE_CONNECT_RESULT value=" + connStatus.toString());
+        switch (connStatus.getCode()+"") {
+            case GlobalConfig.STATUSCODE_SUCCESS+""://连接完成
                 MqttManager.getInstance().
                         subscribe("dev/" + customParams.getSn() + "/#", 2, this);
+                XLink.connStatus(connStatus);
                 break;
-            case CONNECT_DISCONNECT://连接断开
-            case CONNECT_SESSION_ERR://连接会话异常
+            case GlobalConfig.STATUSCODE_FAILED+""://连接断开
+            default:
                 map.clear();
                 MqttManager.getInstance().disConnect();
-                break;
-            case CONNECT_UNINIT://解除注册
-            case CONNECT_AGENT_FAIL://代理服务器连接异常
-            case CONNECT_VOUCHER_ERR://凭证异常
                 disConnDelConfig();
+                XLink.connStatus(connStatus);
                 break;
         }
-        XLink.connectState(type);
     }
 
     /**

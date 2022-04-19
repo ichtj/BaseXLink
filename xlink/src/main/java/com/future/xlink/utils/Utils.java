@@ -23,8 +23,8 @@ import java.util.regex.Pattern;
  */
 public class Utils {
     public static String getToken(InitParams params, String time) {
-        String token = "Basic " + AESUtils.encrypt(params.getKey(), params.getSn() + ":" + params.getSecret() + ":" + time);
-        return token;
+        String tokenMsg=AESUtils.encrypt(params.getKey(), params.getSn() + ":" + params.getSecret() + ":" + time);
+        return  TextUtils.isEmpty(tokenMsg)?null:"Basic " +tokenMsg ;
     }
 
     /**

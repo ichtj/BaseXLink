@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="agent_conn_err">proxy service connection failed</string>
     <string name="conn_session_err">Abnormal connection session</string>
     <string name="conn_user_err">user name or password is incorrect</string>
     <string name="init_params_null">registration parameter is empty</string>
@@ -13,6 +12,8 @@
     <string name="conn_success">Connect Success</string>
     <string name="device_net_err">Device Network Exception</string>
     <string name="agent_succ_connerr">connect agent normal, communication is abnormal</string>
+    <string name="agent_conn_err">proxy service connection failed</string>
     <string name="agent_other_err">Agent gets other exceptions</string>
     <string name="register_other_err">Register other exception</string>
+    <string name="conn_lost_timeout">connection has timed out,Please reconnect</string>
 </resources>

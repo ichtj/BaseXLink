@@ -40,8 +40,12 @@ public class GlobalConfig {
     public static final int TYPE_MODE_TO_CONNECT     = 0x204;//创建连接
     public static final int TYPE_MODE_DISCONNECT     = 0x205;//断开连接
     public static final int TYPE_MODE_UNINIT         = 0x206;//注销连接
-
     public static final int TYPE_MODE_LOST_RESULT    = 0x207;//连接丢失参数
+
+    public static final int LOST_AGENT_CONN_ERR      =0x1001;//代理连接异常
+    public static final int LOST_OTHER_ERR           =0x1002;//其他异常
+    public static final int LOST_NETWORK_ERR         =0x1003;//设备网络异常
+    public static final int LOST_TIMEROUT_ERR        =0x1004;//设备丢失连接超时
 
 
     public static void delProperties(String path){

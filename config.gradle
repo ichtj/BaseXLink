@@ -28,8 +28,7 @@ ext {
             "mqttv3"                  : "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0",
             "mqttv-service"           : "org.eclipse.paho:org.eclipse.paho.android.service:1.1.1",
             //okhttp
-            "okhttp12"                : "com.squareup.okhttp3:okhttp:3.12.1",
-            "okhttp"                  : "com.squareup.okhttp3:okhttp:3.10.0",
+            "okhttp"                : "com.squareup.okhttp3:okhttp:3.12.1",
             //rxjava
             "retrofit"                : "com.squareup.retrofit2:retrofit:2.6.2",
             "converter-gson"          : "com.squareup.retrofit2:converter-gson:2.6.2",

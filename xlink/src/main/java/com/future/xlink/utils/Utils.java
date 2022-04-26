@@ -33,7 +33,7 @@ public class Utils {
      * @return ip
      */
     public static String patternIp(String str){
-        String regular = "\\d{3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
+        String regular = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
         if(!TextUtils.isEmpty(str)){
             Pattern pattern = Pattern.compile(regular);
             Matcher matcher = pattern.matcher(str);

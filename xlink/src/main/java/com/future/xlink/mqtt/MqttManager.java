@@ -137,6 +137,7 @@ public class MqttManager implements MqttCallbackExtended {
             if (tokenMeg != null) {
                 String iid = tokenMeg.getString("iid");
                 XLog.d("deliveryComplete token iid=" + iid + ",isComplete=" + token.isComplete());
+                XLog.d("deliveryComplete token message="+token.getMessage().toString());
             }
         } catch (Exception e) {
             XLog.e("deliveryComplete", e);

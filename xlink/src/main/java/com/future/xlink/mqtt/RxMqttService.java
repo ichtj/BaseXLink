@@ -436,8 +436,8 @@ public class RxMqttService extends Service {
     private void judgeMethod(McuProtocal protocal) {
         switch (protocal.getType()) {
             case GlobalConfig.TYPE_REMOTE_TX://消息上报
-            case GlobalConfig.TYPE_REMOTE_TX_EVENT://消息上报→事件
-            case GlobalConfig.TYPE_REMOTE_TX_SERVICE://消息上报→属性
+            case GlobalConfig.TYPE_REMOTE_TX_EVENT://事件上报
+            case GlobalConfig.TYPE_REMOTE_TX_SERVICE://属性上报
                 reportRxMsg(protocal);
                 break;
             case GlobalConfig.TYPE_REMOTE_RX://消息接收

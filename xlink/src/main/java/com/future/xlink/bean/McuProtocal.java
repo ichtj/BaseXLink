@@ -6,22 +6,26 @@ import java.lang.reflect.Type;
 
 public class McuProtocal extends Protocal {
     private String act;
-    /**
-     * 响应主题，如APP为请求端，则为APP订阅的主题,用户无需定义
-     * */
-    private String ack;
-
+    private String ack;//响应主题，如APP为请求端，则为APP订阅的主题,用户无需定义
     private long time; //消息到达时间
     private int type; //当前消息类型
-    private int status; //是否处理标志位 0，没处理，1处理
+    private boolean isComplete; //是否处理标志位 false，没处理，true处理
 
-    public McuProtocal(String iid, Object tx, String rx, int overtime, String act, String ack, long time, int type, int status) {
+    public McuProtocal(String iid, Object tx, String rx, int overtime, String act, String ack, long time, int type, boolean isComplete) {
         super(iid, tx, rx, overtime);
         this.act = act;
         this.ack = ack;
         this.time = time;
         this.type = type;
-        this.status = status;
+        this.isComplete = isComplete;
+    }
+
+    public McuProtocal(String act, String ack, long time, int type, boolean isComplete) {
+        this.act = act;
+        this.ack = ack;
+        this.time = time;
+        this.type = type;
+        this.isComplete = isComplete;
     }
 
     public McuProtocal() {
@@ -59,12 +63,12 @@ public class McuProtocal extends Protocal {
         this.type = type;
     }
 
-    public int getStatus() {
-        return status;
+    public boolean isComplete() {
+        return isComplete;
     }
 
-    public void setStatus(int status) {
-        this.status = status;
+    public void setComplete(boolean complete) {
+        isComplete = complete;
     }
 
     /**

@@ -320,18 +320,11 @@ public class RxMqttService extends Service {
             XLink.msgCallBack(protocal);
             return;
         }
-
-        McuProtocal mcuprotocal;
-        if (map.containsKey(protocal.getIid())) {
-            mcuprotocal = map.get(protocal.getIid());
-            mcuprotocal.setStatus(mcuprotocal.getStatus() + 1);
-        } else {
-            mcuprotocal = new McuProtocal();
-            mcuprotocal.setIid(protocal.getIid());
-            mcuprotocal.setTime(System.currentTimeMillis());
-            mcuprotocal.setAct("cmd");//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
-            mcuprotocal.setAck("svr/" + customParams.getSn());//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
-        }
+        McuProtocal mcuprotocal= new McuProtocal();
+        mcuprotocal.setIid(protocal.getIid());
+        mcuprotocal.setTime(System.currentTimeMillis());
+        mcuprotocal.setAct("cmd");//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
+        mcuprotocal.setAck("svr/" + customParams.getSn());//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
         switch (type) {
             case GlobalConfig.TYPE_REMOTE_TX_SERVICE://服务属性上报
                 mcuprotocal.setAct("upload");
@@ -344,8 +337,6 @@ public class RxMqttService extends Service {
             case GlobalConfig.TYPE_REMOTE_TX://消息上报
                 if (!mcuprotocal.getAct().contains(RESP)) {
                     mcuprotocal.setAct(mcuprotocal.getAct() + RESP);
-                } else if (mcuprotocal.getAct().contains(RESP)) {
-                    mcuprotocal.setStatus(mcuprotocal.getStatus() + 1);
                 }
                 break;
         }
@@ -366,7 +357,7 @@ public class RxMqttService extends Service {
                 XLog.d("arriveMsgToMap 重复数据下发-->" + request.iid);
                 return;
             }
-            protocal.setStatus(protocal.getStatus() + 1);
+            protocal.setComplete(true);
         } else {
             protocal = new McuProtocal();
             protocal.setAck(request.ack);
@@ -413,13 +404,13 @@ public class RxMqttService extends Service {
                 judgeMethod(protocal);
                 reportRxMsg(protocal);
                 map.remove(protocal.getIid());
-            } else {//未超时
-                if (protocal.getStatus() == 0) {
-                    //这里表示正在处理平台下发的操作
+            } else {
+                if (protocal.isComplete()==false) {
+                    //代表这里的消息未得到回复
                     judgeMethod(protocal);
-                    protocal.setStatus(protocal.getStatus() + 1);
+                    //protocal.setComplete(protocal.getStatus() + 1);
                 } else {
-                    //这里表示设备回复平台下发的操作
+                    //代表消息已经得到回复
                     if (protocal.getTx() != null && !TextUtils.isEmpty(protocal.getRx())) {
                         //判断平台下发的消息和回复的消息都不为空即可上报该消息
                         judgeMethod(protocal);

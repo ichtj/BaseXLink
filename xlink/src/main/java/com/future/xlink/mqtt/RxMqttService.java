@@ -177,18 +177,18 @@ public class RxMqttService extends Service {
         //连接丢失 不管本地网络是否正常 都将丢失连接
         if (PingUtils.checkNetWork()) {//访问外网正常
             if (!serviceIsNormal()) {
-                XLink.lostStatus(new LostStatus(GlobalConfig.LOST_AGENT_CONN_ERR,true, getString(R.string.agent_conn_err)));
+                XLink.lostStatus(new LostStatus(GlobalConfig.LOST_AGENT_CONN_ERR, true, getString(R.string.agent_conn_err)));
                 //网络正常 代理服务连接异常 这里需要重置部分参数
                 disConnDelConfig();
             } else {
                 //网络正常 代理服务连接正常 丢失检测
                 checkLostTime();
-                XLink.lostStatus(new LostStatus(GlobalConfig.LOST_OTHER_ERR,true, getString(R.string.agent_succ_connerr)));
+                XLink.lostStatus(new LostStatus(GlobalConfig.LOST_OTHER_ERR, true, getString(R.string.agent_succ_connerr)));
             }
         } else {
             //网络异常
             checkLostTime();
-            XLink.lostStatus(new LostStatus(GlobalConfig.LOST_NETWORK_ERR,false, getString(R.string.device_net_err)));
+            XLink.lostStatus(new LostStatus(GlobalConfig.LOST_NETWORK_ERR, false, getString(R.string.device_net_err)));
         }
     }
 
@@ -197,8 +197,8 @@ public class RxMqttService extends Service {
      */
     public void checkLostTime() {
         XLog.d("checkLostTime");
-        isNetLost=true;
-        Date lostTime=new Date();
+        isNetLost = true;
+        Date lostTime = new Date();
         if (disposable == null) {
             disposable = Observable
                     .interval(0, 1, TimeUnit.MINUTES)
@@ -207,17 +207,17 @@ public class RxMqttService extends Service {
                     .subscribe(new Consumer<Long>() {
                         @Override
                         public void accept(Long aLong) throws Exception {
-                            if(!isNetLost){
+                            if (!isNetLost) {
                                 //连接或者重连成功 关闭此任务
                                 closeDisposable();
                             }
-                            if(PingUtils.checkNetWork()){
+                            if (PingUtils.checkNetWork()) {
                                 //网络正常的时候才去检查丢失连接是否超时 网络异常时检查无意义
                                 long miao = (new Date().getTime() - lostTime.getTime()) / 1000;//除以1000是为了转换成秒
                                 long minutes = miao / 60;   // 分钟
-                                if(minutes>=30){
+                                if (minutes >= 30) {
                                     XLog.d("lost minutes>=30");
-                                    XLink.lostStatus(new LostStatus(GlobalConfig.LOST_TIMEROUT_ERR,true,getString(R.string.conn_lost_timeout)));
+                                    XLink.lostStatus(new LostStatus(GlobalConfig.LOST_TIMEROUT_ERR, true, getString(R.string.conn_lost_timeout)));
                                     closeDisposable();
                                 }
                             }
@@ -230,7 +230,7 @@ public class RxMqttService extends Service {
     /**
      * 关闭定时检测任务
      */
-    public void closeDisposable(){
+    public void closeDisposable() {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
             disposable = null;
@@ -241,7 +241,7 @@ public class RxMqttService extends Service {
     /**
      * 检查代理服务是否连接正常
      */
-    public boolean serviceIsNormal(){
+    public boolean serviceIsNormal() {
         String ip = Utils.patternIp(customParams.getRegister().mqttBroker);
         //远程服务器ping结果
         return PingUtils.ping(ip, 1, 1);
@@ -290,7 +290,7 @@ public class RxMqttService extends Service {
                 MqttManager.getInstance().
                         subscribe("dev/" + customParams.getSn() + "/#", 2, this);
                 XLink.connStatus(connStatus);
-                isNetLost=false;
+                isNetLost = false;
                 break;
             case GlobalConfig.STATUSCODE_FAILED + ""://连接断开
             default:
@@ -320,7 +320,7 @@ public class RxMqttService extends Service {
             XLink.msgCallBack(protocal);
             return;
         }
-        McuProtocal mcuprotocal= new McuProtocal();
+        McuProtocal mcuprotocal = new McuProtocal();
         mcuprotocal.setIid(protocal.getIid());
         mcuprotocal.setTime(System.currentTimeMillis());
         mcuprotocal.setAct("cmd");//另外新加的参数 回复某种情况下由于未及时回复 而需要回复的情况
@@ -405,17 +405,18 @@ public class RxMqttService extends Service {
                 reportRxMsg(protocal);
                 map.remove(protocal.getIid());
             } else {
-                if (protocal.isComplete()==false) {
-                    //代表这里的消息未得到回复
-                    judgeMethod(protocal);
-                    //protocal.setComplete(protocal.getStatus() + 1);
-                } else {
-                    //代表消息已经得到回复
-                    if (protocal.getTx() != null && !TextUtils.isEmpty(protocal.getRx())) {
-                        //判断平台下发的消息和回复的消息都不为空即可上报该消息
+                if(protocal.isComplete()){
+                    //发布成功 直接清除集合中数据
+                    map.remove(protocal.getIid());
+                }else{
+                    //判断发布次数
+                    if (protocal.getPublishCount()<10) {
                         judgeMethod(protocal);
+                    } else {
                         map.remove(protocal.getIid());
                     }
+                    //发布失败 累加发布次数
+                    protocal.setPublishCount(protocal.getPublishCount() + 1);
                 }
             }
         }
@@ -430,9 +431,9 @@ public class RxMqttService extends Service {
             case GlobalConfig.TYPE_REMOTE_TX_EVENT://事件上报
             case GlobalConfig.TYPE_REMOTE_TX_SERVICE://属性上报
                 reportRxMsg(protocal);
-                break;
             case GlobalConfig.TYPE_REMOTE_RX://消息接收
                 XLink.msgCallBack(protocal);
+            default:
                 break;
         }
     }

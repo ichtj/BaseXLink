@@ -9,22 +9,25 @@ public class McuProtocal extends Protocal {
     private String ack;//响应主题，如APP为请求端，则为APP订阅的主题,用户无需定义
     private long time; //消息到达时间
     private int type; //当前消息类型
-    private boolean isComplete; //是否处理标志位 false，没处理，true处理
+    private int publishCount;//发布次数
+    private boolean isComplete;//发布是否成功
 
-    public McuProtocal(String iid, Object tx, String rx, int overtime, String act, String ack, long time, int type, boolean isComplete) {
+    public McuProtocal(String iid, Object tx, String rx, int overtime, String act, String ack, long time, int type, int publishCount, boolean isComplete) {
         super(iid, tx, rx, overtime);
         this.act = act;
         this.ack = ack;
         this.time = time;
         this.type = type;
+        this.publishCount = publishCount;
         this.isComplete = isComplete;
     }
 
-    public McuProtocal(String act, String ack, long time, int type, boolean isComplete) {
+    public McuProtocal(String act, String ack, long time, int type, int publishCount, boolean isComplete) {
         this.act = act;
         this.ack = ack;
         this.time = time;
         this.type = type;
+        this.publishCount = publishCount;
         this.isComplete = isComplete;
     }
 
@@ -61,6 +64,14 @@ public class McuProtocal extends Protocal {
 
     public void setType(int type) {
         this.type = type;
+    }
+
+    public int getPublishCount() {
+        return publishCount;
+    }
+
+    public void setPublishCount(int publishCount) {
+        this.publishCount = publishCount;
     }
 
     public boolean isComplete() {

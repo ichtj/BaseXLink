@@ -20,9 +20,9 @@ import okio.Buffer;
 
 final class OkHttpSingleton {
     private static final String TAG = "OkHttpSingleton";
-    private static final long CONNECT_TIMEOUT = 10;
-    private static final long WRITE_TIMEOUT = 10;
-    private static final long READ_TIMEOUT = 10;
+    private static final long CONNECT_TIMEOUT = 20;
+    private static final long WRITE_TIMEOUT = 20;
+    private static final long READ_TIMEOUT = 20;
 
     private OkHttpSingleton() {
     }

@@ -60,6 +60,7 @@ public class MqttManager implements MqttCallbackExtended {
         String tmpDir = System.getProperty("java.io.tmpdir");
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
         conOpt = new MqttConnectOptions();
+        conOpt.setMaxInflight(1000);
         // 清除缓存
         conOpt.setCleanSession(params.isCleanSession());
         // 设置超时时间，单位：秒

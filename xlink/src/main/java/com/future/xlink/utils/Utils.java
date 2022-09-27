@@ -128,17 +128,4 @@ public class Utils {
         }
         return false;
     }
-
-    /**
-     * 判断是否有网络连接
-     */
-    public static boolean isNetConnect(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = cm.getActiveNetworkInfo();
-        if (networkInfo != null) {
-            return networkInfo.isAvailable() && networkInfo.isConnected();
-        } else {
-            return false;
-        }
-    }
 }

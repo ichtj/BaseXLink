@@ -176,7 +176,7 @@ public class MqttManager implements MqttCallbackExtended {
     public void publish(String topicName, int qos, byte[] payload, Context context) {
         try {
             boolean isMqttConnect = isConnect();
-            boolean isNetConnect = Utils.isNetConnect(context);
+            boolean isNetConnect = PingUtils.checkNetWork();
             XLog.d("isMqttConnect=" + isMqttConnect + ",isNetConnect=" + isNetConnect);
             if (isMqttConnect && isNetConnect) {
                 // Create and configure a message
@@ -214,7 +214,7 @@ public class MqttManager implements MqttCallbackExtended {
      * @param qos       the maximum quality of service to receive messages at for this subscription
      */
     public void subscribe(String topicName, int qos, Context context) {
-        if (isConnect() && Utils.isNetConnect(context)) {
+        if (isConnect() && PingUtils.checkNetWork()) {
             XLog.d("subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
                 client.subscribe(topicName, qos);

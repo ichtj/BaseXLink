@@ -21,6 +21,7 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.json.JSONObject;
@@ -86,9 +87,12 @@ public class MqttManager implements MqttCallbackExtended {
                 XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
                 client.setCallback(this);
                 connAndListener();
-            }catch (Throwable e){
-                XLog.e(e);
-                XBus.post(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,context.getString(R.string.conn_session_err)));
+            }catch (MqttException e){
+                if(e.getReasonCode()==32100){
+                    XBus.post(new ConnStatus(GlobalConfig.STATUSCODE_SUCCESS,context.getString(R.string.conn_reconnect)));
+                }else{
+                    XBus.post(new ConnStatus(GlobalConfig.STATUSCODE_FAILED,context.getString(R.string.conn_session_err)));
+                }
             }
         } else {
             //凭证异常
@@ -148,7 +152,7 @@ public class MqttManager implements MqttCallbackExtended {
      * 建立连接 并监听连接回调
      * 连接结果将在 iMqttActionListener中进行回调 使用旧连接
      */
-    public void connAndListener() throws Throwable {
+    public void connAndListener() throws MqttException {
         boolean isConnect = isConnect();
         XLog.d("isConnect=" + isConnect);
         if (!isConnect) {

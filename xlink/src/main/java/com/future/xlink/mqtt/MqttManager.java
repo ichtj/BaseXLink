@@ -77,14 +77,14 @@ public class MqttManager implements MqttCallbackExtended {
         if (!TextUtils.isEmpty(userName) && !TextUtils.isEmpty(pwd)) {
             try {
                 char[] password = pwd.toCharArray();
-                XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
+                //XLog.d("getMqttConnectOptions: decrypt>>> userName:" + userName + ",password=" + pwd);
                 conOpt.setUserName(userName);
                 conOpt.setPassword(password);
                 conOpt.setServerURIs(new String[]{register.mqttBroker});
                 conOpt.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
                 String clientId = params.getSn();
                 client = new MqttAndroidClient(context, register.mqttBroker, clientId, dataStore);
-                XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
+                //XLog.d("creatConnect client id=" + client.getClientId() + ",dataStore=" + tmpDir);
                 client.setCallback(this);
                 connAndListener();
             }catch (MqttException e){
@@ -189,7 +189,7 @@ public class MqttManager implements MqttCallbackExtended {
                 client.publish(topicName, message, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
-                        XLog.d("public message successful");
+                        //XLog.d("public message successful");
                     }
 
                     @Override

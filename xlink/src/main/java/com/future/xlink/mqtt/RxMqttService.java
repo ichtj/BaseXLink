@@ -64,7 +64,7 @@ public class RxMqttService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        XLog.d("start service and messageHandlerThread start");
+        //XLog.d("start service and messageHandlerThread start");
         XBus.register(this);
     }
 
@@ -90,7 +90,7 @@ public class RxMqttService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        XLog.d("onStartCommand map.size=" + map.size());
+        //XLog.d("onStartCommand map.size=" + map.size());
         if (intent != null) {
             boolean isThreadEnd = ThreadPool.isTaskEnd();
             XLog.d("isThreadEnd=" + isThreadEnd);

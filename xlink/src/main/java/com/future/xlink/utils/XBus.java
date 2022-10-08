@@ -12,12 +12,12 @@ public final class XBus {
     }
 
     public static void register(Object subscriber) {
-        XLog.d("register xbus");
+        //XLog.d("register xbus");
         EventBus.getDefault().register(subscriber);
     }
 
     public static void unregister(Object subscriber) {
-        XLog.d("unregister xbus");
+        //XLog.d("unregister xbus");
         EventBus.getDefault().unregister(subscriber);
     }
 }

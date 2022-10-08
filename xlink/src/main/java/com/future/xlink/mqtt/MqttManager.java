@@ -70,7 +70,7 @@ public class MqttManager implements MqttCallbackExtended {
         conOpt.setKeepAliveInterval(params.getKeepAliveTime());
         conOpt.setAutomaticReconnect(params.isAutomaticReconnect());
         // 用户名
-        XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
+        //XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
         String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
         String pwd = AESUtils.decrypt(params.getKey(), register.mqttPassword);
         //解码凭证是否正常

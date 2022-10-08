@@ -287,8 +287,7 @@ public class RxMqttService extends Service {
         XLog.d("onEvent： TYPE_MODE_CONNECT_RESULT value=" + connStatus.toString());
         switch (connStatus.getCode() + "") {
             case GlobalConfig.STATUSCODE_SUCCESS + ""://连接完成
-                MqttManager.getInstance().
-                        subscribe("dev/" + customParams.getSn() + "/#", 2, this);
+                MqttManager.getInstance().subscribe("dev/" + customParams.getSn() + "/#", 2, this);
                 XLink.connStatus(connStatus);
                 isNetLost=false;
                 break;

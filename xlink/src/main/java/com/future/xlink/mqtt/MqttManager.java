@@ -14,6 +14,7 @@ import com.future.xlink.utils.PingUtils;
 import com.future.xlink.bean.common.ConnStatus;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.utils.XBus;
+import com.future.xlink.utils.XLogTools;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -221,7 +222,17 @@ public class MqttManager implements MqttCallbackExtended {
         if (isConnect() && PingUtils.checkNetWork()) {
             XLog.d("subscribe " + "Subscribing to topic \"" + topicName + "\" qos " + qos);
             try {
-                client.subscribe(topicName, qos);
+                client.subscribe(topicName, qos, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        XLogTools.cd("subscribe","onSuccess");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        XLogTools.cd("subscribe","onFailure >> "+exception.getMessage());
+                    }
+                });
             } catch (Throwable e) {
                 XLog.e("subscribe", e);
             }

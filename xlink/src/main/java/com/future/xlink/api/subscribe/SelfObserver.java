@@ -1,4 +1,4 @@
-package com.future.xlink.api.subscribe;
+package com.future.xlink.request.subscribe;
 
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;

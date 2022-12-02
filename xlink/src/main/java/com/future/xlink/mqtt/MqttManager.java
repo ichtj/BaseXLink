@@ -63,16 +63,16 @@ public class MqttManager implements MqttCallbackExtended {
         MqttDefaultFilePersistence dataStore = new MqttDefaultFilePersistence(tmpDir);
         conOpt = new MqttConnectOptions();
         conOpt.setMaxInflight(1000);
-        // 清除缓存
+        //清除缓存
         conOpt.setCleanSession(params.isCleanSession());
-        // 设置超时时间，单位：秒
+        //设置超时时间，单位：秒
         conOpt.setConnectionTimeout(params.getOutTime());
-        // 心跳包发送间隔，单位：秒
+        //心跳包发送间隔，单位：秒
         conOpt.setKeepAliveInterval(params.getKeepAliveTime());
         conOpt.setAutomaticReconnect(params.isAutomaticReconnect());
-        // 用户名
-        //XLog.d("getMqttConnectOptions: start>>> key:" + params.getKey() + ",mqttUsername=" + register.mqttUsername + ",mqttPassword=" + register.mqttPassword);
+        //用户名解密
         String userName = AESUtils.decrypt(params.getKey(), register.mqttUsername);
+        //密码解密
         String pwd = AESUtils.decrypt(params.getKey(), register.mqttPassword);
         //解码凭证是否正常
         if (!TextUtils.isEmpty(userName) && !TextUtils.isEmpty(pwd)) {

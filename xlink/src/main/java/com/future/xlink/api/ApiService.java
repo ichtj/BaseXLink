@@ -1,14 +1,12 @@
-package com.future.xlink.api;
+package com.future.xlink.request;
 
 
-import com.future.xlink.api.response.BaseResponse;
+import com.future.xlink.request.response.BaseResponse;
 import com.future.xlink.bean.Agents;
 import com.future.xlink.bean.LogBean;
 import com.future.xlink.bean.LogPayload;
 import com.future.xlink.bean.ProductInfo;
 import com.future.xlink.bean.Register;
-import com.future.xlink.bean.request.Payload;
-import com.future.xlink.utils.GlobalConfig;
 
 import java.util.Map;
 
@@ -41,7 +39,7 @@ public interface ApiService {
                                                        @Header("Authorization") String token,
                                                        @Header("time") String timestamp,
                                                        @Header("SN") String sn,
-                                                       @Body com.future.xlink.bean.request.Body body);
+                                                       @Body com.future.xlink.bean.method.request.Body body);
 
     @POST
     Observable <BaseResponse <Agents>> uniqueProduct(@Url String url,

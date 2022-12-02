@@ -7,7 +7,7 @@ import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Protocal;
 import com.future.xlink.bean.common.RespType;
 import com.future.xlink.bean.mqtt.RespStatus;
-import com.future.xlink.listener.MessageListener;
+import com.future.xlink.callback.MessageListener;
 import com.future.xlink.mqtt.MqttManager;
 import com.future.xlink.mqtt.RxMqttService;
 import com.future.xlink.utils.Carrier;

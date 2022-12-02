@@ -1,4 +1,4 @@
-package com.future.xlink.api.response;
+package com.future.xlink.request.response;
 
 public class BaseResponse <T>{
     public  String description;

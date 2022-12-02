@@ -19,6 +19,7 @@ allprojects {
         mavenCentral()
         //jcenter() // Warning: this repository is going to shut down soon
         maven { url 'https://www.jitpack.io' }
+        maven { url "https://repo.eclipse.org/content/repositories/paho-snapshots/"}
     }
 }
 

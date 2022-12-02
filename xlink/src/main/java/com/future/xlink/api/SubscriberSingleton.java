@@ -1,4 +1,4 @@
-package com.future.xlink.api;
+package com.future.xlink.request;
 
 
 import java.util.ArrayList;

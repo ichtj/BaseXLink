@@ -1,8 +1,8 @@
-package com.future.xlink.api.retrofit;
+package com.future.xlink.request.retrofit;
 
 import android.util.Log;
 
-import com.future.xlink.api.ApiService;
+import com.future.xlink.request.ApiService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;

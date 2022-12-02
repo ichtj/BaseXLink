@@ -4,16 +4,16 @@ import android.content.Context;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.R;
-import com.future.xlink.api.response.BaseResponse;
-import com.future.xlink.api.retrofit.RetrofitClient;
-import com.future.xlink.api.subscribe.SelfObserver;
+import com.future.xlink.request.response.BaseResponse;
+import com.future.xlink.request.retrofit.RetrofitClient;
+import com.future.xlink.request.subscribe.SelfObserver;
 import com.future.xlink.bean.Agents;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.Register;
 import com.future.xlink.bean.common.ConnStatus;
-import com.future.xlink.bean.request.Body;
-import com.future.xlink.bean.request.Payload;
-import com.future.xlink.listener.PingListener;
+import com.future.xlink.bean.method.request.Body;
+import com.future.xlink.bean.method.request.Payload;
+import com.future.xlink.callback.PingListener;
 
 import java.util.ArrayList;
 import java.util.Collections;

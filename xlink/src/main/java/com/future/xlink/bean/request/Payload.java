@@ -1,4 +1,4 @@
-package com.future.xlink.bean.request;
+package com.future.xlink.bean.method.request;
 
 public class Payload {
     public  String did; //设备SN码

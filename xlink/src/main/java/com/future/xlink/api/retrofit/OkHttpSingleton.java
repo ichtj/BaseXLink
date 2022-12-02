@@ -1,4 +1,4 @@
-package com.future.xlink.api.retrofit;
+package com.future.xlink.request.retrofit;
 
 import android.text.TextUtils;
 import android.util.Log;

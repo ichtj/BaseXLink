@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 public class PingUtils {
     public static final String[] PING_ADDR = new String[]{
             /*"114.114.114.114",*/ "223.5.5.5", "223.6.6.6", "180.76.76.76",/* "8.8.8.8",*/
-            /*"114.114.115.115",*/ "119.29.29.29", "210.2.4.8", /*"9.9.9.9", */"199.91.73.222",
+            /*"114.114.115.115",*/ "119.29.29.29", "210.2.4.8", /*"9.9.9.9", *//*"199.91.73.222",*/
             "101.226.4.6","1.2.4.8","47.106.129.104"
     };
     public static String ping(String host, int pingCount, StringBuffer stringBuffer) {

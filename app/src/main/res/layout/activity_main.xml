@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
     android:layout_margin="10dp"
+    android:gravity="center"
     android:orientation="vertical"
     tools:context="com.zgkx.change.MainAty">
 
@@ -13,11 +13,42 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvSn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginRight="10dp"
+            android:singleLine="true"
+            android:text="当前操作的SN："
+            android:textColor="@color/black"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tvConnStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginRight="10dp"
+            android:singleLine="true"
+            android:text="当前状态：false"
+            android:textColor="@color/black"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+
         <Button
             android:id="@+id/btnAddDev"
             android:layout_width="wrap_content"
-            android:singleLine="true"
             android:layout_height="wrap_content"
+            android:singleLine="true"
             android:text="添加设备" />
 
         <Button
@@ -34,25 +65,25 @@
             android:singleLine="true"
             android:text="代理地址" />
 
-
-
         <Button
             android:id="@+id/btnConn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="点击连接" />
+
         <Button
             android:id="@+id/btnSeHearbeat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="开启心跳" />
+
         <Button
             android:id="@+id/btnDisConn"
             android:layout_width="wrap_content"
-            android:singleLine="true"
             android:layout_height="wrap_content"
+            android:singleLine="true"
             android:text="断开连接" />
     </LinearLayout>
 
@@ -60,28 +91,32 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/tvTile"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="left"
-            android:padding="10dp"
             android:layout_weight="1"
-            android:text="以下为操作响应内容" />
+            android:padding="10dp"
+            android:text="以下为操作响应内容,更多日志请在/sdcard/xlink/目录下查看" />
+
         <Button
-            android:layout_width="wrap_content"
             android:id="@+id/btnClear"
-            android:text="清除日志"
-            android:layout_height="wrap_content"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="清除日志" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/tvResult"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@drawable/ic_result__bg"
         android:paddingLeft="5dp"
         android:paddingRight="5dp"
-        android:background="@drawable/ic_result__bg"
         android:scrollbars="vertical"
         android:textSize="21sp" />
+
 </LinearLayout>

@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.base.BaseData;
 import com.future.xlink.bean.PutType;
 import com.future.xlink.request.DataTransfer;
@@ -25,28 +26,27 @@ import com.future.xlink.callback.IMqttCallback;
 import com.future.xlink.callback.IHttpRequest;
 import com.future.xlink.request.retrofit.IApis;
 import com.future.xlink.utils.JsonFormat;
-import com.future.xlink.utils.PingUtils;
-import com.future.xlink.utils.Utils;
+import com.future.xlink.utils.TheadTools;
 import com.future.xlink.xlog.XLogTools;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
 
 public class MainAty extends Activity implements IMqttCallback, View.OnClickListener {
-    private static final String TAG = MainAty.class.getSimpleName();
-    Button btnSeHearbeat;
-    Button btnGetAgent;
-    Button btnGetDevice;
-    Button btnClear;
-    Button btnAddDev;
-    Button btnConn;
-    Button btnDisConn;
-    TextView tvResult;
-    static boolean isHeartbeat = false;
-    String clientId = "FSMMMNNNFF0";
-    TimerThread timerThread;
+    private static final String TAG = MainAty.class.getSimpleName() + "F";
+    private Button btnSeHearbeat;
+    private Button btnGetAgent;
+    private Button btnGetDevice;
+    private Button btnClear;
+    private Button btnAddDev;
+    private Button btnConn;
+    private Button btnDisConn;
+    private TextView tvResult;
+    private TextView tvConnStatus;
+    private TextView tvSn;
+    private static boolean isHeartbeat = false;
+    private String clientId = "FSMMMNNNFF001";
+    private TimerThread timerThread;
 
     /**
      * 获取初始化参数
@@ -71,6 +71,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        tvConnStatus = findViewById(R.id.tvConnStatus);
+        tvSn = findViewById(R.id.tvSn);
         btnSeHearbeat = findViewById(R.id.btnSeHearbeat);
         btnGetAgent = findViewById(R.id.btnGetAgent);
         btnGetDevice = findViewById(R.id.btnGetDevice);
@@ -87,25 +89,39 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnGetDevice.setOnClickListener(this);
         btnGetAgent.setOnClickListener(this);
         btnSeHearbeat.setOnClickListener(this);
+        tvSn.setText("当前操作的SN：" + clientId);
+
+        XLog.d("dlksjdfklsjdlkfjslkd");
         String configFolder = IApis.ROOT + getPackageName() + "/" + clientId + "/xlink-log/";
-        XLogTools.initResetXLog(configFolder);
-        timerThread=new TimerThread();
+        XLogTools.initXLog(configFolder);
+        timerThread = new TimerThread(handler);
         timerThread.start();
     }
 
-
+    /**
+     * 连接状态变化
+     *
+     * @param connected   true false
+     * @param description connected 为false时描述错误信息
+     */
     @Override
-    public void connChange(boolean connected, String description) {
-        sendToMessage(MainUtil.getFont("connChange()", !connected) + " >> connected=" + connected + ",description=" + description + "<br />");
+    public void connState(boolean connected, String description) {
+        sendToMessage(MainUtil.getFont("connState()", !connected) + " >> connected=" + connected + ",description=" + description + "<br />");
         if (connected) {
             XLink.subscribe("dev/" + clientId + "/#", 2);
             XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "online", null);
         }
+        handler.sendMessage(handler.obtainMessage(0x101, connected));
     }
 
+    /**
+     * 平台指令到达
+     *
+     * @param baseData 消息内容
+     */
     @Override
-    public void iotRequest(BaseData baseData) {
-        sendToMessage(MainUtil.getFont("iotRequest()", false) + " >> " + baseData.toString() + "<br />");
+    public void msgArrives(BaseData baseData) {
+        sendToMessage(MainUtil.getFont("msgArrives()", false) + " >> " + baseData.toString() + "<br />");
         if (baseData.operation.equals("remote_cmd")) {
             Map<String, Object> cmdList = new HashMap<>();
             cmdList.put("data", "这是一个测试data");
@@ -115,46 +131,67 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         }
     }
 
+    /**
+     * 推送完成
+     *
+     * @param baseData 完成的数据
+     */
     @Override
-    public void iotReply(String act, String iid) {
-        sendToMessage(MainUtil.getFont("iotReply()", false) + " >> act=" + act + ", iid >> " + iid + "<br />");
+    public void pushed(BaseData baseData) {
+        sendToMessage(MainUtil.getFont("pushed()", false) + " >> " + baseData.toString() + "<br />");
     }
 
+    /**
+     * 平台回复消息
+     *
+     * @param act
+     * @param iid
+     */
     @Override
-    public void pushComplete(BaseData baseData) {
-        sendToMessage(MainUtil.getFont("pushComplete()", false) + " >> " + baseData.toString() + "<br />");
+    public void iotReplyed(String act, String iid) {
+        sendToMessage(MainUtil.getFont("iotReplyed()", false) + " >> act=" + act + ", iid >> " + iid + "<br />");
     }
 
+    /**
+     * 推送数据错误
+     *
+     * @param baseData    推送内容
+     * @param description 错误描述
+     */
     @Override
-    public void pushFail(String description) {
-        sendToMessage(MainUtil.getFont("pushFail()", true) + " >> description=" + description + "<br />");
+    public void pushFail(BaseData baseData, String description) {
+        sendToMessage(MainUtil.getFont("pushFail()", true) + " >> " + baseData.toString() + " >> description=" + description + "<br />");
     }
 
+    /**
+     * 已订阅
+     */
     @Override
-    public void subscribeComplete() {
-        sendToMessage(MainUtil.getFont("subscriptionComplete()", false) + " >> " + "<br />");
+    public void subscribed(String topic) {
+        sendToMessage(MainUtil.getFont("subscriptionComplete()", false) + " topic >> " + topic + "<br />");
     }
 
+    /**
+     * 订阅失败
+     *
+     * @param description 错误描述
+     */
     @Override
-    public void subscribeFail(String description) {
-        sendToMessage(MainUtil.getFont("subscriptionFail()", true) + " >> description=" + description + "<br />");
+    public void subscribeFail(String topic,String description) {
+        sendToMessage(MainUtil.getFont("subscriptionFail()", true) +", topic >> "+topic+ " >> description=" + description + "<br />");
     }
-
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btnClear:
                 tvResult.setText("");
+                tvResult.scrollTo(0, 0);
                 break;
             case R.id.btnConn:
                 XLink.connect(MainAty.this, getInitParams(), MainAty.this);
                 break;
             case R.id.btnSeHearbeat:
-                if (!XLink.getConnectStatus()) {
-                    Toast.makeText(this, "请先进行连接！", Toast.LENGTH_SHORT).show();
-                    return;
-                }
                 if (isHeartbeat) {
                     isHeartbeat = false;
                     btnSeHearbeat.setText("开启心跳");
@@ -218,18 +255,40 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         }
     }
 
-    static class TimerThread extends Thread{
+    static class TimerThread extends Thread {
+        Handler handler;
+
+        public TimerThread(Handler handler) {
+            this.handler = handler;
+        }
+
         @Override
         public void run() {
             while (true) {
-                if(isHeartbeat&&XLink.getConnectStatus()){
+                if (isHeartbeat) {
                     XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
-                    Map uploadList=new HashMap();
-                    uploadList.put("15",true);
+                    Map uploadList = new HashMap();
+                    uploadList.put("15", true);
+                    uploadList.put("13", true);
                     XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList);
+                    Map uploadList2 = new HashMap();
+                    uploadList2.put("0", true);
+                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "15", uploadList2);
+                    Map eventMaps = new HashMap();
+                    eventMaps.put("result", true);
+                    eventMaps.put("sex", "1");
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_rsrc_monitor", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_install_result", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_uninstall_result", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_download_percent", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "firmware_install_result", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_upload_result", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_file_occupancy", eventMaps);
+
                     try {
-                        Thread.sleep(2000);
-                    }catch (Throwable e){
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -240,8 +299,14 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
-            showData(msg.obj.toString());
-
+            switch (msg.what) {
+                case 0x100:
+                    showData(msg.obj.toString());
+                    break;
+                case 0x101:
+                    tvConnStatus.setText("当前连接状态：" + msg.obj.toString());
+                    break;
+            }
         }
     };
 
@@ -255,16 +320,25 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      * @param htmlStr
      */
     public void showData(String htmlStr) {
-        tvResult.append(Html.fromHtml(MainUtil.getTodayDateHms("yyMMdd HH:mm:ss") + "：" + htmlStr));
+        tvResult.append(Html.fromHtml(MainUtil.getTodayDateHms("yy-MM-dd HH:mm:ss") + "：" + htmlStr));
+        tvResult.append("\n");
         //刷新最新行显示
         int offset = tvResult.getLineCount() * tvResult.getLineHeight();
-        if (offset > tvResult.getHeight()) {
-            tvResult.scrollTo(0, offset - tvResult.getHeight());
+        int tvHeight = tvResult.getHeight();
+        if (offset > 6000) {
+            tvResult.setText("");
+            tvResult.scrollTo(0, 0);
+        } else {
+            if (offset > tvHeight) {
+                //Log.d(TAG, "showData: offset >> " + offset + " ,tvHeight >> " + tvHeight);
+                tvResult.scrollTo(0, offset - tvHeight);
+            }
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        XLink.disConnect();
     }
 }

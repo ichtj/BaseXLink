@@ -1,4 +1,4 @@
 rootProject.name = "BaseXLink"
 include ':app'
-include ':xlink'
-/*include ':module_xlink'*/
+/*include ':xlink'*/
+include ':module_xlink'

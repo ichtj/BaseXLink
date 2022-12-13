@@ -191,21 +191,39 @@ public class DataTransfer {
                         }.getType());
                 for (int i = 0; i < gdevList.size(); i++) {
                     String did = gdevList.get(i).did;
-                    String[] operation = gdevList.get(i).serv_pros;
-                    if (did.equals(cliendId)) {
-                        return new BaseData(PutType.GETPERTIES, iid, operation[0], null);
+                    String[] serv_pros = gdevList.get(i).serv_pros;
+                    for (int j = 0; j < serv_pros.length; j++) {
+                        String[] operationInfo = serv_pros[j].split("-");
+                        String sid = operationInfo[0];
+                        String operation = operationInfo[1];
+                        Map<String, Object> maps = new HashMap<>();
+                        maps.put("prid", operation);
+                        if (did.equals(cliendId)) {
+                            return new BaseData(PutType.GETPERTIES, iid, sid, maps);
+                        }
                     }
                 }
                 break;
             case ICmdType.PLATFORM_SETPROPERTIES:
-                List<Sdevice> sDevices = GsonTools.fromJson(inHandle.getString("devices"),
-                        new TypeToken<ArrayList<Sdevice>>() {
-                        }.getType());
-                for (int i = 0; i < sDevices.size(); i++) {
-                    String did = sDevices.get(i).did;
-                    Object operation = sDevices.get(i).propts;
+                JSONObject jset = new JSONObject(jHandle.getString("inputs"));
+                JSONArray jdevices = jset.getJSONArray("devices");
+                for (int i = 0; i < jdevices.length(); i++) {
+                    JSONObject opera= (JSONObject) jdevices.get(i);
+                    String did=opera.getString("did");
+                    JSONObject propts=opera.getJSONObject("propts");
                     if (did.equals(cliendId)) {
-                        return new BaseData(PutType.SETPERTIES, iid, operation.toString(), null);
+                        Iterator<String> keys = propts.keys();// jsonObject.keys();
+                        Map<String,Object> maps=new HashMap<>();
+                        while (keys.hasNext()) {
+                            String key = keys.next();
+                            String[] operationsetInfo=key.split("-");
+                            String sid=operationsetInfo[0];
+                            String prid=operationsetInfo[1];
+                            String value = propts.getString(key);
+                            maps.put("prid", prid);
+                            maps.put("value", value);
+                            return new BaseData(PutType.SETPERTIES, iid,sid , maps);
+                        }
                     }
                 }
                 break;

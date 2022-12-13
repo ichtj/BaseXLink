@@ -266,7 +266,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         public void run() {
             while (true) {
                 if (isHeartbeat) {
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
                     Map uploadList = new HashMap();
                     uploadList.put("15", true);
                     uploadList.put("13", true);
@@ -277,13 +277,13 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     Map eventMaps = new HashMap();
                     eventMaps.put("result", true);
                     eventMaps.put("sex", "1");
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_rsrc_monitor", eventMaps);
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_install_result", eventMaps);
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_uninstall_result", eventMaps);
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_download_percent", eventMaps);
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "firmware_install_result", eventMaps);
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_upload_result", eventMaps);
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_file_occupancy", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_rsrc_monitor", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_install_result", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_uninstall_result", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_download_percent", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "firmware_install_result", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_upload_result", eventMaps);
+                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_file_occupancy", eventMaps);
 
                     try {
                         Thread.sleep(10000);

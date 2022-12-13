@@ -149,11 +149,14 @@ public class XLinkHttp {
                             super.onNext(baseResponse);
                             XLog.d("registeronNext:>=" + baseResponse.toString());
                             if (baseResponse.status == 0) {
-                                iReq.requestComplete("");
+                                iReq.requestComplete("{\"code\":0,\"description\":\"已完成\"}");
                             } else {
-                                //1 设备SN唯一验证失败, 该设备SN已经存在
-                                //403 达到最大的设备数量限制
-                                iReq.requestErr(baseResponse.description);
+                                if(!TextUtils.isEmpty(baseResponse.description)
+                                        &&baseResponse.description.indexOf("SN已经存在")!=-1){
+                                    iReq.requestComplete("{\"code\":0,\"description\":\"已完成\"}");
+                                }else{
+                                    iReq.requestErr(baseResponse.description);
+                                }
                             }
                         }
 

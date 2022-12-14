@@ -219,7 +219,7 @@ public class XLink {
                         //比较之前的时间与现在的时间相隔是否超过一分钟
                         if (msgData.pushCount < 3) {
                             if (nowSecond - beforeSecond > 1 * 60) {
-                                XLog.e("超时数据 记录 >> " + msgData.toString());
+                                XLog.e("record pos >> ["+msgData.pushCount +"], pushData >> "+ msgData.iid+",operation >> "+msgData.operation);
                                 //得到超时的秒数
                                 pushData(msgData, false);
                             }
@@ -245,6 +245,7 @@ public class XLink {
         if (getConnectStatus()) {
             try {
                 String pushData = DataTransfer.getPushData(instance().clientId, msgData);
+                XLog.d("pushData >> "+pushData);
                 String topic = DataTransfer.getDiffTopic(pushData, instance().clientId, instance().mqttSsid);
                 MqttMessage message = new MqttMessage(pushData.getBytes());
                 message.setQos(2);
@@ -253,11 +254,10 @@ public class XLink {
                     msgData.isPush = true;
                     //保存推送消息的时间 用于记录超时管理
                     msgData.pushTime = System.currentTimeMillis();
-                    Thread.sleep(100);
                 } else {
                     msgData.pushCount++;
-                    Thread.sleep(150);
                 }
+                Thread.sleep(150);
             } catch (Throwable e) {
                 getiMqtt().pushFail(msgData, e.getMessage());
             }
@@ -277,10 +277,9 @@ public class XLink {
             instance().conOpt = DataTransfer.getConOption(params);
             instance().client = new MqttAndroidClient(mCxt, params.mqttBroker, params.clientId, new MqttDefaultFilePersistence(tmpDir));
             instance().client.setCallback(new MqttContentHandle(mCxt));
-            IMqttToken itoken = instance().client.connect(instance().conOpt);
+            instance().client.connect(instance().conOpt).waitForCompletion();
             XLog.d("createConnect Waiting for connection to finish！");
             //阻止当前线程，直到该令牌关联的操作完成
-            itoken.waitForCompletion();
         } catch (MqttException e) {
             XLog.d("createConnect errMeg >> ", e);
             switch (e.getReasonCode()) {
@@ -317,7 +316,6 @@ public class XLink {
     public static boolean putCmd(@IPutType int iPutType, String iid, String operation, Map<String, Object> dataMap) {
         BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
         if (getConnectStatus()) {
-            XLog.d("putCmd >> " + baseData.toString());
             instance().pushMap.add(new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false, false));
             return true;
         }

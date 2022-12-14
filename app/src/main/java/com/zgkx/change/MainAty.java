@@ -128,6 +128,15 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
             cmdList.put("result", "这是一个测试result");
             cmdList.put("description", "这是一个测试description");
             XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, cmdList);
+        }else if(baseData.operation.equals("16")){
+            if(baseData.iPutType==PutType.GETPERTIES){
+                Map<String,Object> maps=new HashMap<>();
+                maps.put("prid",baseData.maps.get("prid"));
+                maps.put("value","测试");
+                XLink.putCmd(PutType.GETPERTIES,baseData.iid,baseData.operation,maps);
+            }else if(baseData.iPutType==PutType.SETPERTIES){
+                XLink.putCmd(PutType.SETPERTIES,baseData.iid,baseData.operation,baseData.maps);
+            }
         }
     }
 

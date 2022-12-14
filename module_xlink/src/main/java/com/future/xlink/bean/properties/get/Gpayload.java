@@ -1,9 +1,9 @@
 package com.future.xlink.bean.properties.get;
 
 public class Gpayload {
-    public String devices_get;
+    public Object devices_get;
 
-    public Gpayload(String devices_get) {
+    public Gpayload(Object devices_get) {
         this.devices_get = devices_get;
     }
 }

@@ -4,14 +4,14 @@ import com.future.xlink.bean.base.Mbase;
 import com.future.xlink.bean.properties.get.Gpayload;
 
 public class Preceive extends Mbase {
-    public Gpayload gpayload;
+    public Gpayload payload;
 
-    public Preceive(String iid, String act, Gpayload gpayload) {
+    public Preceive(String iid, String act, Gpayload payload) {
         super(iid, act);
-        this.gpayload = gpayload;
+        this.payload = payload;
     }
 
-    public Preceive(Gpayload gpayload) {
-        this.gpayload = gpayload;
+    public Preceive(Gpayload payload) {
+        this.payload = payload;
     }
 }

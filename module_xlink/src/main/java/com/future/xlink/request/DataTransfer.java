@@ -41,8 +41,12 @@ public class DataTransfer {
                 JSONObject eDevice = new JSONObject();
                 eDevice.put("did", clientId);
                 eDevice.put("event", baseData.operation);
-                JSONObject eOut = new JSONObject(baseData.maps);
-                eDevice.put("out", eOut);
+                if(baseData.maps!=null&&baseData.maps.size()>0){
+                    JSONObject eOut = new JSONObject(baseData.maps);
+                    eDevice.put("out", eOut);
+                }else{
+                    eDevice.put("out", null);
+                }
                 eDevices.put(eDevice);
 
                 JSONObject ePayload = new JSONObject();
@@ -60,8 +64,12 @@ public class DataTransfer {
                 JSONObject mAction = new JSONObject();
                 mAction.put("_description", "");
                 mAction.put("_status", 0);
-                JSONObject mOut = new JSONObject(baseData.maps);
-                mAction.put("out", mOut);
+                if(baseData.maps!=null&&baseData.maps.size()>0){
+                    JSONObject mOut = new JSONObject(baseData.maps);
+                    mAction.put("out", mOut);
+                }else{
+                    mAction.put("out", null);
+                }
                 mAction.put("did", clientId);
                 mAction.put("method", baseData.operation);
                 mActions.put(mAction);

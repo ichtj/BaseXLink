@@ -5,28 +5,10 @@ import android.text.TextUtils;
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.base.BaseData;
 import com.future.xlink.bean.InitParams;
-import com.future.xlink.bean.control.Erequest;
-import com.future.xlink.bean.control.Mreceive;
-import com.future.xlink.bean.control.Preceive;
-import com.future.xlink.bean.control.Urequest;
-import com.future.xlink.bean.event.Edevice;
-import com.future.xlink.bean.event.Epayload;
-import com.future.xlink.bean.method.receive.MactionResult;
-import com.future.xlink.bean.method.receive.Mpayload;
-import com.future.xlink.bean.method.request.Maction;
-import com.future.xlink.bean.method.request.Minputs;
-import com.future.xlink.bean.properties.get.Gdevice;
-import com.future.xlink.bean.properties.get.Gpayload;
-import com.future.xlink.bean.properties.set.Sdevice;
-import com.future.xlink.bean.properties.upload.Udevice;
-import com.future.xlink.bean.properties.upload.Upayload;
-import com.future.xlink.bean.properties.upload.Uproperties;
-import com.future.xlink.bean.properties.upload.Uservice;
 import com.future.xlink.callback.ICmdType;
 import com.future.xlink.bean.PutType;
+import com.future.xlink.callback.IPutType;
 import com.future.xlink.utils.AesTools;
-import com.future.xlink.utils.GsonTools;
-import com.google.gson.reflect.TypeToken;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -34,7 +16,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -56,83 +37,133 @@ public class DataTransfer {
         String requestCmd = null;
         switch (baseData.iPutType) {
             case PutType.EVENT:
-                List<Edevice> edevices = new ArrayList<>();
-                edevices.add(new Edevice(clientId, baseData.operation, baseData.maps));
-                requestCmd = GsonTools.toJsonWtihNullField(new Erequest(baseData.iid, "event", new Epayload(edevices)));
+                JSONArray eDevices = new JSONArray();
+                JSONObject eDevice = new JSONObject();
+                eDevice.put("did", clientId);
+                eDevice.put("event", baseData.operation);
+                JSONObject eOut = new JSONObject(baseData.maps);
+                eDevice.put("out", eOut);
+                eDevices.put(eDevice);
+
+                JSONObject ePayload = new JSONObject();
+                ePayload.put("devices", eDevices);
+
+                JSONObject eDatas = new JSONObject();
+                eDatas.put("payload", ePayload);
+                eDatas.put("act", "event");
+                eDatas.put("iid", baseData.iid);
+
+                requestCmd = eDatas.toString();
                 break;
             case PutType.METHOD:
-                List<MactionResult> action = new ArrayList<>();
-                action.add(new MactionResult(clientId, baseData.operation, "0", "", baseData.maps));
-                requestCmd = GsonTools.toJsonWtihNullField(new Mreceive(baseData.iid, "cmd-resp", new Mpayload(action)));
+                JSONArray mActions = new JSONArray();
+                JSONObject mAction = new JSONObject();
+                mAction.put("_description", "");
+                mAction.put("_status", 0);
+                JSONObject mOut = new JSONObject(baseData.maps);
+                mAction.put("out", mOut);
+                mAction.put("did", clientId);
+                mAction.put("method", baseData.operation);
+                mActions.put(mAction);
+
+                JSONObject mPayload = new JSONObject();
+                mPayload.put("action", mActions);
+
+                JSONObject mDatas = new JSONObject();
+                mDatas.put("payload", mPayload);
+                mDatas.put("act", "cmd-resp");
+                mDatas.put("iid", baseData.iid);
+
+                requestCmd = mDatas.toString();
                 break;
             case PutType.GETPERTIES:
-                Map getMaps = baseData.maps;
-                String getprid = getMaps.get("prid").toString();
-                String getvalue = getMaps.get("value").toString();
-                String sidPrid = baseData.operation + "-" + getprid;
+                JSONObject getJson = new JSONObject(baseData.maps);
+                Iterator<String> getSets = getJson.keys();
+                while (getSets.hasNext()) {
+                    String prid = getSets.next();
+                    String getvalue = getJson.getString(prid);
+                    String sidPrid = baseData.operation + "-" + prid;
 
-                JSONArray devMsgList = new JSONArray();
-                JSONObject dev = new JSONObject();
-                dev.put("_status", 0);
-                dev.put("_description", "");
-                dev.put(sidPrid + "", getvalue);
-                devMsgList.put(0, dev);
+                    JSONArray devMsgList = new JSONArray();
+                    JSONObject dev = new JSONObject();
+                    dev.put("_status", 0);
+                    dev.put("_description", "");
+                    dev.put(sidPrid + "", getvalue);
+                    devMsgList.put(0, dev);
 
-                JSONObject devMsg = new JSONObject();
-                devMsg.put(clientId, devMsgList);
+                    JSONObject devMsg = new JSONObject();
+                    devMsg.put(clientId, devMsgList);
 
-                JSONObject devices_get = new JSONObject();
-                devices_get.put("devices_get", devMsg);
+                    JSONObject devices_get = new JSONObject();
+                    devices_get.put("devices_get", devMsg);
 
-                JSONObject getAllData = new JSONObject();
-                getAllData.put("act", "cmd-resp");
-                getAllData.put("iid", baseData.iid);
-                getAllData.put("payload", devices_get);
-                requestCmd = getAllData.toString();
+                    JSONObject gDatas = new JSONObject();
+                    gDatas.put("act", "cmd-resp");
+                    gDatas.put("iid", baseData.iid);
+                    gDatas.put("payload", devices_get);
+                    requestCmd = gDatas.toString();
+                }
                 break;
             case PutType.SETPERTIES:
-                Map setMaps = baseData.maps;
-                String setprid = setMaps.get("prid").toString();
-                String setvalue = setMaps.get("value").toString();
-                String setSidPrid = baseData.operation + "-" + setprid;
+                JSONObject setJson = new JSONObject(baseData.maps);
+                Iterator<String> mapSet = setJson.keys();
+                while (mapSet.hasNext()) {
+                    String setprid = mapSet.next();
+                    String setvalue = setJson.getString(setprid);
+                    String setSidPrid = baseData.operation + "-" + setprid;
 
-                JSONArray setDevList = new JSONArray();
-                JSONObject setDdev = new JSONObject();
-                setDdev.put("_status", 0);
-                setDdev.put("_description", "");
-                setDdev.put(setSidPrid + "", setvalue);
-                setDevList.put(0, setDdev);
+                    JSONArray setDevList = new JSONArray();
+                    JSONObject setDdev = new JSONObject();
+                    setDdev.put("_status", 0);
+                    setDdev.put("_description", "");
+                    setDdev.put(setSidPrid + "", setvalue);
+                    setDevList.put(0, setDdev);
 
-                JSONObject setDdevMsg = new JSONObject();
-                setDdevMsg.put(clientId, setDevList);
+                    JSONObject setDdevMsg = new JSONObject();
+                    setDdevMsg.put(clientId, setDevList);
 
+                    JSONObject devices_set = new JSONObject();
+                    devices_set.put("devices_set", setDdevMsg);
 
-                JSONObject devices_set = new JSONObject();
-                devices_set.put("devices_set", setDdevMsg);
-
-
-                JSONObject setAllData = new JSONObject();
-                setAllData.put("act", "cmd-resp");
-                setAllData.put("iid", baseData.iid);
-                setAllData.put("payload", devices_set);
-                requestCmd = setAllData.toString();
+                    JSONObject sDatas = new JSONObject();
+                    sDatas.put("act", "cmd-resp");
+                    sDatas.put("iid", baseData.iid);
+                    sDatas.put("payload", devices_set);
+                    requestCmd = sDatas.toString();
+                }
                 break;
             case PutType.UPLOAD:
-                List<Udevice> udevices = new ArrayList<>();
-                List<Uservice> uservices = new ArrayList<>();
-                List<Uproperties> properties = new ArrayList<>();
-                //遍历 baseData map
-                Set<String> s1 = baseData.maps.keySet();
+                JSONArray uDevices=new JSONArray();
+                JSONArray uServices=new JSONArray();
+                JSONObject uService=new JSONObject();
+                JSONArray uProperties=new JSONArray();
+                Set<String> maps = baseData.maps.keySet();
                 //开始根据键找值
-                for (String key : s1) {
-                    Object keyvalue = baseData.maps.get(key);
-                    properties.add(new Uproperties(key, keyvalue));
+                for (String key : maps) {
+                    JSONObject uPropertie=new JSONObject();
+                    Object value = baseData.maps.get(key);
+                    uPropertie.put("prid", key);
+                    uPropertie.put("value", value);
+                    uProperties.put(uPropertie);
                 }
-                uservices.add(new Uservice(baseData.operation, properties));
-                udevices.add(new Udevice(clientId, uservices));
-                Upayload payload = new Upayload(udevices);
-                Urequest urequest = new Urequest(baseData.iid, "upload", payload);
-                requestCmd = GsonTools.toJsonWtihNullField(urequest);
+
+                uService.put("properties",uProperties);
+                uService.put("sid",baseData.operation);
+                uServices.put(uService);
+
+                JSONObject uDevice=new JSONObject();
+                uDevice.put("did",clientId);
+                uDevice.put("services",uServices);
+                uDevices.put(uDevice);
+
+                JSONObject uPayload = new JSONObject();
+                uPayload.put("devices", uDevices);
+
+                JSONObject uDatas = new JSONObject();
+                uDatas.put("act", "upload");
+                uDatas.put("iid", baseData.iid);
+                uDatas.put("payload", uPayload);
+                requestCmd = uDatas.toString();
                 break;
         }
         return requestCmd;
@@ -148,7 +179,7 @@ public class DataTransfer {
     public static String getDiffTopic(String pushDataJson, String cliendId, String mqttSsid) throws JSONException {
         String topic;
         JSONObject jsonObject = new JSONObject(pushDataJson);
-        String act = jsonObject.getString("act");
+        String act = jsonObject.optString("act");
         switch (act) {
             case "event":
                 topic = "evt/" + mqttSsid;
@@ -167,112 +198,123 @@ public class DataTransfer {
     /**
      * 交付结果处理
      */
-    public static BaseData deliveryHandle(String cliendId, MqttMessage msg) throws JSONException {
+    public static BaseData deliveryHandle(String cliendId, MqttMessage msg) throws Throwable {
         JSONObject jsonObject = new JSONObject(msg.toString());
         String act = jsonObject.getString("act");
         String iid = jsonObject.getString("iid");
         switch (act) {
             case "event":
-                Epayload epayload = GsonTools.fromJson(jsonObject.getString("payload"), Epayload.class);
-                List<Edevice> edevices = epayload.devices;
-                for (int i = 0; i < edevices.size(); i++) {
-                    String did = edevices.get(i).did;
-                    String operation = edevices.get(i).event;
-                    Map<String, Object> maps = edevices.get(i).out;
+                JSONObject eventPayload = new JSONObject(jsonObject.getString("payload"));
+                JSONArray eventArray = eventPayload.getJSONArray("devices");
+                for (int i = 0; i < eventArray.length(); i++) {
+                    JSONObject jEvent = eventArray.getJSONObject(i);
+                    String event = jEvent.getString("event");
+                    String did = jEvent.getString("did");
                     if (did.equals(cliendId)) {
-                        return new BaseData(PutType.EVENT, iid, operation, maps);
+                        JSONObject jsonOut = jEvent.getJSONObject("out");
+                        Iterator<String> outSets = jsonOut.keys();
+                        Map<String, Object> outMaps = new HashMap<>();
+                        while (outSets.hasNext()) {
+                            String key = outSets.next();
+                            String value = jsonOut.getString(key);
+                            outMaps.put(key, value);
+                        }
+                        return new BaseData(PutType.EVENT, iid, event, outMaps);
                     }
                 }
                 break;
             case "upload":
-                Upayload upayload = GsonTools.fromJson(jsonObject.getString("payload"), Upayload.class);
-                List<Udevice> udevices = upayload.devices;
-                for (int i = 0; i < udevices.size(); i++) {
-                    if (cliendId.equals(udevices.get(i).did)) {
-                        List<Uservice> uservices = udevices.get(i).services;
-                        Map<String, Object> uValue = new HashMap<>();
-                        for (int j = 0; j < uservices.size(); j++) {
-                            List<Uproperties> uproperties = uservices.get(j).properties;
-                            for (int k = 0; k < uproperties.size(); k++) {
-                                uValue.put(uproperties.get(k).prid, uproperties.get(k).value);
+                JSONObject uploadJson = new JSONObject(jsonObject.getString("payload"));
+                JSONArray devicesArray = uploadJson.getJSONArray("devices");
+                for (int i = 0; i < devicesArray.length(); i++) {
+                    JSONObject jdevice = devicesArray.getJSONObject(i);
+                    JSONArray serviceArray = jdevice.getJSONArray("services");
+                    String did = jdevice.getString("did");
+                    if (did.equals(cliendId)) {
+                        for (int j = 0; j < serviceArray.length(); j++) {
+                            JSONObject propertiesJson = serviceArray.getJSONObject(j);
+                            String sid = propertiesJson.getString("sid");
+                            JSONArray valueArray = propertiesJson.getJSONArray("properties");
+                            Map<String, Object> maps = new HashMap<>();
+                            for (int k = 0; k < valueArray.length(); k++) {
+                                JSONObject valueJson = valueArray.getJSONObject(k);
+                                String prid = valueJson.optString("prid");
+                                String value = valueJson.optString("value");
+                                maps.put(prid, value);
                             }
+                            return new BaseData(PutType.UPLOAD, iid, sid, maps);
                         }
-                        return new BaseData(PutType.UPLOAD, iid, uservices.get(i).sid, uValue);
                     }
                 }
                 break;
             case "cmd-resp":
-                JSONObject jsonObject1 = new JSONObject(msg.toString());
-                JSONObject payloadJson = jsonObject1.getJSONObject("payload");
+                JSONObject payloadJson = jsonObject.getJSONObject("payload");
                 if (payloadJson.has("devices_get")) {
-                    JSONObject deviceJson = new JSONObject(payloadJson.getString("devices_get"));
-                    Iterator<String> deviceSet = deviceJson.keys();
-                    while (deviceSet.hasNext()) {
-                        String clientIdkey = deviceSet.next();
-                        if (clientIdkey.equals(cliendId)) {
-                            JSONArray clientIdArray = deviceJson.getJSONArray(cliendId);
-                            for (int i = 0; i < clientIdArray.length(); i++) {
-                                JSONObject jInfo = (JSONObject) clientIdArray.get(i);
-                                Iterator<String> jInfoSet = jInfo.keys();
-                                Map<String, Object> maps = new HashMap<>();
-                                String sid = "";
-                                String prid;
-                                while (jInfoSet.hasNext()) {
-                                    String deviceKey = jInfoSet.next();
-                                    String sidPrid = regular("[0-9]*-[0-9]*", deviceKey);
-                                    if (!TextUtils.isEmpty(sidPrid)) {
-                                        String[] sidPridArray = sidPrid.split("-");
-                                        sid = sidPridArray[0];
-                                        prid = sidPridArray[1];
-                                        maps.put("prid", prid);
-                                        maps.put("value", jInfo.get(deviceKey));
-                                    }
-                                }
-                                return new BaseData(PutType.GETPERTIES, iid, sid, maps);
-                            }
-                        }
-                    }
+                    return propertiesHandle(payloadJson, iid, cliendId, PutType.GETPERTIES);
                 } else if (payloadJson.has("devices_set")) {
-                    JSONObject deviceJson = new JSONObject(payloadJson.getString("devices_set"));
-                    Iterator<String> deviceSet = deviceJson.keys();
-                    while (deviceSet.hasNext()) {
-                        String clientIdkey = deviceSet.next();
-                        if (clientIdkey.equals(cliendId)) {
-                            JSONArray clientIdArray = deviceJson.getJSONArray(cliendId);
-                            for (int i = 0; i < clientIdArray.length(); i++) {
-                                JSONObject jInfo = (JSONObject) clientIdArray.get(i);
-                                Iterator<String> jInfoSet = jInfo.keys();
-                                Map<String, Object> maps = new HashMap<>();
-                                String sid = "";
-                                String prid;
-                                while (jInfoSet.hasNext()) {
-                                    String deviceKey = jInfoSet.next();
-                                    String sidPrid = regular("[0-9]*-[0-9]*", deviceKey);
-                                    if (!TextUtils.isEmpty(sidPrid)) {
-                                        String[] sidPridArray = sidPrid.split("-");
-                                        sid = sidPridArray[0];
-                                        prid = sidPridArray[1];
-                                        maps.put("prid", prid);
-                                        maps.put("value", jInfo.get(deviceKey));
-                                    }
-                                }
-                                return new BaseData(PutType.SETPERTIES, iid, sid, maps);
-                            }
-                        }
-                    }
+                    return propertiesHandle(payloadJson, iid, cliendId, PutType.SETPERTIES);
                 } else {
-                    Mpayload mpayload = GsonTools.fromJson(jsonObject.getString("payload"), Mpayload.class);
-                    List<MactionResult> action = mpayload.action;
-                    for (int i = 0; i < action.size(); i++) {
-                        String did = action.get(i).did;
-                        String operation = action.get(i).method;
-                        Map<String, Object> maps = action.get(i).out;
-                        if (did.equals(cliendId)) {
-                            return new BaseData(PutType.METHOD, iid, operation, maps);
+                    JSONObject mPayload=jsonObject.getJSONObject("payload");
+                    JSONArray mActions=mPayload.getJSONArray("action");
+                    for (int i = 0; i < mActions.length(); i++) {
+                        JSONObject mAction=mActions.getJSONObject(i);
+                        String did=mAction.getString("did");
+                        if(did.equals(cliendId)){
+                            String method=mAction.getString("method");
+                            JSONObject mOut=mAction.getJSONObject("out");
+                            Iterator<String> outSets=mOut.keys();
+                            Map maps=new HashMap();
+                            while (outSets.hasNext()){
+                                String key=outSets.next();
+                                String value=mOut.get(key).toString();
+                                maps.put(key,value);
+                            }
+                            return new BaseData(PutType.METHOD, iid, method, maps);
                         }
                     }
                 }
                 break;
+        }
+        return null;
+    }
+
+    /**
+     * 属性 get set处理
+     *
+     * @param payloadJson 消息内容
+     * @param iid         消息标识
+     * @param cliendId    唯一id
+     * @param iPutType    消息类别
+     * @return 封装后的baseData
+     * @throws JSONException
+     */
+    private static BaseData propertiesHandle(JSONObject payloadJson, String iid, String cliendId, @IPutType int iPutType) throws JSONException {
+        JSONObject deviceJson = new JSONObject(
+                payloadJson.getString(iPutType == PutType.GETPERTIES ? "devices_get" : "devices_set"));
+        Iterator<String> deviceSet = deviceJson.keys();
+        while (deviceSet.hasNext()) {
+            String clientIdkey = deviceSet.next();
+            if (clientIdkey.equals(cliendId)) {
+                JSONArray clientIdArray = deviceJson.getJSONArray(cliendId);
+                for (int i = 0; i < clientIdArray.length(); i++) {
+                    JSONObject jInfo = (JSONObject) clientIdArray.get(i);
+                    String sid = "";
+                    String prid;
+                    Iterator<String> jInfoSet = jInfo.keys();
+                    Map<String, Object> maps = new HashMap<>();
+                    while (jInfoSet.hasNext()) {
+                        String deviceKey = jInfoSet.next();
+                        String sidPrid = regular("[0-9]*-[0-9]*", deviceKey);
+                        if (!TextUtils.isEmpty(sidPrid)) {
+                            String[] sidPridArray = sidPrid.split("-");
+                            sid = sidPridArray[0];
+                            prid = sidPridArray[1];
+                            maps.put(prid, jInfo.get(deviceKey));
+                        }
+                    }
+                    return new BaseData(iPutType, iid, sid, maps);
+                }
+            }
         }
         return null;
     }
@@ -288,38 +330,40 @@ public class DataTransfer {
      * 平台请求
      */
     public static BaseData IotRequest(String cliendId, JSONObject jHandle, String iid) throws JSONException {
-        //String ack = jHandle.has("ack") ? jHandle.getString("ack") : "";
         String inputs = jHandle.getString("inputs");
         JSONObject inHandle = new JSONObject(inputs);
-        String intent = inHandle.getString("intent");
+        String intent = inHandle.optString("intent");
         switch (intent) {
             case ICmdType.PLATFORM_METHOD:
-                Minputs minputs = GsonTools.fromJson(inputs, Minputs.class);
-                List<Maction> mActions = minputs.action;
-                for (int i = 0; i < mActions.size(); i++) {
-                    String did = mActions.get(i).did;
-                    if (did.equals(cliendId)) {
-                        String operation = mActions.get(i).method;
-                        return new BaseData(PutType.METHOD, iid, operation, mActions.get(i).in);
+                JSONArray mActions=inHandle.getJSONArray("action");
+                for (int i = 0; i < mActions.length(); i++) {
+                    JSONObject mAction=mActions.getJSONObject(i);
+                    String did=mAction.getString("did");
+                    if(did.equals(cliendId)){
+                        JSONObject mInMaps=mAction.getJSONObject("in");
+                        String method=mAction.getString("method");
+                        Iterator<String> mInMapsSet=mInMaps.keys();
+                        Map maps=new HashMap();
+                        while (mInMapsSet.hasNext()){
+                            String key= mInMapsSet.next();
+                            String value=mInMaps.getString(key);
+                            maps.put(key,value);
+                        }
+                        return new BaseData(PutType.METHOD, iid, method, maps);
                     }
                 }
                 break;
             case ICmdType.PLATFORM_GETPROPERTIES:
-                List<Gdevice> gdevList = GsonTools.fromJson(inHandle.getString("devices"),
-                        new TypeToken<List<Gdevice>>() {
-                        }.getType());
-                for (int i = 0; i < gdevList.size(); i++) {
-                    String did = gdevList.get(i).did;
-                    String[] serv_pros = gdevList.get(i).serv_pros;
-                    for (int j = 0; j < serv_pros.length; j++) {
-                        String[] operationInfo = serv_pros[j].split("-");
-                        String sid = operationInfo[0];
-                        String operation = operationInfo[1];
+                JSONArray getdevices = inHandle.getJSONArray("devices");
+                for (int i = 0; i < getdevices.length(); i++) {
+                    JSONObject jDevice = getdevices.getJSONObject(i);
+                    String did = jDevice.getString("did");
+                    if (did.equals(cliendId)) {
+                        String serv_pros = jDevice.getString("serv_pros").replace("[\"", "").replace("\"]", "");
+                        String[] servInfo = serv_pros.split("-");
                         Map<String, Object> maps = new HashMap<>();
-                        maps.put("prid", operation);
-                        if (did.equals(cliendId)) {
-                            return new BaseData(PutType.GETPERTIES, iid, sid, maps);
-                        }
+                        maps.put("prid", servInfo[1]);
+                        return new BaseData(PutType.GETPERTIES, iid, servInfo[0], maps);
                     }
                 }
                 break;
@@ -339,8 +383,7 @@ public class DataTransfer {
                             String sid = operationsetInfo[0];
                             String prid = operationsetInfo[1];
                             String value = propts.getString(key);
-                            maps.put("prid", prid);
-                            maps.put("value", value);
+                            maps.put(prid, value);
                             return new BaseData(PutType.SETPERTIES, iid, sid, maps);
                         }
                     }

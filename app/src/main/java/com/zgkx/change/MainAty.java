@@ -29,7 +29,10 @@ import com.future.xlink.utils.JsonFormat;
 import com.future.xlink.utils.TheadTools;
 import com.future.xlink.xlog.XLogTools;
 
+import org.json.JSONObject;
+
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class MainAty extends Activity implements IMqttCallback, View.OnClickListener {
@@ -45,7 +48,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private TextView tvConnStatus;
     private TextView tvSn;
     private static boolean isHeartbeat = false;
-    private String clientId = "FSMMMNNNFF001";
+    //private String clientId = "FSMMMNNNFF001";
+    private String clientId = "FSMMMNNNFF002";
     private TimerThread timerThread;
 
     /**
@@ -109,7 +113,11 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         sendToMessage(MainUtil.getFont("connState()", !connected) + " >> connected=" + connected + ",description=" + description + "<br />");
         if (connected) {
             XLink.subscribe("dev/" + clientId + "/#", 2);
-            XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "online", null);
+            Map<String,Object> maps=new HashMap<>();
+            maps.put("address","飞思未来深圳科技有限公司");
+            maps.put("longitude","0");
+            maps.put("latitude","0");
+            XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "online", maps);
         }
         handler.sendMessage(handler.obtainMessage(0x101, connected));
     }
@@ -128,14 +136,13 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
             cmdList.put("result", "这是一个测试result");
             cmdList.put("description", "这是一个测试description");
             XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, cmdList);
-        }else if(baseData.operation.equals("16")){
-            if(baseData.iPutType==PutType.GETPERTIES){
-                Map<String,Object> maps=new HashMap<>();
-                maps.put("prid",baseData.maps.get("prid"));
-                maps.put("value","测试");
-                XLink.putCmd(PutType.GETPERTIES,baseData.iid,baseData.operation,maps);
-            }else if(baseData.iPutType==PutType.SETPERTIES){
-                XLink.putCmd(PutType.SETPERTIES,baseData.iid,baseData.operation,baseData.maps);
+        } else if (baseData.operation.equals("16")) {
+            if (baseData.iPutType == PutType.GETPERTIES) {
+                Map<String, Object> maps = new HashMap<>();
+                maps.put(baseData.maps.get("prid").toString(),true);
+                XLink.putCmd(PutType.GETPERTIES, baseData.iid, baseData.operation, maps);
+            } else if (baseData.iPutType == PutType.SETPERTIES) {
+                XLink.putCmd(PutType.SETPERTIES, baseData.iid, baseData.operation, baseData.maps);
             }
         }
     }
@@ -186,8 +193,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      * @param description 错误描述
      */
     @Override
-    public void subscribeFail(String topic,String description) {
-        sendToMessage(MainUtil.getFont("subscriptionFail()", true) +", topic >> "+topic+ " >> description=" + description + "<br />");
+    public void subscribeFail(String topic, String description) {
+        sendToMessage(MainUtil.getFont("subscriptionFail()", true) + ", topic >> " + topic + " >> description=" + description + "<br />");
     }
 
     @Override
@@ -277,15 +284,15 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 if (isHeartbeat) {
                     //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
                     Map uploadList = new HashMap();
-                    uploadList.put("15", true);
-                    uploadList.put("13", true);
+                    uploadList.put("15", false);
+                    uploadList.put("13", false);
                     XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList);
-                    Map uploadList2 = new HashMap();
-                    uploadList2.put("0", true);
-                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "15", uploadList2);
-                    Map eventMaps = new HashMap();
-                    eventMaps.put("result", true);
-                    eventMaps.put("sex", "1");
+                    //Map uploadList2 = new HashMap();
+                    //uploadList2.put("0", true);
+                    //XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "15", uploadList2);
+                    //Map eventMaps = new HashMap();
+                    //eventMaps.put("result", true);
+                    //eventMaps.put("sex", "1");
                     //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_rsrc_monitor", eventMaps);
                     //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_install_result", eventMaps);
                     //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_uninstall_result", eventMaps);

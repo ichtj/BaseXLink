@@ -41,10 +41,10 @@ public class DataTransfer {
                 JSONObject eDevice = new JSONObject();
                 eDevice.put("did", clientId);
                 eDevice.put("event", baseData.operation);
-                if(baseData.maps!=null&&baseData.maps.size()>0){
+                if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject eOut = new JSONObject(baseData.maps);
                     eDevice.put("out", eOut);
-                }else{
+                } else {
                     eDevice.put("out", null);
                 }
                 eDevices.put(eDevice);
@@ -64,10 +64,10 @@ public class DataTransfer {
                 JSONObject mAction = new JSONObject();
                 mAction.put("_description", "");
                 mAction.put("_status", 0);
-                if(baseData.maps!=null&&baseData.maps.size()>0){
+                if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject mOut = new JSONObject(baseData.maps);
                     mAction.put("out", mOut);
-                }else{
+                } else {
                     mAction.put("out", null);
                 }
                 mAction.put("did", clientId);
@@ -85,18 +85,17 @@ public class DataTransfer {
                 requestCmd = mDatas.toString();
                 break;
             case PutType.GETPERTIES:
-                JSONObject getJson = new JSONObject(baseData.maps);
-                Iterator<String> getSets = getJson.keys();
-                while (getSets.hasNext()) {
-                    String prid = getSets.next();
-                    String getvalue = getJson.getString(prid);
+                if (baseData.maps != null && baseData.maps.size() > 0) {
+                    JSONObject getJson = new JSONObject(baseData.maps);
+                    String prid = getJson.getString("prid");
+                    String value = getJson.getString("value");
                     String sidPrid = baseData.operation + "-" + prid;
 
                     JSONArray devMsgList = new JSONArray();
                     JSONObject dev = new JSONObject();
                     dev.put("_status", 0);
                     dev.put("_description", "");
-                    dev.put(sidPrid + "", getvalue);
+                    dev.put(sidPrid + "", value);
                     devMsgList.put(0, dev);
 
                     JSONObject devMsg = new JSONObject();
@@ -113,18 +112,17 @@ public class DataTransfer {
                 }
                 break;
             case PutType.SETPERTIES:
-                JSONObject setJson = new JSONObject(baseData.maps);
-                Iterator<String> mapSet = setJson.keys();
-                while (mapSet.hasNext()) {
-                    String setprid = mapSet.next();
-                    String setvalue = setJson.getString(setprid);
-                    String setSidPrid = baseData.operation + "-" + setprid;
+                if (baseData.maps != null && baseData.maps.size() > 0) {
+                    JSONObject getJson = new JSONObject(baseData.maps);
+                    String prid = getJson.getString("prid");
+                    String value = getJson.getString("value");
+                    String sidPrid = baseData.operation + "-" + prid;
 
                     JSONArray setDevList = new JSONArray();
                     JSONObject setDdev = new JSONObject();
                     setDdev.put("_status", 0);
                     setDdev.put("_description", "");
-                    setDdev.put(setSidPrid + "", setvalue);
+                    setDdev.put(sidPrid + "", value);
                     setDevList.put(0, setDdev);
 
                     JSONObject setDdevMsg = new JSONObject();
@@ -141,27 +139,27 @@ public class DataTransfer {
                 }
                 break;
             case PutType.UPLOAD:
-                JSONArray uDevices=new JSONArray();
-                JSONArray uServices=new JSONArray();
-                JSONObject uService=new JSONObject();
-                JSONArray uProperties=new JSONArray();
+                JSONArray uDevices = new JSONArray();
+                JSONArray uServices = new JSONArray();
+                JSONObject uService = new JSONObject();
+                JSONArray uProperties = new JSONArray();
                 Set<String> maps = baseData.maps.keySet();
                 //开始根据键找值
                 for (String key : maps) {
-                    JSONObject uPropertie=new JSONObject();
+                    JSONObject uPropertie = new JSONObject();
                     Object value = baseData.maps.get(key);
                     uPropertie.put("prid", key);
                     uPropertie.put("value", value);
                     uProperties.put(uPropertie);
                 }
 
-                uService.put("properties",uProperties);
-                uService.put("sid",baseData.operation);
+                uService.put("properties", uProperties);
+                uService.put("sid", baseData.operation);
                 uServices.put(uService);
 
-                JSONObject uDevice=new JSONObject();
-                uDevice.put("did",clientId);
-                uDevice.put("services",uServices);
+                JSONObject uDevice = new JSONObject();
+                uDevice.put("did", clientId);
+                uDevice.put("services", uServices);
                 uDevices.put(uDevice);
 
                 JSONObject uPayload = new JSONObject();
@@ -220,7 +218,7 @@ public class DataTransfer {
                     String did = jEvent.getString("did");
                     if (did.equals(cliendId)) {
                         Map<String, Object> outMaps = new HashMap<>();
-                        if(jEvent.has("out")){
+                        if (jEvent.has("out")) {
                             JSONObject jsonOut = jEvent.getJSONObject("out");
                             Iterator<String> outSets = jsonOut.keys();
                             while (outSets.hasNext()) {
@@ -264,20 +262,20 @@ public class DataTransfer {
                 } else if (payloadJson.has("devices_set")) {
                     return propertiesHandle(payloadJson, iid, cliendId, PutType.SETPERTIES);
                 } else {
-                    JSONObject mPayload=jsonObject.getJSONObject("payload");
-                    JSONArray mActions=mPayload.getJSONArray("action");
+                    JSONObject mPayload = jsonObject.getJSONObject("payload");
+                    JSONArray mActions = mPayload.getJSONArray("action");
                     for (int i = 0; i < mActions.length(); i++) {
-                        JSONObject mAction=mActions.getJSONObject(i);
-                        String did=mAction.getString("did");
-                        if(did.equals(cliendId)){
-                            String method=mAction.getString("method");
-                            JSONObject mOut=mAction.getJSONObject("out");
-                            Iterator<String> outSets=mOut.keys();
-                            Map maps=new HashMap();
-                            while (outSets.hasNext()){
-                                String key=outSets.next();
-                                String value=mOut.get(key).toString();
-                                maps.put(key,value);
+                        JSONObject mAction = mActions.getJSONObject(i);
+                        String did = mAction.getString("did");
+                        if (did.equals(cliendId)) {
+                            String method = mAction.getString("method");
+                            JSONObject mOut = mAction.getJSONObject("out");
+                            Iterator<String> outSets = mOut.keys();
+                            Map maps = new HashMap();
+                            while (outSets.hasNext()) {
+                                String key = outSets.next();
+                                String value = mOut.get(key).toString();
+                                maps.put(key, value);
                             }
                             return new BaseData(PutType.METHOD, iid, method, maps);
                         }
@@ -345,19 +343,19 @@ public class DataTransfer {
         String intent = inHandle.optString("intent");
         switch (intent) {
             case ICmdType.PLATFORM_METHOD:
-                JSONArray mActions=inHandle.getJSONArray("action");
+                JSONArray mActions = inHandle.getJSONArray("action");
                 for (int i = 0; i < mActions.length(); i++) {
-                    JSONObject mAction=mActions.getJSONObject(i);
-                    String did=mAction.getString("did");
-                    if(did.equals(cliendId)){
-                        JSONObject mInMaps=mAction.getJSONObject("in");
-                        String method=mAction.getString("method");
-                        Iterator<String> mInMapsSet=mInMaps.keys();
-                        Map maps=new HashMap();
-                        while (mInMapsSet.hasNext()){
-                            String key= mInMapsSet.next();
-                            String value=mInMaps.getString(key);
-                            maps.put(key,value);
+                    JSONObject mAction = mActions.getJSONObject(i);
+                    String did = mAction.getString("did");
+                    if (did.equals(cliendId)) {
+                        JSONObject mInMaps = mAction.getJSONObject("in");
+                        String method = mAction.getString("method");
+                        Iterator<String> mInMapsSet = mInMaps.keys();
+                        Map maps = new HashMap();
+                        while (mInMapsSet.hasNext()) {
+                            String key = mInMapsSet.next();
+                            String value = mInMaps.getString(key);
+                            maps.put(key, value);
                         }
                         return new BaseData(PutType.METHOD, iid, method, maps);
                     }

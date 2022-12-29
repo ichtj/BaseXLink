@@ -219,13 +219,15 @@ public class DataTransfer {
                     String event = jEvent.getString("event");
                     String did = jEvent.getString("did");
                     if (did.equals(cliendId)) {
-                        JSONObject jsonOut = jEvent.getJSONObject("out");
-                        Iterator<String> outSets = jsonOut.keys();
                         Map<String, Object> outMaps = new HashMap<>();
-                        while (outSets.hasNext()) {
-                            String key = outSets.next();
-                            String value = jsonOut.getString(key);
-                            outMaps.put(key, value);
+                        if(jEvent.has("out")){
+                            JSONObject jsonOut = jEvent.getJSONObject("out");
+                            Iterator<String> outSets = jsonOut.keys();
+                            while (outSets.hasNext()) {
+                                String key = outSets.next();
+                                String value = jsonOut.getString(key);
+                                outMaps.put(key, value);
+                            }
                         }
                         return new BaseData(PutType.EVENT, iid, event, outMaps);
                     }

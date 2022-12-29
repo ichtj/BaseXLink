@@ -95,7 +95,6 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnSeHearbeat.setOnClickListener(this);
         tvSn.setText("当前操作的SN：" + clientId);
 
-        XLog.d("dlksjdfklsjdlkfjslkd");
         String configFolder = IApis.ROOT + getPackageName() + "/" + clientId + "/xlink-log/";
         XLogTools.initXLog(configFolder);
         timerThread = new TimerThread(handler);

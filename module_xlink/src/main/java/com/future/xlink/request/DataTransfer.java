@@ -88,14 +88,13 @@ public class DataTransfer {
                 if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject getJson = new JSONObject(baseData.maps);
                     String prid = getJson.getString("prid");
-                    String value = getJson.getString("value");
                     String sidPrid = baseData.operation + "-" + prid;
 
                     JSONArray devMsgList = new JSONArray();
                     JSONObject dev = new JSONObject();
                     dev.put("_status", 0);
                     dev.put("_description", "");
-                    dev.put(sidPrid + "", value);
+                    dev.put(sidPrid + "", getJson.get("value"));
                     devMsgList.put(0, dev);
 
                     JSONObject devMsg = new JSONObject();
@@ -115,14 +114,13 @@ public class DataTransfer {
                 if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject getJson = new JSONObject(baseData.maps);
                     String prid = getJson.getString("prid");
-                    String value = getJson.getString("value");
                     String sidPrid = baseData.operation + "-" + prid;
 
                     JSONArray setDevList = new JSONArray();
                     JSONObject setDdev = new JSONObject();
                     setDdev.put("_status", 0);
                     setDdev.put("_description", "");
-                    setDdev.put(sidPrid + "", value);
+                    setDdev.put(sidPrid + "", getJson.get("value"));
                     setDevList.put(0, setDdev);
 
                     JSONObject setDdevMsg = new JSONObject();

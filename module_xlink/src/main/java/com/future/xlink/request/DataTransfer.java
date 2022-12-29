@@ -261,13 +261,15 @@ public class DataTransfer {
                         String did = mAction.getString("did");
                         if (did.equals(cliendId)) {
                             String method = mAction.getString("method");
-                            JSONObject mOut = mAction.getJSONObject("out");
-                            Iterator<String> outSets = mOut.keys();
                             Map maps = new HashMap();
-                            while (outSets.hasNext()) {
-                                String key = outSets.next();
-                                String value = mOut.get(key).toString();
-                                maps.put(key, value);
+                            if(mAction.has("out")){
+                                JSONObject mOut = mAction.getJSONObject("out");
+                                Iterator<String> outSets = mOut.keys();
+                                while (outSets.hasNext()) {
+                                    String key = outSets.next();
+                                    String value = mOut.get(key).toString();
+                                    maps.put(key, value);
+                                }
                             }
                             return new BaseData(PutType.METHOD, iid, method, maps);
                         }

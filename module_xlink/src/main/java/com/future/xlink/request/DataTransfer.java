@@ -139,15 +139,11 @@ public class DataTransfer {
                 JSONArray uServices = new JSONArray();
                 JSONObject uService = new JSONObject();
                 JSONArray uProperties = new JSONArray();
-                Set<String> maps = baseData.maps.keySet();
                 //开始根据键找值
-                for (String key : maps) {
-                    JSONObject uPropertie = new JSONObject();
-                    Object value = baseData.maps.get(key);
-                    uPropertie.put("prid", key);
-                    uPropertie.put("value", value);
-                    uProperties.put(uPropertie);
-                }
+                JSONObject uPropertie = new JSONObject();
+                uPropertie.put("prid", baseData.maps.get("prid"));
+                uPropertie.put("value", baseData.maps.get("value"));
+                uProperties.put(uPropertie);
 
                 uService.put("properties", uProperties);
                 uService.put("sid", baseData.operation);
@@ -387,7 +383,8 @@ public class DataTransfer {
                             String sid = operationsetInfo[0];
                             String prid = operationsetInfo[1];
                             String value = propts.getString(key);
-                            maps.put(prid, value);
+                            maps.put("prid", prid);
+                            maps.put("value", value);
                             return new BaseData(PutType.SETPERTIES, iid, sid, maps);
                         }
                     }

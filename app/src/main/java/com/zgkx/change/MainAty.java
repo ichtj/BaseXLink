@@ -281,24 +281,17 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         public void run() {
             while (true) {
                 if (isHeartbeat) {
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
-                    Map uploadList = new HashMap();
-                    uploadList.put("15", false);
-                    uploadList.put("13", false);
-                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList);
-                    //Map uploadList2 = new HashMap();
-                    //uploadList2.put("0", true);
-                    //XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "15", uploadList2);
-                    //Map eventMaps = new HashMap();
-                    //eventMaps.put("result", true);
-                    //eventMaps.put("sex", "1");
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_rsrc_monitor", eventMaps);
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_install_result", eventMaps);
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "apk_uninstall_result", eventMaps);
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_download_percent", eventMaps);
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "firmware_install_result", eventMaps);
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "file_upload_result", eventMaps);
-                    //XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "hdev_file_occupancy", eventMaps);
+                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
+
+                    Map uploadList1 = new HashMap();
+                    uploadList1.put("prid", "15");
+                    uploadList1.put("value", false);
+                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
+
+                    Map uploadList2 = new HashMap();
+                    uploadList2.put("prid", "13");
+                    uploadList2.put("value", false);
+                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
 
                     try {
                         Thread.sleep(10000);

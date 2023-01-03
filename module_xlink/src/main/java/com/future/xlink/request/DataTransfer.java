@@ -18,9 +18,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +63,10 @@ public class DataTransfer {
                 mAction.put("_description", "");
                 mAction.put("_status", 0);
                 if (baseData.maps != null && baseData.maps.size() > 0) {
-                    JSONObject mOut = new JSONObject(baseData.maps);
+                    JSONObject mOut = new JSONObject();
+                    for (String key:baseData.maps.keySet()) {
+                        mOut.put(key,baseData.maps.get(key));
+                    }
                     mAction.put("out", mOut);
                 } else {
                     mAction.put("out", null);

@@ -1,6 +1,7 @@
 package com.zgkx.change;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -31,6 +32,7 @@ import com.future.xlink.xlog.XLogTools;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -44,6 +46,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private Button btnAddDev;
     private Button btnConn;
     private Button btnDisConn;
+    private Button btnAutoConn;
+    private Button btnReboot;
     private TextView tvResult;
     private TextView tvConnStatus;
     private TextView tvSn;
@@ -75,6 +79,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        btnReboot = findViewById(R.id.btnReboot);
+        btnAutoConn = findViewById(R.id.btnAutoConn);
+        boolean isAutoConn = SPUtils.getBoolean(this, MainUtil.KEY_AUTOCONN, false);
+        btnAutoConn.setText("开机自启：" + isAutoConn);
         tvConnStatus = findViewById(R.id.tvConnStatus);
         tvSn = findViewById(R.id.tvSn);
         btnSeHearbeat = findViewById(R.id.btnSeHearbeat);
@@ -93,12 +101,30 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnGetDevice.setOnClickListener(this);
         btnGetAgent.setOnClickListener(this);
         btnSeHearbeat.setOnClickListener(this);
+        btnAutoConn.setOnClickListener(this);
+        btnReboot.setOnClickListener(this);
         tvSn.setText("当前操作的SN：" + clientId);
 
         String configFolder = IApis.ROOT + getPackageName() + "/" + clientId + "/xlink-log/";
         XLogTools.initXLog(configFolder);
         timerThread = new TimerThread(handler);
         timerThread.start();
+
+        if (isAutoConn) {
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    btnConn.performClick();
+                    try {
+                        Thread.sleep(1500);
+                    } catch (Throwable e) {
+                        Log.e(TAG, "run: ", e);
+                    }
+                    btnSeHearbeat.performClick();
+                }
+            }, 5000);
+        }
     }
 
     /**
@@ -112,10 +138,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         sendToMessage(MainUtil.getFont("connState()", !connected) + " >> connected=" + connected + ",description=" + description + "<br />");
         if (connected) {
             XLink.subscribe("dev/" + clientId + "/#", 2);
-            Map<String,Object> maps=new HashMap<>();
-            maps.put("address","飞思未来深圳科技有限公司");
-            maps.put("longitude","0");
-            maps.put("latitude","0");
+            Map<String, Object> maps = new HashMap<>();
+            maps.put("address", "飞思未来深圳科技有限公司");
+            maps.put("longitude", "0");
+            maps.put("latitude", "0");
             XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "online", maps);
         }
         handler.sendMessage(handler.obtainMessage(0x101, connected));
@@ -129,20 +155,30 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     @Override
     public void msgArrives(BaseData baseData) {
         sendToMessage(MainUtil.getFont("msgArrives()", false) + " >> " + baseData.toString() + "<br />");
-        if (baseData.operation.equals("remote_cmd")) {
-            Map<String, Object> cmdList = new HashMap<>();
-            cmdList.put("data", "这是一个测试data");
-            cmdList.put("result", "这是一个测试result");
-            cmdList.put("description", "这是一个测试description");
-            XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, cmdList);
-        } else if (baseData.operation.equals("16")) {
-            if (baseData.iPutType == PutType.GETPERTIES) {
+        switch (baseData.iPutType) {
+            case PutType.UPGRADE:
+                Map<String, Object> upMaps = new HashMap<>();
+                upMaps.put("startTime", "2022-11-11");
+                upMaps.put("endTime", "2022-11-12");
+                upMaps.put("description", "这是一个测试upgrade");
+                XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, upMaps);
+                break;
+            case PutType.METHOD:
+                Map<String, Object> cmdList = new HashMap<>();
+                cmdList.put("data", "这是一个测试data");
+                cmdList.put("result", "这是一个测试result");
+                cmdList.put("description", "这是一个测试description");
+                XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, cmdList);
+                break;
+            case PutType.GETPERTIES:
                 Map<String, Object> maps = new HashMap<>();
-                maps.put(baseData.maps.get("prid").toString(),true);
+                maps.put("prid", baseData.maps.get("prid").toString());
+                maps.put("value", true);
                 XLink.putCmd(PutType.GETPERTIES, baseData.iid, baseData.operation, maps);
-            } else if (baseData.iPutType == PutType.SETPERTIES) {
+                break;
+            case PutType.SETPERTIES:
                 XLink.putCmd(PutType.SETPERTIES, baseData.iid, baseData.operation, baseData.maps);
-            }
+                break;
         }
     }
 
@@ -266,6 +302,18 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                         sendToMessage(MainUtil.getFont("getAgentList >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
                     }
                 });
+                break;
+            case R.id.btnAutoConn:
+                boolean isAutoConn = SPUtils.getBoolean(this, MainUtil.KEY_AUTOCONN, false);
+                btnAutoConn.setText("开机自启：" + !isAutoConn);
+                SPUtils.putBoolean(this, MainUtil.KEY_AUTOCONN, !isAutoConn);
+                break;
+            case R.id.btnReboot:
+                //调用系统接口进行重启
+                try {
+                    Runtime.getRuntime().exec(new String[]{"su", "-c", "reboot"});
+                } catch (Throwable e) {
+                }
                 break;
         }
     }

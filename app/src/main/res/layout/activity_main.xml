@@ -85,6 +85,20 @@
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="断开连接" />
+
+        <Button
+            android:id="@+id/btnAutoConn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="开机自启：false" />
+
+        <Button
+            android:id="@+id/btnReboot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="重启" />
     </LinearLayout>
 
     <LinearLayout

@@ -3,6 +3,8 @@ package com.future.xlink.utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import org.json.JSONException;
+
 import java.lang.reflect.Type;
 
 public class GsonTools {
@@ -43,7 +45,7 @@ public class GsonTools {
      * 将json转化为对应的实体对象
      * new TypeToken<HashMap<String, Object>>(){}.getType()
      */
-    public static <T>  T fromJson(String json, Type type){
+    public static <T>  T fromJson(String json, Type type) throws JSONException {
         return nullableGson.fromJson(json, type);
     }
 }

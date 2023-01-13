@@ -5,6 +5,8 @@ import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.other.Register;
 import com.future.xlink.request.retrofit.IApis;
 
+import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,7 +49,7 @@ public class FileTools {
             //将byte数组转换成指定格式的字符串
             result = new String(buffer, "UTF-8");
         } catch (Throwable e) {
-            XLog.e( "readFileData: ",e );
+            XLog.e("readFileData: ", e);
         }
         return result;
     }
@@ -76,12 +78,12 @@ public class FileTools {
             return true;
         } catch (Exception e) {
             e.printStackTrace();
-            XLog.e( "writeFileData: " + e.getMessage());
+            XLog.e("writeFileData: " + e.getMessage());
         } finally {
             try {
                 fos.close();//关闭文件输出流
             } catch (Throwable e) {
-                XLog.e( "errMeg:" + e.getMessage());
+                XLog.e("errMeg:" + e.getMessage());
             }
         }
         return false;
@@ -91,30 +93,36 @@ public class FileTools {
     /**
      * 删除一些旧的配置参数
      */
-    public static void delProperties(String configPath){
+    public static void delProperties(String configPath) {
         try {
-            boolean isDel=new File(configPath).delete();
-            XLog.d( "delProperties: isDel="+isDel);
-        }catch (Exception e){
-            XLog.e( "delProperties: ",e );
+            boolean isDel = new File(configPath).delete();
+            XLog.d("delProperties: isDel=" + isDel);
+        } catch (Exception e) {
+            XLog.e("delProperties: ", e);
         }
     }
 
     /**
      * 保存配置到文件到指定位置
      */
-    public static boolean saveConfig(InitParams params,String configFolder, String jsonData){
-        Register regPonse = GsonTools.fromJson(jsonData, Register.class);
-        params.mqttBroker = regPonse.mqttBroker;
-        params.mqttSsid = regPonse.ssid;
-        params.mqttUsername = regPonse.mqttUsername;
-        params.mqttPassword = regPonse.mqttPassword;
-        String configSave = JsonFormat.formatJson(GsonTools.toJsonWtihNullField(params));
-        return FileTools.writeFileData(configFolder + IApis.MY_PROPERTIES, configSave, true);
+    public static boolean saveConfig(InitParams params, String configFolder, String jsonData) {
+        try {
+            Register regPonse = GsonTools.fromJson(jsonData, Register.class);
+            params.mqttBroker = regPonse.mqttBroker;
+            params.mqttSsid = regPonse.ssid;
+            params.mqttUsername = regPonse.mqttUsername;
+            params.mqttPassword = regPonse.mqttPassword;
+            String configSave = JsonFormat.formatJson(GsonTools.toJsonWtihNullField(params));
+            return FileTools.writeFileData(configFolder + IApis.MY_PROPERTIES, configSave, true);
+        } catch (JSONException e) {
+            XLog.e("saveConfig >> " + e.getMessage());
+            return false;
+        }
     }
 
     /**
      * 读取文件中的每一行内容到集合中去
+     *
      * @return 返回读取到的所有包名list集合
      */
     public static List<String> readLineToList(String filePath) {

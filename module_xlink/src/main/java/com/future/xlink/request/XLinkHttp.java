@@ -25,7 +25,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class XLinkHttp {
     /**
-     * 获取代理服务地址
+     * get agent list
      */
     public static void getAgentList(InitParams iParams, IHttpRequest iReq) {
         String time = String.valueOf(System.currentTimeMillis());
@@ -71,8 +71,7 @@ public class XLinkHttp {
 
 
     /**
-     * 获取设备信息
-     * 所在产品
+     * Get device information
      */
     public static void getDeviceInfo(InitParams iParams, IHttpRequest iReq) {
         Map<String, Object> body = new HashMap<>();
@@ -127,7 +126,7 @@ public class XLinkHttp {
     }
 
     /**
-     * 添加id到产品下
+     * add sn to iot
      */
     public static void addProdId(InitParams params, IHttpRequest iReq) {
         Map<String, Object> body = new HashMap<>();
@@ -177,7 +176,7 @@ public class XLinkHttp {
     }
 
     /**
-     * 注册设备
+     * register dev
      */
     public static void registerDev(InitParams iParams, String url, IHttpRequest iReq) {
         Body body = new Body();

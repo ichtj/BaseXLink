@@ -140,8 +140,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
             XLink.subscribe("dev/" + clientId + "/#", 2);
             Map<String, Object> maps = new HashMap<>();
             maps.put("address", "飞思未来深圳科技有限公司");
-            maps.put("longitude", "0");
-            maps.put("latitude", "0");
+            maps.put("longitude", "113°55′43.91″");
+            maps.put("latitude", "22°37′55.12″");
             XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "online", maps);
         }
         handler.sendMessage(handler.obtainMessage(0x101, connected));
@@ -164,17 +164,17 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, upMaps);
                 break;
             case PutType.METHOD:
-                Map<String, Object> cmdList = new HashMap<>();
-                cmdList.put("data", "这是一个测试data");
-                cmdList.put("result", "这是一个测试result");
-                cmdList.put("description", "这是一个测试description");
-                XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, cmdList);
+                Map<String, Object> methodMaps = new HashMap<>();
+                methodMaps.put("data", "这是一个测试data");
+                methodMaps.put("result", "这是一个测试result");
+                methodMaps.put("description", "这是一个测试description");
+                XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, methodMaps);
                 break;
             case PutType.GETPERTIES:
-                Map<String, Object> maps = new HashMap<>();
-                maps.put("prid", baseData.maps.get("prid").toString());
-                maps.put("value", true);
-                XLink.putCmd(PutType.GETPERTIES, baseData.iid, baseData.operation, maps);
+                Map<String, Object> getMaps = new HashMap<>();
+                getMaps.put("prid", baseData.maps.get("prid").toString());
+                getMaps.put("value", true);
+                XLink.putCmd(PutType.GETPERTIES, baseData.iid, baseData.operation, getMaps);
                 break;
             case PutType.SETPERTIES:
                 XLink.putCmd(PutType.SETPERTIES, baseData.iid, baseData.operation, baseData.maps);

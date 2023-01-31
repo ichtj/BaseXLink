@@ -121,7 +121,7 @@ public class XLink {
         public void connectComplete(boolean reconnect, String serverURI) {
             instance().isRunPush = true;
             XLog.d("connectComplete: reconnect >> " + reconnect);
-            getiMqtt().connState(true, reconnect ? "connect complete" : "reConnect complete");
+            getiMqtt().connState(true, reconnect ? "reConnect complete" : "connect complete");
             TheadTools.execute(instance().pushThread);
         }
 
@@ -269,14 +269,14 @@ public class XLink {
      *
      * @param params connect params
      */
-    private synchronized static void createConnect(Context mCxt, InitParams params) {
+    private synchronized static void createConnect(Context mCtx, InitParams params) {
         try {
             XLog.d("createConnect ThreadName >> " + Thread.currentThread().getName());
             instance().mqttSsid = params.mqttSsid;
             String tmpDir = System.getProperty("java.io.tmpdir");
             instance().conOpt = DataTransfer.getConOption(params);
-            instance().client = new MqttAndroidClient(mCxt, params.mqttBroker, params.clientId, new MqttDefaultFilePersistence(tmpDir));
-            instance().client.setCallback(new MqttContentHandle(mCxt));
+            instance().client = new MqttAndroidClient(mCtx, params.mqttBroker, params.clientId, new MqttDefaultFilePersistence(tmpDir));
+            instance().client.setCallback(new MqttContentHandle(mCtx));
             instance().client.connect(instance().conOpt).waitForCompletion();
             XLog.d("createConnect Waiting for connection to finish！");
         } catch (MqttException e) {
@@ -286,7 +286,7 @@ public class XLink {
                     getiMqtt().connState(true, params.mqttBroker);
                     break;
                 case MqttException.REASON_CODE_NOT_AUTHORIZED:
-                    String configFolder = IApis.ROOT + mCxt.getPackageName() + "/" + params.clientId + "/";
+                    String configFolder = IApis.ROOT + mCtx.getPackageName() + "/" + params.clientId + "/";
                     FileTools.delProperties(configFolder + IApis.MY_PROPERTIES);
                     getiMqtt().connState(false, "REASON_CODE_NOT_AUTHORIZED code = 5");
                     break;
@@ -411,8 +411,6 @@ public class XLink {
                     }
                 });
             }
-
-
         }
     }
 

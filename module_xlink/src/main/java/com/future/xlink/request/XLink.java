@@ -121,7 +121,9 @@ public class XLink {
         public void connectComplete(boolean reconnect, String serverURI) {
             instance().isRunPush = true;
             XLog.d("connectComplete: reconnect >> " + reconnect);
-            getiMqtt().connState(true, reconnect ? "reConnect complete" : "connect complete");
+            if(getiMqtt()!=null){
+                getiMqtt().connState(true, reconnect ? "reConnect complete" : "connect complete");
+            }
             TheadTools.execute(instance().pushThread);
         }
 
@@ -133,7 +135,9 @@ public class XLink {
             instance().isRunPush = false;
             boolean isPing = NetTools.checkNet(instance().pingList, mContext);
             XLog.e("connectionLost: isPing >> " + isPing);
-            getiMqtt().connState(false, cause == null ? (isPing ? "other exception" : "network is lost！") : cause.getMessage());
+            if(getiMqtt()!=null){
+                getiMqtt().connState(false, cause == null ? (isPing ? "other exception" : "network is lost！") : cause.getMessage());
+            }
         }
 
         /**
@@ -226,7 +230,7 @@ public class XLink {
                         } else {
                             instance().pushMap.remove(i);
                             XLog.d("platformHandle: pushMap2.remove iid=" + msgData.iid + ",nowSize=" + instance().pushMap.size());
-                            getiMqtt().pushFail(msgData, "发送超时,请检查发送内容是否正常！");
+                            getiMqtt().pushFail(msgData, "Sending data timed out");
                         }
                     }
                 }
@@ -414,12 +418,23 @@ public class XLink {
         }
     }
 
+    /**
+     * 解除注册
+     * @param mContext 上下文
+     */
+    public static void unInit(Context mContext){
+        FileTools.delProperties(IApis.ROOT + mContext.getPackageName() + "/" + instance().clientId + "/"+IApis.MY_PROPERTIES);
+        instance().pushMap.clear();
+        disConnect();
+    }
 
     /**
      * 断开并重置连接
      */
     public static void disConnect() {
-        getiMqtt().connState(false, "Active disconnect");
+        if(getiMqtt()!=null){
+            getiMqtt().connState(false, "Active disconnect");
+        }
         instance().iMqttCallback = null;
         if (instance().client != null) {
             instance().client.setCallback(null);
@@ -427,12 +442,10 @@ public class XLink {
             try {
                 instance().client.disconnect();
             } catch (Throwable e) {
-                XLog.e("disConnect1", e);
             }
             try {
                 instance().client.close();
             } catch (Throwable e) {
-                XLog.e("disConnect2", e);
             }
             instance().client = null;
         }

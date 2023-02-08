@@ -38,7 +38,7 @@ public class XLinkHttp {
                         @Override
                         public void onNext(BaseResponse<Agents> bResponse) {
                             super.onNext(bResponse);
-                            XLog.d("getAgentList: baseResponse=" + bResponse.toString());
+                            XLog.d("getAgentList: baseResponse=" + bResponse.toString() +",ThreadName >> "+Thread.currentThread().getName());
                             if (bResponse.isSuccessNonNull()) {
                                 //获取服务器列表成功，进行ping操作，获得最佳连接链路
                                 XLog.d("onNext pinglist:" + bResponse.payload.servers.toString());
@@ -92,7 +92,7 @@ public class XLinkHttp {
                         @Override
                         public void onNext(BaseResponse<ProductInfo> baseResponse) {
                             super.onNext(baseResponse);
-                            XLog.d("accept: baseResponse >> " + baseResponse.toString());
+                            XLog.d("accept: baseResponse >> " + baseResponse.toString() +",ThreadName >> "+Thread.currentThread().getName());
                             if (baseResponse.status == 0) {
                                 //产品一致
                                 iReq.requestComplete(GsonTools.toJsonWtihNullField(baseResponse.payload));
@@ -146,7 +146,7 @@ public class XLinkHttp {
                         @Override
                         public void onNext(BaseResponse baseResponse) {
                             super.onNext(baseResponse);
-                            XLog.d("registeronNext:>=" + baseResponse.toString());
+                            XLog.d("registeronNext:>=" + baseResponse.toString() +",ThreadName >> "+Thread.currentThread().getName());
                             if (baseResponse.status == 0) {
                                 iReq.requestComplete("{\"code\":0,\"description\":\"已完成\"}");
                             } else {
@@ -196,7 +196,7 @@ public class XLinkHttp {
                     .subscribe(new Consumer<BaseResponse<Register>>() {
                         @Override
                         public void accept(BaseResponse<Register> regPonse) throws Exception {
-                            XLog.d("registerRequest onNext status:" + regPonse.toString());
+                            XLog.d("registerRequest onNext status:" + regPonse.toString() +",ThreadName >> "+Thread.currentThread().getName());
                             if (regPonse.isSuccessNonNull()) {
                                 iReq.requestComplete(GsonTools.toJsonWtihNullField(regPonse.payload));
                             } else {

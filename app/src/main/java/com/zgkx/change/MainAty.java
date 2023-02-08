@@ -45,6 +45,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private Button btnClear;
     private Button btnAddDev;
     private Button btnConn;
+    private Button btnUninit;
     private Button btnDisConn;
     private Button btnAutoConn;
     private Button btnReboot;
@@ -93,6 +94,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnDisConn = findViewById(R.id.btnDisConn);
         tvResult = findViewById(R.id.tvResult);
         tvResult.setMovementMethod(ScrollingMovementMethod.getInstance());
+        btnUninit = findViewById(R.id.btnUninit);
+        btnUninit.setOnClickListener(this);
         btnConn = findViewById(R.id.btnConn);
         btnClear.setOnClickListener(this);
         btnAddDev.setOnClickListener(this);
@@ -241,6 +244,9 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 break;
             case R.id.btnConn:
                 XLink.connect(MainAty.this, getInitParams(), MainAty.this);
+                break;
+            case R.id.btnUninit:
+                XLink.unInit(MainAty.this);
                 break;
             case R.id.btnSeHearbeat:
                 if (isHeartbeat) {

@@ -5,6 +5,7 @@ package com.future.xlink.request.retrofit;
 public interface IApis {
     String ROOT = "/sdcard/xlink/";
     String MY_PROPERTIES = "my.properties";
+    String CONFIG_PATH = "/data/misc/localconfig.json";
     String AGENT_SERVER_LIST = "api/iot/reg/device/servers"; //代理服务端地址
     String AGENT_REGISTER = "/api/iot/reg/device/register"; //注册服务器
     String UPLOAD_LOGURL = "api/iot/reg/device/uploadLogUrl"; //获取上传日志信息

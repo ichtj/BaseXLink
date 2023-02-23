@@ -207,7 +207,7 @@ public class XLink {
             for (int i = 0; i < instance().pushMap.size(); i++) {
                 MsgData msgData = instance().pushMap.get(i);
                 //mqtt连接正常的时候才推送
-                XLog.d("msgData >>> " + msgData + ", pushMap.size =" + instance().pushMap.size() + ",isPush >> " + msgData.isPush);
+                //XLog.d("msgData >>> " + msgData + ", pushMap.size =" + instance().pushMap.size() + ",isPush >> " + msgData.isPush);
                 if (!msgData.isPush) {
                     //处理本地队列未推送的数据
                     pushData(msgData, true);

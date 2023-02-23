@@ -319,7 +319,7 @@ public class XLink {
     public static boolean putCmd(@IPutType int iPutType, String iid, String operation, Map<String, Object> dataMap) {
         BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
         if (getConnectStatus()) {
-            MsgData msgData=new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false, false)
+            MsgData msgData=new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false, false);
             instance().pushMap.add(msgData);
             XLog.d("putCmd  >>> "+msgData.toString());
             return true;

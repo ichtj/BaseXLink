@@ -105,6 +105,12 @@
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="解除注册" />
+        <Button
+            android:id="@+id/btnPushEvent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="发布事件" />
     </LinearLayout>
 
     <LinearLayout

@@ -40,7 +40,10 @@ public class DataTransfer {
                 eDevice.put("did", clientId);
                 eDevice.put("event", baseData.operation);
                 if (baseData.maps != null && baseData.maps.size() > 0) {
-                    JSONObject eOut = new JSONObject(baseData.maps);
+                    JSONObject eOut = new JSONObject();
+                    for (String key:baseData.maps.keySet()) {
+                        eOut.put(key,baseData.maps.get(key));
+                    }
                     eDevice.put("out", eOut);
                 } else {
                     eDevice.put("out", null);

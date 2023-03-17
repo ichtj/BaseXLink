@@ -48,6 +48,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private Button btnUninit;
     private Button btnDisConn;
     private Button btnAutoConn;
+    private Button btnPushEvent;
     private Button btnReboot;
     private TextView tvResult;
     private TextView tvConnStatus;
@@ -86,6 +87,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnAutoConn.setText("开机自启：" + isAutoConn);
         tvConnStatus = findViewById(R.id.tvConnStatus);
         tvSn = findViewById(R.id.tvSn);
+        btnPushEvent = findViewById(R.id.btnPushEvent);
+        btnPushEvent.setOnClickListener(this);
         btnSeHearbeat = findViewById(R.id.btnSeHearbeat);
         btnGetAgent = findViewById(R.id.btnGetAgent);
         btnGetDevice = findViewById(R.id.btnGetDevice);
@@ -319,6 +322,13 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 try {
                     Runtime.getRuntime().exec(new String[]{"su", "-c", "reboot"});
                 } catch (Throwable e) {
+                }
+                break;
+            case R.id.btnPushEvent:
+                if(XLink.getConnectStatus()){
+                    MainUtil.pushTestEvent();
+                }else{
+                    Toast.makeText(this,"请先连接",Toast.LENGTH_LONG).show();
                 }
                 break;
         }

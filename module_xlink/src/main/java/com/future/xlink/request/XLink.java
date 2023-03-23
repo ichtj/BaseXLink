@@ -290,9 +290,10 @@ public class XLink {
                     getiMqtt().connState(true, params.mqttBroker);
                     break;
                 case MqttException.REASON_CODE_NOT_AUTHORIZED:
+                case MqttException.REASON_CODE_SERVER_CONNECT_ERROR:
                     String configFolder = IApis.ROOT + mCtx.getPackageName() + "/" + params.clientId + "/";
                     FileTools.delProperties(configFolder + IApis.MY_PROPERTIES);
-                    getiMqtt().connState(false, "REASON_CODE_NOT_AUTHORIZED code = 5");
+                    getiMqtt().connState(false, "ErrCode = "+e.getReasonCode());
                     break;
                 default:
                     getiMqtt().connState(false, e.getMessage());

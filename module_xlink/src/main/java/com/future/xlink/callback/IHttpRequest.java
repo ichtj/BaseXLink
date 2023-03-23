@@ -13,5 +13,5 @@ public interface IHttpRequest {
      * 请求错误
      * @param description 错误描述
      */
-    void requestErr(String description);
+    void requestErr(int errCode,String description);
 }

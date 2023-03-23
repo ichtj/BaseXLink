@@ -275,7 +275,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     }
 
                     @Override
-                    public void requestErr(String description) {
+                    public void requestErr(int errCode,String description) {
                         sendToMessage(MainUtil.getFont("addProdId >> requestErr()", true) + " >> description = " + description + "<br />");
                     }
                 });
@@ -291,7 +291,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     }
 
                     @Override
-                    public void requestErr(String description) {
+                    public void requestErr(int errCode,String description) {
                         sendToMessage(MainUtil.getFont("getDeviceInfo >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
                     }
                 });
@@ -307,7 +307,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     }
 
                     @Override
-                    public void requestErr(String description) {
+                    public void requestErr(int errCode,String description) {
                         sendToMessage(MainUtil.getFont("getAgentList >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
                     }
                 });
@@ -327,6 +327,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
             case R.id.btnPushEvent:
                 if(XLink.getConnectStatus()){
                     MainUtil.pushTestEvent();
+                    MainUtil.pushTestEvent2();
                 }else{
                     Toast.makeText(this,"请先连接",Toast.LENGTH_LONG).show();
                 }
@@ -357,6 +358,9 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     uploadList2.put("value", false);
                     XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
 
+
+                    MainUtil.pushTestEvent();
+                    MainUtil.pushTestEvent2();
                     try {
                         Thread.sleep(10000);
                     } catch (InterruptedException e) {

@@ -109,4 +109,98 @@ public class MainUtil {
             Log.e(TAG,e.getMessage());
         }
     }
+
+    public static void pushTestEvent2(){
+        String jsonStr="{\n" +
+                "\t\"recordId\": \"7EDCD80AF2F31964000001DCD80A\",\n" +
+                "\t\"person\": {\n" +
+                "\t\t\"personId\": \"eb4854ec-cd3c-46b7-94e2-c73a8d27ffec\",\n" +
+                "\t\t\"personNo\": \"10057008\",\n" +
+                "\t\t\"personName\": \"陶陶\",\n" +
+                "\t\t\"personGender\": 2,\n" +
+                "\t\t\"deptId\": \"\",\n" +
+                "\t\t\"deptName\": \"\",\n" +
+                "\t\t\"remark\": \"第三方SDK下发邀访记录时发行凭证\",\n" +
+                "\t\t\"personPhoto\": \"\",\n" +
+                "\t\t\"certificateType\": \"其他\",\n" +
+                "\t\t\"identityNo\": null,\n" +
+                "\t\t\"mobile\": \"15688552551\",\n" +
+                "\t\t\"tel1\": null,\n" +
+                "\t\t\"tel2\": null,\n" +
+                "\t\t\"email\": null,\n" +
+                "\t\t\"roomNo\": null,\n" +
+                "\t\t\"address\": null,\n" +
+                "\t\t\"tenementType\": 7,\n" +
+                "\t\t\"vehicleList\": null\n" +
+                "\t},\n" +
+                "\t\"remark\": \"二维码用户无权限\",\n" +
+                "\t\"device\": {\n" +
+                "\t\t\"deviceGuid\": \"b195f443-1132-4f2f-8815-13c478079c33\",\n" +
+                "\t\t\"deviceId\": \"181984256\",\n" +
+                "\t\t\"deviceName\": \"012\",\n" +
+                "\t\t\"deviceIp\": \"192.168.10.26\",\n" +
+                "\t\t\"deviceGateway\": \"192.168.10.1\",\n" +
+                "\t\t\"deviceNetmask\": \"255.255.255.0\",\n" +
+                "\t\t\"deviceType\": 0,\n" +
+                "\t\t\"deviceIoType\": 0,\n" +
+                "\t\t\"parentId\": \"3945515520\",\n" +
+                "\t\t\"parentName\": null,\n" +
+                "\t\t\"remark\": \"通过搜索设备添加\"\n" +
+                "\t},\n" +
+                "\t\"cardNo\": \"00006621BDCD\",\n" +
+                "\t\"cardType\": 56,\n" +
+                "\t\"eventType\": 16,\n" +
+                "\t\"recordType\": 2,\n" +
+                "\t\"inOutType\": 0,\n" +
+                "\t\"crossTime\": \"2023-03-21 18:14:10\",\n" +
+                "\t\"offlineFlag\": 0,\n" +
+                "\t\"interviewee\": {\n" +
+                "\t\t\"personId\": \"d78efd7b-dbb2-4f59-9e65-0007961f6a03\",\n" +
+                "\t\t\"personNo\": \"89008566\",\n" +
+                "\t\t\"personName\": \"黎清晨\",\n" +
+                "\t\t\"personGender\": 2,\n" +
+                "\t\t\"deptId\": \"5a9dc528-e7ad-4952-9f21-a885b6564a1c\",\n" +
+                "\t\t\"deptName\": \"汉唐大厦;|汉唐大厦;\",\n" +
+                "\t\t\"remark\": null,\n" +
+                "\t\t\"personPhoto\": \"down/pic/25220323/door/a40bafe3/a40bafe3_3079028974" +
+                ".jpg\",\n" +
+                "\t\t\"certificateType\": \"IDENTITY\",\n" +
+                "\t\t\"identityNo\": \"\",\n" +
+                "\t\t\"mobile\": \"13713907538\",\n" +
+                "\t\t\"tel1\": null,\n" +
+                "\t\t\"tel2\": null,\n" +
+                "\t\t\"email\": \"\",\n" +
+                "\t\t\"roomNo\": null,\n" +
+                "\t\t\"address\": \"\",\n" +
+                "\t\t\"tenementType\": 2,\n" +
+                "\t\t\"vehicleList\": null\n" +
+                "\t},\n" +
+                "\t\"pictureFile\": null,\n" +
+                "\t\"errorNo\": 4136,\n" +
+                "\t\"errorName\": \"二维码用户无权限\",\n" +
+                "\t\"TemperatureDevID\": 0,\n" +
+                "\t\"TemperatureDevName\": null,\n" +
+                "\t\"Temperature\": 0.0,\n" +
+                "\t\"reTrySend\": null\n" +
+                "}";
+        try {
+            DoorRecord doorRecord= GsonTools.fromJson(jsonStr,DoorRecord.class);
+            HashMap map=new HashMap();
+            map.put("eventType",doorRecord.getEventType());
+            map.put("recordType",doorRecord.getRecordType());
+            map.put("pictureFile",doorRecord.getPictureFile());
+            map.put("crossTime",doorRecord.getCrossTime());
+            map.put("cardNo",doorRecord.getCardNo());
+            map.put("cardType",doorRecord.getCardType());
+            map.put("device",GsonTools.toJsonWtihNullField(doorRecord.getDevice()));
+            map.put("remark",doorRecord.getRemark());
+            map.put("person",GsonTools.toJsonWtihNullField(doorRecord.getPerson()));
+            map.put("recordId",doorRecord.getRecordId());
+            map.put("interviewee",GsonTools.toJsonWtihNullField(doorRecord.getInterviewee()));
+            Log.d(TAG,"doorRecord info >>> "+doorRecord);
+            XLink.putCmd(PutType.EVENT, DataTransfer.createIID(),"door_record", map);
+        }catch (Exception e){
+            Log.e(TAG,e.getMessage());
+        }
+    }
 }

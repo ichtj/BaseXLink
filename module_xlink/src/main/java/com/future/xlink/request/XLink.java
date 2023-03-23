@@ -396,7 +396,7 @@ public class XLink {
                                         }
 
                                         @Override
-                                        public void requestErr(String description) {
+                                        public void requestErr(int errCode,String description) {
                                             getiMqtt().connState(false, description);
                                         }
                                     });
@@ -411,7 +411,7 @@ public class XLink {
                     }
 
                     @Override
-                    public void requestErr(String description) {
+                    public void requestErr(int errCode,String description) {
                         XLog.d("requestErr: description >> " + description);
                         getiMqtt().connState(false, description);
                     }

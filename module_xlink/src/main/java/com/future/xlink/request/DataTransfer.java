@@ -179,7 +179,10 @@ public class DataTransfer {
                 upgrade.put("_description","");
                 upgradeDatas.put(upgrade);
                 upgradeList.put("upgrade",upgradeDatas);
+
                 upgradeResult.put("payload",upgradeList);
+                upgradeResult.put("act","upgrade");
+                upgradeResult.put("iid",baseData.iid);
                 requestCmd = upgradeResult.toString();
                 break;
         }
@@ -217,8 +220,11 @@ public class DataTransfer {
      */
     public static BaseData deliveryHandle(String cliendId, MqttMessage msg) throws Throwable {
         JSONObject jsonObject = new JSONObject(msg.toString());
-        String act = jsonObject.getString("act");
-        String iid = jsonObject.getString("iid");
+        String act = jsonObject.optString("act");
+        String iid = jsonObject.optString("iid");
+        if(TextUtils.isEmpty(act)&&TextUtils.isEmpty(iid)){
+            act=jsonObject.toString().indexOf("upgrade")!=-1?"upgrade":"";
+        }
         switch (act) {
             case "event":
                 JSONObject eventPayload = new JSONObject(jsonObject.getString("payload"));
@@ -295,6 +301,8 @@ public class DataTransfer {
                     }
                 }
                 break;
+            case "upgrade":
+                return new BaseData(PutType.UPGRADE,iid,"upgrade",null);
         }
         return null;
     }

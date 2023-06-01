@@ -43,8 +43,8 @@ public class DataTransfer {
                 eDevice.put("event", baseData.operation);
                 if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject eOut = new JSONObject();
-                    for (String key:baseData.maps.keySet()) {
-                        eOut.put(key,baseData.maps.get(key));
+                    for (String key : baseData.maps.keySet()) {
+                        eOut.put(key, baseData.maps.get(key));
                     }
                     eDevice.put("out", eOut);
                 } else {
@@ -69,8 +69,8 @@ public class DataTransfer {
                 mAction.put("_status", 0);
                 if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject mOut = new JSONObject();
-                    for (String key:baseData.maps.keySet()) {
-                        mOut.put(key,baseData.maps.get(key));
+                    for (String key : baseData.maps.keySet()) {
+                        mOut.put(key, baseData.maps.get(key));
                     }
                     mAction.put("out", mOut);
                 } else {
@@ -168,6 +168,19 @@ public class DataTransfer {
                 uDatas.put("iid", baseData.iid);
                 uDatas.put("payload", uPayload);
                 requestCmd = uDatas.toString();
+                break;
+            case PutType.UPGRADE:
+                JSONObject upgradeResult = new JSONObject();
+                JSONObject upgradeList=new JSONObject();
+                JSONArray upgradeDatas=new JSONArray();
+                JSONObject upgrade=new JSONObject();
+                upgrade.put("did",clientId);
+                upgrade.put("_status",0);
+                upgrade.put("_description","");
+                upgradeDatas.put(upgrade);
+                upgradeList.put("upgrade",upgradeDatas);
+                upgradeResult.put("payload",upgradeList);
+                requestCmd = upgradeResult.toString();
                 break;
         }
         return requestCmd;
@@ -268,7 +281,7 @@ public class DataTransfer {
                         if (did.equals(cliendId)) {
                             String method = mAction.getString("method");
                             Map maps = new HashMap();
-                            if(mAction.has("out")){
+                            if (mAction.has("out")) {
                                 JSONObject mOut = mAction.getJSONObject("out");
                                 Iterator<String> outSets = mOut.keys();
                                 while (outSets.hasNext()) {
@@ -296,9 +309,11 @@ public class DataTransfer {
      * @return 封装后的baseData
      * @throws JSONException
      */
-    private static BaseData propertiesHandle(JSONObject payloadJson, String iid, String cliendId, @IPutType int iPutType) throws JSONException {
+    private static BaseData propertiesHandle(JSONObject payloadJson, String iid, String cliendId,
+                                             @IPutType int iPutType) throws JSONException {
         JSONObject deviceJson = new JSONObject(
-                payloadJson.getString(iPutType == PutType.GETPERTIES ? "devices_get" : "devices_set"));
+                payloadJson.getString(iPutType == PutType.GETPERTIES ? "devices_get" :
+                        "devices_set"));
         Iterator<String> deviceSet = deviceJson.keys();
         while (deviceSet.hasNext()) {
             String clientIdkey = deviceSet.next();
@@ -367,7 +382,9 @@ public class DataTransfer {
                     JSONObject jDevice = getdevices.getJSONObject(i);
                     String did = jDevice.getString("did");
                     if (did.equals(cliendId)) {
-                        String serv_pros = jDevice.getString("serv_pros").replace("[\"", "").replace("\"]", "");
+                        String serv_pros =
+                                jDevice.getString("serv_pros").replace("[\"", "").replace("\"]",
+                                        "");
                         String[] servInfo = serv_pros.split("-");
                         Map<String, Object> maps = new HashMap<>();
                         maps.put("prid", servInfo[1]);

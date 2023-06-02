@@ -171,20 +171,20 @@ public class DataTransfer {
                 break;
             case PutType.UPGRADE:
                 JSONObject upgradeResult = new JSONObject();
-                JSONArray upgradeDatas=new JSONArray();
-                JSONObject upgrade=new JSONObject();
-                upgrade.put("did",clientId);
-                upgrade.put("_status",0);
-                upgrade.put("_description","");
+                JSONArray upgradeDatas = new JSONArray();
+                JSONObject upgrade = new JSONObject();
+                upgrade.put("did", clientId);
+                upgrade.put("_status", 0);
+                upgrade.put("_description", "");
                 upgradeDatas.put(upgrade);
 
-                JSONObject upgradeList=new JSONObject();
-                upgradeList.put("upgrade",upgradeDatas);
+                JSONObject upgradeList = new JSONObject();
+                upgradeList.put("upgrade", upgradeDatas);
 
-                upgradeResult.put("payload",upgradeList);
-                upgradeResult.put("act","cmd-resp");
-                upgradeResult.put("act_alternative","upgrade");
-                upgradeResult.put("iid",baseData.iid);
+                upgradeResult.put("payload", upgradeList);
+                upgradeResult.put("act", "cmd-resp");
+                upgradeResult.put("act_alternative", "upgrade");
+                upgradeResult.put("iid", baseData.iid);
                 requestCmd = upgradeResult.toString();
                 break;
         }
@@ -224,9 +224,8 @@ public class DataTransfer {
         JSONObject jsonObject = new JSONObject(msg.toString());
         String act = jsonObject.optString("act");
         String iid = jsonObject.optString("iid");
-        if(TextUtils.isEmpty(act)&&TextUtils.isEmpty(iid)){
-            act=jsonObject.optString("act_alternative");
-        }
+        String act_alternative = jsonObject.optString("act_alternative");
+        act = !TextUtils.isEmpty(act_alternative) ? act_alternative : act;
         switch (act) {
             case "event":
                 JSONObject eventPayload = new JSONObject(jsonObject.getString("payload"));
@@ -304,7 +303,7 @@ public class DataTransfer {
                 }
                 break;
             case "upgrade":
-                return new BaseData(PutType.UPGRADE,iid,"upgrade",null);
+                return new BaseData(PutType.UPGRADE, iid, "upgrade", null);
         }
         return null;
     }

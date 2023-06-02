@@ -167,7 +167,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 upMaps.put("startTime", "2022-11-11");
                 upMaps.put("endTime", "2022-11-12");
                 upMaps.put("description", "这是一个测试upgrade");
-                XLink.putCmd(PutType.METHOD, baseData.iid, baseData.operation, upMaps);
+                XLink.putCmd(PutType.UPGRADE, baseData.iid, baseData.operation, upMaps);
                 break;
             case PutType.METHOD:
                 Map<String, Object> methodMaps = new HashMap<>();

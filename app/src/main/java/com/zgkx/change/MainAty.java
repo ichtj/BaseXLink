@@ -2,6 +2,7 @@ package com.zgkx.change;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.InetAddresses;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -28,14 +29,23 @@ import com.future.xlink.callback.IHttpRequest;
 import com.future.xlink.request.retrofit.IApis;
 import com.future.xlink.utils.JsonFormat;
 import com.future.xlink.utils.TheadTools;
+import com.future.xlink.utils.Utils;
 import com.future.xlink.xlog.XLogTools;
 
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MainAty extends Activity implements IMqttCallback, View.OnClickListener {
     private static final String TAG = MainAty.class.getSimpleName() + "F";
@@ -359,10 +369,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
 
 
-                    MainUtil.pushTestEvent();
-                    MainUtil.pushTestEvent2();
+                    //MainUtil.pushTestEvent();
+                    //MainUtil.pushTestEvent2();
                     try {
-                        Thread.sleep(10000);
+                        Thread.sleep(15000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

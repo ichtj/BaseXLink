@@ -33,5 +33,5 @@ dependencies {
     }
 
 
-    //implementation 'com.github.wave-chtj:BaseXLink:2.7.5'
+    //implementation 'com.github.wave-chtj:BaseXLink:2.7.6'
 }

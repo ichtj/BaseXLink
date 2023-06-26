@@ -3,14 +3,14 @@ package com.future.xlink.bean.base;
 import java.util.Map;
 
 public class MsgData extends BaseData{
-    public boolean isPush;
-    public boolean isDeliveryed;
+    //public boolean isPush;
+    public boolean isDeliveryed;//平台已告知接收完成
     public long pushTime;
     public long pushCount;
 
-    public MsgData(int iPutType, String iid, String operation, Map<String, Object> maps, boolean isPush, boolean isDeliveryed) {
+    public MsgData(int iPutType, String iid, String operation, Map<String, Object> maps/*, boolean isPush*/, boolean isDeliveryed) {
         super(iPutType, iid, operation, maps);
-        this.isPush = isPush;
+        //this.isPush = isPush;
         this.isDeliveryed = isDeliveryed;
     }
 
@@ -25,7 +25,7 @@ public class MsgData extends BaseData{
                 ", iid='" + iid + '\'' +
                 ", operation='" + operation + '\'' +
                 ", maps=" + maps +
-                ", isPush=" + isPush +
+                //", isPush=" + isPush +
                 ", isDeliveryed=" + isDeliveryed +
                 ", pushTime=" + pushTime +
                 '}';

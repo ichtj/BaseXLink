@@ -49,7 +49,7 @@ public class FileTools {
             //将byte数组转换成指定格式的字符串
             result = new String(buffer, "UTF-8");
         } catch (Throwable e) {
-            XLog.e("readFileData: ", e);
+            XLog.e("readFileData>Throwable >> ", e);
         }
         return result;
     }
@@ -77,13 +77,12 @@ public class FileTools {
             fos.flush();
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            XLog.e("writeFileData: " + e.getMessage());
+            XLog.e("writeFileData>Exception >> " + e.getMessage());
         } finally {
             try {
                 fos.close();//关闭文件输出流
             } catch (Throwable e) {
-                XLog.e("errMeg:" + e.getMessage());
+                XLog.e("writeFileData>Throwable >> " + e.getMessage());
             }
         }
         return false;
@@ -98,7 +97,7 @@ public class FileTools {
             boolean isDel = new File(configPath).delete();
             XLog.d("delProperties: isDel=" + isDel);
         } catch (Exception e) {
-            XLog.e("delProperties: ", e);
+            XLog.e("delProperties>Exception>> ", e);
         }
     }
 
@@ -115,7 +114,7 @@ public class FileTools {
             String configSave = JsonFormat.formatJson(GsonTools.toJsonWtihNullField(params));
             return FileTools.writeFileData(configFolder + IApis.MY_PROPERTIES, configSave, true);
         } catch (JSONException e) {
-            XLog.e("saveConfig >> " + e.getMessage());
+            XLog.e("saveConfig>JSONException >> " + e.getMessage());
             return false;
         }
     }

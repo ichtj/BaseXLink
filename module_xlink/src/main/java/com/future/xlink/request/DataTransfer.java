@@ -459,12 +459,10 @@ public class DataTransfer {
         conOpt.setKeepAliveInterval(60);
         conOpt.setAutomaticReconnect(params.autoReConnect);
         // 用户名
-        XLog.d("createConnect: start>>> key:" + params.appKey + ",mqttUsername=" + params.mqttUsername + ",mqttPassword=" + params.mqttPassword);
         String userName = AesTools.decrypt(params.appKey, params.mqttUsername);
         String password = AesTools.decrypt(params.appKey, params.mqttPassword);
         //解码凭证是否正常
 
-        XLog.d("createConnect: userName >>> " + userName + ",password >> " + password);
         char[] pwd = password.toCharArray();
         conOpt.setUserName(userName);
         conOpt.setPassword(pwd);

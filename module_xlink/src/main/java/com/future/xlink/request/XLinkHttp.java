@@ -1,6 +1,7 @@
 package com.future.xlink.request;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
@@ -137,6 +138,8 @@ public class XLinkHttp {
         body.put("payload", payload);
         String token = DataTransfer.getToken(params.uniqueKey, params.uniqueScret,
                 params.clientId, time);
+        Log.d("ichtj", "addProdId: token>>"+token+",time>>"+time+",SN>>"+params.clientId);
+        Log.d("ichtj", "addProdId: "+GsonTools.toJsonWtihNullField(body));
         if (token != null) {
             RetrofitClient.getInstance()
                     .uniqueProduct(params.httpUrl + ":" + params.httpPort + "/" + IApis.PRODUCT_UNIQUE, token, time, params.clientId, body)
@@ -196,6 +199,7 @@ public class XLinkHttp {
         String time = String.valueOf(System.currentTimeMillis());
         String token = DataTransfer.getToken(params.appKey, params.appSecret, params.clientId,
                 time);
+        //XLog.d("registerDev>>body>>"+GsonTools.toJsonWtihNullField(body));
         if (token != null) {
             RetrofitClient.getInstance()
                     .registerAgent(url + IApis.AGENT_REGISTER, token, time, params.clientId, body)

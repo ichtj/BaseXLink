@@ -46,6 +46,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MainAty extends Activity implements IMqttCallback, View.OnClickListener {
     private static final String TAG = MainAty.class.getSimpleName() + "F";
@@ -66,7 +68,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private static boolean isHeartbeat = false;
     //private String clientId = "FSMMMNNNFF001";
     private String clientId = "FSMMMNNNFF002";
-    private TimerThread timerThread;
+    ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * 获取初始化参数
@@ -120,11 +122,11 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnAutoConn.setOnClickListener(this);
         btnReboot.setOnClickListener(this);
         tvSn.setText("当前操作的SN：" + clientId);
+        FormatViewUtils.setMovementMethod(tvResult);
 
         String configFolder = IApis.ROOT + getPackageName() + "/" + clientId + "/xlink-log/";
         XLogTools.initXLog(configFolder);
-        timerThread = new TimerThread(handler);
-        timerThread.start();
+        service.scheduleAtFixedRate(this::run, 0, 15, TimeUnit.SECONDS);
 
         if (isAutoConn) {
             Handler handler = new Handler();
@@ -272,6 +274,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 break;
             case R.id.btnDisConn:
                 XLink.disConnect();
+                FormatViewUtils.scrollBackToTop(tvResult);
                 break;
             case R.id.btnAddDev:
                 //检查是否存在
@@ -285,7 +288,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     }
 
                     @Override
-                    public void requestErr(int errCode,String description) {
+                    public void requestErr(int errCode, String description) {
                         sendToMessage(MainUtil.getFont("addProdId >> requestErr()", true) + " >> description = " + description + "<br />");
                     }
                 });
@@ -301,7 +304,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     }
 
                     @Override
-                    public void requestErr(int errCode,String description) {
+                    public void requestErr(int errCode, String description) {
                         sendToMessage(MainUtil.getFont("getDeviceInfo >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
                     }
                 });
@@ -317,7 +320,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     }
 
                     @Override
-                    public void requestErr(int errCode,String description) {
+                    public void requestErr(int errCode, String description) {
                         sendToMessage(MainUtil.getFont("getAgentList >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
                     }
                 });
@@ -335,48 +338,38 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 }
                 break;
             case R.id.btnPushEvent:
-                if(XLink.getConnectStatus()){
+                if (XLink.getConnectStatus()) {
                     MainUtil.pushTestEvent();
                     MainUtil.pushTestEvent2();
-                }else{
-                    Toast.makeText(this,"请先连接",Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "请先连接", Toast.LENGTH_LONG).show();
                 }
                 break;
         }
     }
 
-    static class TimerThread extends Thread {
-        Handler handler;
 
-        public TimerThread(Handler handler) {
-            this.handler = handler;
-        }
+    public void run() {
+        if (isHeartbeat) {
+            XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
 
-        @Override
-        public void run() {
-            while (true) {
-                if (isHeartbeat) {
-                    XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
+            Map uploadList1 = new HashMap();
+            uploadList1.put("prid", "15");
+            uploadList1.put("value", false);
+            XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
 
-                    Map uploadList1 = new HashMap();
-                    uploadList1.put("prid", "15");
-                    uploadList1.put("value", false);
-                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
+            Map uploadList2 = new HashMap();
+            uploadList2.put("prid", "13");
+            uploadList2.put("value", false);
+            XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
 
-                    Map uploadList2 = new HashMap();
-                    uploadList2.put("prid", "13");
-                    uploadList2.put("value", false);
-                    XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
-
-
-                    //MainUtil.pushTestEvent();
-                    //MainUtil.pushTestEvent2();
-                    try {
-                        Thread.sleep(15000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+            Log.d(TAG, "run: end");
+            //MainUtil.pushTestEvent();
+            //MainUtil.pushTestEvent2();
+            try {
+                Thread.sleep(15000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -406,20 +399,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      * @param htmlStr
      */
     public void showData(String htmlStr) {
-        tvResult.append(Html.fromHtml(MainUtil.getTodayDateHms("yy-MM-dd HH:mm:ss") + "：" + htmlStr));
-        tvResult.append("\n");
-        //刷新最新行显示
-        int offset = tvResult.getLineCount() * tvResult.getLineHeight();
-        int tvHeight = tvResult.getHeight();
-        if (offset > 6000) {
-            tvResult.setText("");
-            tvResult.scrollTo(0, 0);
-        } else {
-            if (offset > tvHeight) {
-                //Log.d(TAG, "showData: offset >> " + offset + " ,tvHeight >> " + tvHeight);
-                tvResult.scrollTo(0, offset - tvHeight);
-            }
-        }
+        FormatViewUtils.formatData(tvResult, htmlStr, "yyyy-MM-dd HH:mm:ss");
     }
 
     @Override

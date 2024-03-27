@@ -19,7 +19,6 @@ import com.future.xlink.utils.GsonTools;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -29,23 +28,25 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.future.xlink.utils.NetTools;
-import com.future.xlink.utils.TheadTools;
 import com.future.xlink.utils.Utils;
 
 public class XLink {
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
     private IMqttCallback iMqttCallback;
-    private String mqttSsid;
-    private String clientId;
+    private Context mCtx;
     private String[] pingList;
     private static volatile XLink sInstance;
     private CopyOnWriteArrayList<MsgData> pushMap = new CopyOnWriteArrayList<>();
     private boolean isRunPush = false;
-    private PushThread pushThread;
+    private InitParams initParams;
+    private ThreadPoolExecutor executor = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(2));
 
     /**
      * 单例模式
@@ -59,38 +60,6 @@ public class XLink {
             }
         }
         return sInstance;
-    }
-
-    private XLink() {
-        pushThread = new PushThread();
-    }
-
-    /**
-     * Mqtt执行连接的线程
-     */
-    static class ConnThread extends Thread {
-        Context mCxt;
-        InitParams iParams;
-
-        public ConnThread(Context mCxt, InitParams iRparams) {
-            this.mCxt = mCxt;
-            this.iParams = iRparams;
-        }
-
-        @Override
-        public void run() {
-            createConnect(mCxt, iParams);
-        }
-    }
-
-    /**
-     * 推送消息线程
-     */
-    static class PushThread extends Thread {
-        @Override
-        public void run() {
-            startPushData();
-        }
     }
 
     /**
@@ -108,12 +77,12 @@ public class XLink {
          */
         @Override
         public void connectComplete(boolean reconnect, String serverURI) {
-            instance().isRunPush = true;
-            XLog.d("connectComplete: reconnect >> " + reconnect+",serverURI >>"+serverURI);
+            XLog.d("connectComplete: reconnect >> " + reconnect + ",serverURI >>" + serverURI);
             if (instance().iMqttCallback != null) {
                 instance().iMqttCallback.connState(true, reconnect ? "reConnect complete" : "connect complete");
             }
-            TheadTools.execute(instance().pushThread);
+            instance().isRunPush = true;
+            instance().executor.execute(instance()::startPushData);
         }
 
         /**
@@ -121,13 +90,12 @@ public class XLink {
          */
         @Override
         public void connectionLost(Throwable cause) {
-            instance().isRunPush = false;
             boolean isPing = NetTools.checkNet(instance().pingList, mContext);
             XLog.e("connectionLost: isPing >> " + isPing);
             if (instance().iMqttCallback != null) {
-                instance().iMqttCallback.connState(false, cause == null ? (isPing ? "other exception" :
-                        "network is lost！") : cause.getMessage());
+                instance().iMqttCallback.connState(false, cause == null ? (isPing ? "other exception" : "network is lost！") : cause.getMessage());
             }
+            instance().isRunPush = false;
         }
 
         /**
@@ -146,14 +114,12 @@ public class XLink {
         public void deliveryComplete(IMqttDeliveryToken token) {
             try {
                 boolean isComplete = token.isComplete();
-                BaseData baseData = DataTransfer.deliveryHandle(instance().clientId,
-                        token.getMessage());
+                BaseData baseData = DataTransfer.deliveryHandle(instance().initParams.clientId, token.getMessage());
                 if (isComplete) {
                     instance().iMqttCallback.pushed(baseData);
                 } else {
                     MqttException throwException = token.getException();
-                    instance().iMqttCallback.pushFail(baseData, throwException != null ?
-                            throwException.getMessage() : "message push failed!");
+                    instance().iMqttCallback.pushFail(baseData, throwException != null ? throwException.getMessage() : "message push failed!");
                 }
             } catch (Throwable e) {
                 XLog.e("deliveryComplete>Throwable >> " + e.getMessage());
@@ -177,34 +143,38 @@ public class XLink {
                 break;
             default:
                 //服务器请求设备中的相关数据
-                BaseData baseData = DataTransfer.IotRequest(instance().clientId, jHandle, iid);
+                BaseData baseData = DataTransfer.IotRequest(instance().initParams.clientId, jHandle, iid);
                 instance().iMqttCallback.msgArrives(baseData);
                 break;
         }
     }
 
-
     /**
      * start push data
      */
-    static void startPushData() {
+    public void startPushData() {
         while (instance().isRunPush) {
-            if (instance().pushMap.size() > 0) {
-                MsgData msgData = instance().pushMap.get(0);
-                if (msgData.pushCount == 0) {
-                    pushData(msgData);
-                } else {
-                    if (msgData.isDeliveryed) {
-                        instance().pushMap.remove(msgData);
+            try {
+                if (instance().pushMap.size() > 0) {
+                    MsgData msgData = instance().pushMap.get(0);
+                    if (msgData.pushCount == 0) {
+                        pushData(msgData);
                     } else {
-                        if (msgData.pushCount < 3) {
-                            pushData(msgData);
-                        } else {
+                        if (msgData.isDeliveryed) {
                             instance().pushMap.remove(msgData);
-                            instance().iMqttCallback.pushFail(msgData, "Publish message failed！");
+                        } else {
+                            if (msgData.pushCount < 3) {
+                                pushData(msgData);
+                            } else {
+                                instance().pushMap.remove(msgData);
+                                instance().iMqttCallback.pushFail(msgData, "Publish message failed！");
+                            }
                         }
                     }
                 }
+                Thread.sleep(450);
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
             }
         }
     }
@@ -215,9 +185,8 @@ public class XLink {
     private static void pushData(MsgData msgData) {
         if (getConnectStatus()) {
             try {
-                String pushData = DataTransfer.getPushData(instance().clientId, msgData);
-                String topic = DataTransfer.getDiffTopic(pushData, instance().clientId,
-                        instance().mqttSsid);
+                String pushData = DataTransfer.getPushData(instance().initParams.clientId, msgData);
+                String topic = DataTransfer.getDiffTopic(pushData, instance().initParams.clientId, instance().initParams.mqttSsid);
                 MqttMessage message = new MqttMessage(pushData.getBytes());
                 message.setQos(2);
                 IMqttDeliveryToken deliveryToken = instance().client.publish(topic, message);
@@ -226,7 +195,7 @@ public class XLink {
                 deliveryToken.waitForCompletion(1400);
                 msgData.isDeliveryed = deliveryToken.isComplete();
             } catch (Throwable e) {
-                XLog.e("pushData>Throwable >> "+msgData.toString()+",errMeg >> "+e.getMessage());
+                XLog.e("pushData>Throwable >> " + msgData.toString() + ",errMeg >> " + e.getMessage());
                 instance().iMqttCallback.pushFail(msgData, e.getMessage());
             }
         }
@@ -234,29 +203,24 @@ public class XLink {
 
     /**
      * create connect
-     *
-     * @param params connect params
      */
-    private synchronized static void createConnect(Context mCtx, InitParams params) {
+    private void createConnect() {
         try {
-            instance().mqttSsid = params.mqttSsid;
             String tmpDir = System.getProperty("java.io.tmpdir");
-            instance().conOpt = DataTransfer.getConOption(params);
-            instance().client = new MqttAndroidClient(mCtx, params.mqttBroker, params.clientId,
-                    new MqttDefaultFilePersistence(tmpDir));
-            instance().client.setCallback(new MqttContentHandle(mCtx));
+            instance().conOpt = DataTransfer.getConOption(instance().initParams);
+            instance().client = new MqttAndroidClient(instance().mCtx, instance().initParams.mqttBroker, instance().initParams.clientId, new MqttDefaultFilePersistence(tmpDir));
+            instance().client.setCallback(new MqttContentHandle(instance().mCtx));
             instance().client.connect(instance().conOpt).waitForCompletion();
             XLog.d("createConnect Waiting for connection to finish！");
         } catch (MqttException e) {
             XLog.e("createConnect>MqttException >> ", e);
             switch (e.getReasonCode()) {
                 case MqttException.REASON_CODE_CLIENT_CONNECTED:
-                    instance().iMqttCallback.connState(true, params.mqttBroker);
+                    instance().iMqttCallback.connState(true, instance().initParams.mqttBroker);
                     break;
                 case MqttException.REASON_CODE_NOT_AUTHORIZED:
                 case MqttException.REASON_CODE_SERVER_CONNECT_ERROR:
-                    String configFolder =
-                            IApis.ROOT + mCtx.getPackageName() + "/" + params.clientId + "/";
+                    String configFolder = IApis.ROOT + instance().mCtx.getPackageName() + "/" + instance().initParams.clientId + "/";
                     FileTools.delProperties(configFolder + IApis.MY_PROPERTIES);
                     instance().iMqttCallback.connState(false, "ErrCode = " + e.getReasonCode());
                     break;
@@ -266,7 +230,6 @@ public class XLink {
             }
         }
     }
-
 
     /**
      * get connect status
@@ -282,12 +245,10 @@ public class XLink {
      * @param operation 操作名称
      * @param dataMap   content
      */
-    public static boolean putCmd(@IPutType int iPutType, String iid, String operation, Map<String
-            , Object> dataMap) {
+    public static boolean putCmd(@IPutType int iPutType, String iid, String operation, Map<String, Object> dataMap) {
         BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
         if (getConnectStatus()) {
-            MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation,
-                    baseData.maps, false);
+            MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false);
             instance().pushMap.add(msgData);
             return true;
         }
@@ -306,9 +267,8 @@ public class XLink {
                 instance().iMqttCallback.subscribeFail(topicName, "mqtt disconnect");
             }
         } catch (MqttException e) {
-            XLog.e("subscribe>MqttException >> "+topicName+",qos >> "+qos+",ReasonCode >> " + e.getReasonCode() + ", errMeg:" + e.getMessage());
-            instance().iMqttCallback.subscribeFail(topicName, "ReasonCode >> " + e.getReasonCode() + ", errMeg " +
-                    ">> " + e.getMessage());
+            XLog.e("subscribe>MqttException >> " + topicName + ",qos >> " + qos + ",ReasonCode >> " + e.getReasonCode() + ", errMeg:" + e.getMessage());
+            instance().iMqttCallback.subscribeFail(topicName, "ReasonCode >> " + e.getReasonCode() + ", errMeg " + ">> " + e.getMessage());
         }
     }
 
@@ -316,23 +276,23 @@ public class XLink {
      * read local config and connect mqtt
      */
     public static void connect(Context mCxt, InitParams params, IMqttCallback iMqttCallback) {
+        instance().mCtx = mCxt;
         if (!getConnectStatus()) {//判断未连接时进行连接操作
             String configFolder = IApis.ROOT + mCxt.getPackageName() + "/" + params.clientId + "/";
             FileTools.initLogFile(configFolder);
-            instance().iMqttCallback=iMqttCallback;
+            instance().iMqttCallback = iMqttCallback;
             InitParams iRparams = null;
             try {
-                iRparams =
-                        GsonTools.fromJson(FileTools.readFileData(configFolder + IApis.MY_PROPERTIES), InitParams.class);
+                iRparams = GsonTools.fromJson(FileTools.readFileData(configFolder + IApis.MY_PROPERTIES), InitParams.class);
             } catch (Throwable e) {
                 XLog.e("connect>iRparams >> " + e.getMessage());
             }
             if (iRparams != null && iRparams.checkMqttNotNull()) {
-                instance().clientId = iRparams.clientId;
+                instance().initParams = iRparams;
                 instance().pingList = new String[]{Utils.patternIp(iRparams.mqttBroker)};
-                TheadTools.execute(new ConnThread(mCxt, iRparams));
+                instance().executor.execute(instance()::createConnect);
             } else {
-                instance().clientId = params.clientId;
+                instance().initParams = params;
                 XLinkHttp.getAgentList(params, new IHttpRequest() {
                     @Override
                     public void requestComplete(String jsonData) {
@@ -353,19 +313,17 @@ public class XLink {
                                     XLinkHttp.registerDev(params, bestUrl, new IHttpRequest() {
                                         @Override
                                         public void requestComplete(String jsonData) {
-                                            boolean isWrite = FileTools.saveConfig(params,
-                                                    configFolder, jsonData);
+                                            boolean isWrite = FileTools.saveConfig(params, configFolder, jsonData);
                                             if (isWrite) {
-                                                createConnect(mCxt, params);
+                                                instance().createConnect();
                                             } else {
-                                                instance().iMqttCallback.connState(false,
-                                                        mCxt.getString(R.string.credential_save_err));
+                                                instance().iMqttCallback.connState(false, mCxt.getString(R.string.credential_save_err));
                                             }
                                         }
 
                                         @Override
                                         public void requestErr(int errCode, String description) {
-                                            XLog.e("connect>registerDev>requestErr >> "+errCode+", description >> " + description);
+                                            XLog.e("connect>registerDev>requestErr >> " + errCode + ", description >> " + description);
                                             instance().iMqttCallback.connState(false, description);
                                         }
                                     });
@@ -376,7 +334,7 @@ public class XLink {
                                 XLog.e("connect>getAgentList>Throwable >> " + e.getMessage());
                                 instance().iMqttCallback.connState(false, "get Agent list failed!");
                             }
-                        }else{
+                        } else {
                             XLog.e("connect>getAgentList >> is null!");
                         }
                     }
@@ -397,7 +355,7 @@ public class XLink {
      * @param mContext 上下文
      */
     public static void unInit(Context mContext) {
-        FileTools.delProperties(IApis.ROOT + mContext.getPackageName() + "/" + instance().clientId + "/" + IApis.MY_PROPERTIES);
+        FileTools.delProperties(IApis.ROOT + mContext.getPackageName() + "/" + instance().initParams.clientId + "/" + IApis.MY_PROPERTIES);
         instance().pushMap.clear();
         disConnect();
         XLog.e("unInit >> ");
@@ -407,8 +365,10 @@ public class XLink {
      * 断开并重置连接
      */
     public static void disConnect() {
+        // 关闭线程池
+        instance().isRunPush = false;
         XLog.e("disConnect >> ");
-        if (instance().iMqttCallback!= null) {
+        if (instance().iMqttCallback != null) {
             instance().iMqttCallback.connState(false, "Active disconnect");
         }
         instance().iMqttCallback = null;
@@ -424,6 +384,6 @@ public class XLink {
             }
             instance().client = null;
         }
-        instance().isRunPush = false;
+        instance().executor.shutdown();
     }
 }

@@ -23,7 +23,8 @@ public class FileTools {
     public static void initLogFile(String configFolder) {
         File configFile = new File(configFolder);
         if (!configFile.exists()) {
-            configFile.mkdirs();
+            boolean isWriteComplete=configFile.mkdirs();
+            XLog.d("initLogFile>isWriteComplete>"+isWriteComplete);
         }
     }
 
@@ -112,7 +113,7 @@ public class FileTools {
             params.mqttUsername = regPonse.mqttUsername;
             params.mqttPassword = regPonse.mqttPassword;
             String configSave = JsonFormat.formatJson(GsonTools.toJsonWtihNullField(params));
-            return FileTools.writeFileData(configFolder + IApis.MY_PROPERTIES, configSave, true);
+            return writeFileData(configFolder + IApis.MY_PROPERTIES, configSave, true);
         } catch (JSONException e) {
             XLog.e("saveConfig>JSONException >> " + e.getMessage());
             return false;

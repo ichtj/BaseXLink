@@ -18,18 +18,25 @@
             android:id="@+id/tvSn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
-            android:layout_marginRight="10dp"
+            android:layout_gravity="left|center"
             android:singleLine="true"
             android:text="当前操作的SN："
             android:textColor="@color/black"
             android:textSize="20sp" />
+        <EditText
+            android:id="@+id/etSn"
+            android:hint="请输入SN"
+            android:text="FS240125X000121"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left|center"
+            android:layout_marginRight="10dp"/>
 
         <TextView
             android:id="@+id/tvConnStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
+            android:layout_gravity="left|center"
             android:layout_marginRight="10dp"
             android:singleLine="true"
             android:text="当前状态：false"
@@ -47,6 +54,7 @@
         <Button
             android:id="@+id/btnAddDev"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="添加设备" />
@@ -54,6 +62,7 @@
         <Button
             android:id="@+id/btnGetDevice"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="设备信息" />
@@ -61,6 +70,7 @@
         <Button
             android:id="@+id/btnGetAgent"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="代理地址" />
@@ -68,6 +78,7 @@
         <Button
             android:id="@+id/btnConn"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="点击连接" />
@@ -75,13 +86,21 @@
         <Button
             android:id="@+id/btnSeHearbeat"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="开启心跳" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btnDisConn"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="断开连接" />
@@ -89,6 +108,7 @@
         <Button
             android:id="@+id/btnAutoConn"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="开机自启：false" />
@@ -96,18 +116,21 @@
         <Button
             android:id="@+id/btnReboot"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="重启" />
         <Button
             android:id="@+id/btnUninit"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="解除注册" />
         <Button
             android:id="@+id/btnPushEvent"
             android:layout_width="wrap_content"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:text="发布事件" />

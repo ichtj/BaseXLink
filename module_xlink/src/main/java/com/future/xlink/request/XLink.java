@@ -2,6 +2,7 @@ package com.future.xlink.request;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.R;
@@ -18,7 +19,9 @@ import com.future.xlink.request.retrofit.IApis;
 import com.future.xlink.utils.GsonTools;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -37,6 +40,7 @@ import com.future.xlink.utils.NetTools;
 import com.future.xlink.utils.Utils;
 
 public class XLink {
+    private static final String TAG = XLink.class.getSimpleName();
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
     private IMqttCallback iMqttCallback;
@@ -154,27 +158,8 @@ public class XLink {
      */
     public void startPushData() {
         while (instance().isRunPush) {
-            try {
-                if (instance().pushMap.size() > 0) {
-                    MsgData msgData = instance().pushMap.get(0);
-                    if (msgData.pushCount == 0) {
-                        pushData(msgData);
-                    } else {
-                        if (msgData.isDeliveryed) {
-                            instance().pushMap.remove(msgData);
-                        } else {
-                            if (msgData.pushCount < 3) {
-                                pushData(msgData);
-                            } else {
-                                instance().pushMap.remove(msgData);
-                                instance().iMqttCallback.pushFail(msgData, "Publish message failed！");
-                            }
-                        }
-                    }
-                }
-                Thread.sleep(450);
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
+            if (instance().pushMap.size() > 0) {
+                pushData(instance().pushMap.remove(0));
             }
         }
     }
@@ -189,7 +174,18 @@ public class XLink {
                 String topic = DataTransfer.getDiffTopic(pushData, instance().initParams.clientId, instance().initParams.mqttSsid);
                 MqttMessage message = new MqttMessage(pushData.getBytes());
                 message.setQos(2);
-                IMqttDeliveryToken deliveryToken = instance().client.publish(topic, message);
+                IMqttDeliveryToken deliveryToken = instance().client.publish(topic, message, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        Log.d(TAG,"pushData>onSuccess >> " + asyncActionToken.isComplete()+",msgData>>"+pushData);
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        Log.d(TAG,"pushData>onFailure >> " + msgData.isDeliveryed+",msgData>>"+pushData);
+                        instance().iMqttCallback.pushFail(msgData, exception.getMessage());
+                    }
+                });
                 msgData.pushCount++;
                 msgData.pushTime = System.currentTimeMillis();
                 deliveryToken.waitForCompletion(1400);
@@ -290,6 +286,7 @@ public class XLink {
             if (iRparams != null && iRparams.checkMqttNotNull()) {
                 instance().initParams = iRparams;
                 instance().pingList = new String[]{Utils.patternIp(iRparams.mqttBroker)};
+                XLog.d("connect: isShutdown >> " + instance().executor.isShutdown());
                 instance().executor.execute(instance()::createConnect);
             } else {
                 instance().initParams = params;

@@ -12,6 +12,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,10 +65,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private Button btnReboot;
     private TextView tvResult;
     private TextView tvConnStatus;
-    private TextView tvSn;
+    private EditText etSn;
     private static boolean isHeartbeat = false;
     //private String clientId = "FSMMMNNNFF001";
-    private String clientId = "FSMMMNNNFF002";
+    private String clientId;
     ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 
     /**
@@ -98,7 +99,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         boolean isAutoConn = SPUtils.getBoolean(this, MainUtil.KEY_AUTOCONN, false);
         btnAutoConn.setText("开机自启：" + isAutoConn);
         tvConnStatus = findViewById(R.id.tvConnStatus);
-        tvSn = findViewById(R.id.tvSn);
+        etSn = findViewById(R.id.etSn);
         btnPushEvent = findViewById(R.id.btnPushEvent);
         btnPushEvent.setOnClickListener(this);
         btnSeHearbeat = findViewById(R.id.btnSeHearbeat);
@@ -121,7 +122,6 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnSeHearbeat.setOnClickListener(this);
         btnAutoConn.setOnClickListener(this);
         btnReboot.setOnClickListener(this);
-        tvSn.setText("当前操作的SN：" + clientId);
         FormatViewUtils.setMovementMethod(tvResult);
 
         String configFolder = IApis.ROOT + getPackageName() + "/" + clientId + "/xlink-log/";
@@ -252,6 +252,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
 
     @Override
     public void onClick(View v) {
+        if (checkSn()) return;
         switch (v.getId()) {
             case R.id.btnClear:
                 tvResult.setText("");
@@ -348,26 +349,36 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         }
     }
 
+    private boolean checkSn() {
+        clientId = etSn.getText().toString().trim();
+        if (ObjectUtils.isEmpty(clientId)) {
+            Toast.makeText(this, "请输入SN", Toast.LENGTH_LONG).show();
+            return true;
+        }
+        return false;
+    }
 
+    int count=0;
     public void run() {
         if (isHeartbeat) {
             XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
 
             Map uploadList1 = new HashMap();
             uploadList1.put("prid", "15");
-            uploadList1.put("value", false);
+            uploadList1.put("value", count);
             XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
 
             Map uploadList2 = new HashMap();
             uploadList2.put("prid", "13");
-            uploadList2.put("value", false);
+            uploadList2.put("value", count);
             XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
 
             Log.d(TAG, "run: end");
             //MainUtil.pushTestEvent();
             //MainUtil.pushTestEvent2();
+            count++;
             try {
-                Thread.sleep(15000);
+                Thread.sleep(3500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

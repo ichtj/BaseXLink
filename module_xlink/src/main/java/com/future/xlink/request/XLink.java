@@ -158,8 +158,12 @@ public class XLink {
      */
     public void startPushData() {
         while (instance().isRunPush) {
-            if (instance().pushMap.size() > 0) {
-                pushData(instance().pushMap.remove(0));
+            try {
+                if (!instance().pushMap.isEmpty()){
+                    pushData(instance().pushMap.remove(0));
+                }
+            }catch (Throwable throwable){
+                XLog.e("startPushData err>>"+throwable.getMessage());
             }
         }
     }

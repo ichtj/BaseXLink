@@ -11,7 +11,9 @@ import com.future.xlink.callback.IPutType;
 import com.future.xlink.utils.AesTools;
 import com.google.gson.Gson;
 
+import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -452,7 +454,7 @@ public class DataTransfer {
         MqttConnectOptions conOpt = new MqttConnectOptions();
         conOpt.setMaxInflight(1000);
         // 清除缓存
-        conOpt.setCleanSession(false);
+        conOpt.setCleanSession(params.cleanSession);
         // 设置超时时间，单位：秒
         conOpt.setConnectionTimeout(30);
         // 心跳包发送间隔，单位：秒
@@ -471,7 +473,6 @@ public class DataTransfer {
 
         return conOpt;
     }
-
 
     /**
      * 获取解密后令牌

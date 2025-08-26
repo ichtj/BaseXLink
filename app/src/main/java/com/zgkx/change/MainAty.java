@@ -56,6 +56,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private Button btnGetAgent;
     private Button btnGetDevice;
     private Button btnClear;
+    private Button btnClearMQttCache;
     private Button btnAddDev;
     private Button btnConn;
     private Button btnUninit;
@@ -79,7 +80,9 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     public InitParams getInitParams() {
         InitParams iParam = new InitParams();
         iParam.autoReConnect = true;
+        iParam.cleanSession = true;
         iParam.clientId = clientId;
+        iParam.qos = 0;
         iParam.appKey = "61SLS7nwJxllOodv";
         iParam.appSecret = "FeJsQqfc1xB7B8oSlqbd81a1lUsyaDGC";
         iParam.pdid = "22122a20-5ea8-40ef-b7d2-329ee4207474";
@@ -105,6 +108,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnSeHearbeat = findViewById(R.id.btnSeHearbeat);
         btnGetAgent = findViewById(R.id.btnGetAgent);
         btnGetDevice = findViewById(R.id.btnGetDevice);
+        btnClearMQttCache = findViewById(R.id.btnClearMQttCache);
         btnClear = findViewById(R.id.btnClear);
         btnAddDev = findViewById(R.id.btnAddDev);
         btnDisConn = findViewById(R.id.btnDisConn);
@@ -113,6 +117,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnUninit = findViewById(R.id.btnUninit);
         btnUninit.setOnClickListener(this);
         btnConn = findViewById(R.id.btnConn);
+        btnClearMQttCache.setOnClickListener(this);
         btnClear.setOnClickListener(this);
         btnAddDev.setOnClickListener(this);
         btnConn.setOnClickListener(this);
@@ -153,9 +158,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void connState(boolean connected, String description) {
+        Log.d(TAG, "connState: connected>>"+connected);
         sendToMessage(MainUtil.getFont("connState()", !connected) + " >> connected=" + connected + ",description=" + description + "<br />");
         if (connected) {
-            XLink.subscribe("dev/" + clientId + "/#", 2);
+            XLink.subscribe("dev/" + clientId + "/#");
             Map<String, Object> maps = new HashMap<>();
             maps.put("address", "飞思未来深圳科技有限公司");
             maps.put("longitude", "113°55′43.91″");
@@ -172,6 +178,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void msgArrives(BaseData baseData) {
+        Log.d(TAG, "msgArrives: "+baseData.operation);
         sendToMessage(MainUtil.getFont("msgArrives()", false) + " >> " + baseData.toString() + "<br />");
         switch (baseData.iPutType) {
             case PutType.UPGRADE:
@@ -182,6 +189,11 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 XLink.putCmd(PutType.UPGRADE, baseData.iid, baseData.operation, upMaps);
                 break;
             case PutType.METHOD:
+                try {
+                    Thread.sleep(1000000);
+                }catch (Throwable throwable){
+
+                }
                 Map<String, Object> methodMaps = new HashMap<>();
                 methodMaps.put("data", "这是一个测试data");
                 methodMaps.put("result", "这是一个测试result");
@@ -254,6 +266,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     public void onClick(View v) {
         if (checkSn()) return;
         switch (v.getId()) {
+            case R.id.btnClearMQttCache:
+                tvResult.setText("");
+                tvResult.scrollTo(0, 0);
+                break;
             case R.id.btnClear:
                 tvResult.setText("");
                 tvResult.scrollTo(0, 0);

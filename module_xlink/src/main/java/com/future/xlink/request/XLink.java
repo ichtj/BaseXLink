@@ -30,6 +30,7 @@ import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -67,6 +68,43 @@ public class XLink {
     }
 
     /**
+     * 清除应用 databases 目录下以 mqttAndroidService.db 开头的文件
+     *
+     * @return true 表示成功删除或无匹配文件，false 表示删除失败
+     */
+    public static boolean clearMqttDatabaseFiles(Context context) {
+        try {
+            // 获取应用的 databases 目录 (/data/data/your.package.name/databases/)
+            File dbDir = context.getDatabasePath("dummy").getParentFile();
+            if (dbDir == null || !dbDir.exists()) {
+                Log.d(TAG, "Databases directory does not exist.");
+                return true; // 目录不存在，无需删除
+            }
+
+            // 筛选以 mqttAndroidService.db 开头的文件
+            File[] files = dbDir.listFiles((dir, name) -> name.startsWith("mqttAndroidService.db"));
+            if (files == null || files.length == 0) {
+                Log.d(TAG, "No files found starting with mqttAndroidService.db.");
+                return true; // 无匹配文件
+            }
+
+            // 删除匹配的文件
+            boolean allDeleted = true;
+            for (File file : files) {
+                if (file.delete()) {
+                    Log.d(TAG, "Deleted file: " + file.getName());
+                } else {
+                    Log.e(TAG, "Failed to delete file: " + file.getName());
+                    allDeleted = false;
+                }
+            }
+            return allDeleted;
+        } catch (Exception e) {
+            Log.e(TAG, "Error clearing MQTT database files: " + e.getMessage());
+            return false;
+        }
+    }
+    /**
      * Mqtt消息处理 连接 消息下发
      */
     static class MqttContentHandle implements MqttCallbackExtended {
@@ -81,6 +119,7 @@ public class XLink {
          */
         @Override
         public void connectComplete(boolean reconnect, String serverURI) {
+            Log.d(TAG, "connectComplete: ");
             XLog.d("connectComplete: reconnect >> " + reconnect + ",serverURI >>" + serverURI);
             if (instance().iMqttCallback != null) {
                 instance().iMqttCallback.connState(true, reconnect ? "reConnect complete" : "connect complete");
@@ -107,6 +146,7 @@ public class XLink {
          */
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
+            Log.d(TAG, "messageArrived: ");
             instance().platformHandle(message.toString());
         }
 
@@ -177,7 +217,7 @@ public class XLink {
                 String pushData = DataTransfer.getPushData(instance().initParams.clientId, msgData);
                 String topic = DataTransfer.getDiffTopic(pushData, instance().initParams.clientId, instance().initParams.mqttSsid);
                 MqttMessage message = new MqttMessage(pushData.getBytes());
-                message.setQos(2);
+                message.setQos(instance().initParams.qos);
                 IMqttDeliveryToken deliveryToken = instance().client.publish(topic, message, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
@@ -258,16 +298,16 @@ public class XLink {
     /**
      * subscribe message
      */
-    public static void subscribe(String topicName, int qos) {
+    public static void subscribe(String topicName) {
         try {
             if (getConnectStatus()) {
-                instance().client.subscribe(topicName, qos);
+                instance().client.subscribe(topicName, instance().initParams.qos);
                 instance().iMqttCallback.subscribed(topicName);
             } else {
                 instance().iMqttCallback.subscribeFail(topicName, "mqtt disconnect");
             }
         } catch (MqttException e) {
-            XLog.e("subscribe>MqttException >> " + topicName + ",qos >> " + qos + ",ReasonCode >> " + e.getReasonCode() + ", errMeg:" + e.getMessage());
+            XLog.e("subscribe>MqttException >> " + topicName + ",qos >> " + instance().initParams.qos + ",ReasonCode >> " + e.getReasonCode() + ", errMeg:" + e.getMessage());
             instance().iMqttCallback.subscribeFail(topicName, "ReasonCode >> " + e.getReasonCode() + ", errMeg " + ">> " + e.getMessage());
         }
     }
@@ -277,6 +317,9 @@ public class XLink {
      */
     public static void connect(Context mCxt, InitParams params, IMqttCallback iMqttCallback) {
         instance().mCtx = mCxt;
+        if (params.qos==0){
+            clearMqttDatabaseFiles(mCxt);
+        }
         if (!getConnectStatus()) {//判断未连接时进行连接操作
             String configFolder = IApis.ROOT + mCxt.getPackageName() + "/" + params.clientId + "/";
             FileTools.initLogFile(configFolder);

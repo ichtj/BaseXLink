@@ -40,8 +40,16 @@
             android:layout_marginRight="10dp"
             android:singleLine="true"
             android:text="当前状态：false"
+            android:layout_weight="1"
             android:textColor="@color/black"
             android:textSize="20sp" />
+        <Button
+            android:id="@+id/btnClearMQttCache"
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="清除MQTT缓存" />
 
     </LinearLayout>
 

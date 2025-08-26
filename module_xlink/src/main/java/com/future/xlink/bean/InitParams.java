@@ -13,8 +13,10 @@ public class InitParams {
     public String mqttSsid;//
     public String httpUrl;//
     public String httpPort;//
+    public int qos=0;//0最多送达一次，可能丢失，不持久化，最快，适合非关键数据。重连无旧消息。 QoS 1: 至少送达一次，可能重复，需持久化+确认，默认级别。重连可能有旧消息。QoS 2: 仅送达一次，需持久化+两阶段确认，最可靠但最慢。重连可能有旧消息。
 
     public boolean autoReConnect=true;
+    public boolean cleanSession=false;
 
     public String pdid;
     public String appKey;
@@ -23,7 +25,7 @@ public class InitParams {
     public String uniqueKey;
     public String uniqueScret;
 
-    public InitParams(String clientId, String mqttBroker, String mqttUsername, String mqttPassword, String mqttSsid, String httpUrl, String httpPort, boolean autoReConnect, String pdid, String appKey, String appSecret, String uniqueKey, String uniqueScret) {
+    public InitParams(String clientId, String mqttBroker, String mqttUsername, String mqttPassword, String mqttSsid, String httpUrl, String httpPort, int qos, boolean autoReConnect, boolean cleanSession, String pdid, String appKey, String appSecret, String uniqueKey, String uniqueScret) {
         this.clientId = clientId;
         this.mqttBroker = mqttBroker;
         this.mqttUsername = mqttUsername;
@@ -31,7 +33,9 @@ public class InitParams {
         this.mqttSsid = mqttSsid;
         this.httpUrl = httpUrl;
         this.httpPort = httpPort;
+        this.qos = qos;
         this.autoReConnect = autoReConnect;
+        this.cleanSession = cleanSession;
         this.pdid = pdid;
         this.appKey = appKey;
         this.appSecret = appSecret;

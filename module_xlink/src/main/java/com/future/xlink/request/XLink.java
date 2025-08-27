@@ -77,14 +77,12 @@ public class XLink {
             // 获取应用的 databases 目录 (/data/data/your.package.name/databases/)
             File dbDir = context.getDatabasePath("dummy").getParentFile();
             if (dbDir == null || !dbDir.exists()) {
-                Log.d(TAG, "Databases directory does not exist.");
                 return true; // 目录不存在，无需删除
             }
 
             // 筛选以 mqttAndroidService.db 开头的文件
             File[] files = dbDir.listFiles((dir, name) -> name.startsWith("mqttAndroidService.db"));
             if (files == null || files.length == 0) {
-                Log.d(TAG, "No files found starting with mqttAndroidService.db.");
                 return true; // 无匹配文件
             }
 
@@ -92,15 +90,12 @@ public class XLink {
             boolean allDeleted = true;
             for (File file : files) {
                 if (file.delete()) {
-                    Log.d(TAG, "Deleted file: " + file.getName());
                 } else {
-                    Log.e(TAG, "Failed to delete file: " + file.getName());
                     allDeleted = false;
                 }
             }
             return allDeleted;
         } catch (Exception e) {
-            Log.e(TAG, "Error clearing MQTT database files: " + e.getMessage());
             return false;
         }
     }
@@ -119,7 +114,6 @@ public class XLink {
          */
         @Override
         public void connectComplete(boolean reconnect, String serverURI) {
-            Log.d(TAG, "connectComplete: ");
             XLog.d("connectComplete: reconnect >> " + reconnect + ",serverURI >>" + serverURI);
             if (instance().iMqttCallback != null) {
                 instance().iMqttCallback.connState(true, reconnect ? "reConnect complete" : "connect complete");
@@ -146,7 +140,6 @@ public class XLink {
          */
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
-            Log.d(TAG, "messageArrived: ");
             instance().platformHandle(message.toString());
         }
 

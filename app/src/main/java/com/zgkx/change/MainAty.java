@@ -189,11 +189,6 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 XLink.putCmd(PutType.UPGRADE, baseData.iid, baseData.operation, upMaps);
                 break;
             case PutType.METHOD:
-                try {
-                    Thread.sleep(1000000);
-                }catch (Throwable throwable){
-
-                }
                 Map<String, Object> methodMaps = new HashMap<>();
                 methodMaps.put("data", "这是一个测试data");
                 methodMaps.put("result", "这是一个测试result");

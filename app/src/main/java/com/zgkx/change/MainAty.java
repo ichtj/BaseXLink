@@ -35,6 +35,7 @@ import com.future.xlink.xlog.XLogTools;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -262,8 +263,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         if (checkSn()) return;
         switch (v.getId()) {
             case R.id.btnClearMQttCache:
-                tvResult.setText("");
-                tvResult.scrollTo(0, 0);
+                XLink.clearMqttDatabaseFiles (this);
                 break;
             case R.id.btnClear:
                 tvResult.setText("");
@@ -343,11 +343,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 SPUtils.putBoolean(this, MainUtil.KEY_AUTOCONN, !isAutoConn);
                 break;
             case R.id.btnReboot:
-                //调用系统接口进行重启
-                try {
-                    Runtime.getRuntime().exec(new String[]{"su", "-c", "reboot"});
-                } catch (Throwable e) {
-                }
+                rebootSystem();
                 break;
             case R.id.btnPushEvent:
                 if (XLink.getConnectStatus()) {
@@ -359,6 +355,31 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 break;
         }
     }
+
+    public void rebootSystem(){
+        try{
+            Intent intent = new Intent(Intent.ACTION_REBOOT);
+            intent.putExtra("nowait", 1);
+            intent.putExtra("interval", 1);
+            intent.putExtra("window", 0);
+            sendBroadcast(intent);
+        }catch(Throwable throwable){
+            throwable.printStackTrace();
+        }
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.DataOutputStream os = new java.io.DataOutputStream(process.getOutputStream());
+            os.writeBytes("reboot\n");
+            os.flush();
+            os.writeBytes("exit\n");
+            os.flush();
+            process.waitFor();
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
+
+    }
+
 
     private boolean checkSn() {
         clientId = etSn.getText().toString().trim();
@@ -372,26 +393,26 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     int count=0;
     public void run() {
         if (isHeartbeat) {
-            XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
+            if (XLink.getConnectStatus ()){
+                XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
 
-            Map uploadList1 = new HashMap();
-            uploadList1.put("prid", "15");
-            uploadList1.put("value", count);
-            XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
+                Map uploadList1 = new HashMap();
+                uploadList1.put("prid", "15");
+                uploadList1.put("value", count);
+                XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
 
-            Map uploadList2 = new HashMap();
-            uploadList2.put("prid", "13");
-            uploadList2.put("value", count);
-            XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
-
-            Log.d(TAG, "run: end");
-            //MainUtil.pushTestEvent();
-            //MainUtil.pushTestEvent2();
-            count++;
-            try {
-                Thread.sleep(3500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                Map uploadList2 = new HashMap();
+                uploadList2.put("prid", "13");
+                uploadList2.put("value", count);
+                XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
+                //MainUtil.pushTestEvent();
+                //MainUtil.pushTestEvent2();
+                count++;
+                try {
+                    Thread.sleep(3500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

@@ -140,6 +140,7 @@ public class XLink {
          */
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
+            Log.d(TAG, "messageArrived: ThreadName>>"+Thread.currentThread().getName());
             instance().platformHandle(message.toString());
         }
 
@@ -395,6 +396,7 @@ public class XLink {
         FileTools.delProperties(IApis.ROOT + mContext.getPackageName() + "/" + instance().initParams.clientId + "/" + IApis.MY_PROPERTIES);
         instance().pushMap.clear();
         disConnect();
+        clearMqttDatabaseFiles(mContext);
         XLog.e("unInit >> ");
     }
 

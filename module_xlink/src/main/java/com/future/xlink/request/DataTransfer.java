@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.base.BaseData;
 import com.future.xlink.bean.InitParams;
+import com.future.xlink.bean.base.MsgData;
 import com.future.xlink.callback.ICmdType;
 import com.future.xlink.bean.PutType;
 import com.future.xlink.callback.IPutType;
@@ -35,7 +36,7 @@ public class DataTransfer {
      * @param baseData 数据内容
      * @return 需要推送的真实数据
      */
-    public static String getPushData(String clientId, BaseData baseData) throws Throwable {
+    public static String getPushData(String clientId, MsgData baseData) throws Throwable {
         String requestCmd = null;
         switch (baseData.iPutType) {
             case PutType.EVENT:
@@ -67,8 +68,8 @@ public class DataTransfer {
             case PutType.METHOD:
                 JSONArray mActions = new JSONArray();
                 JSONObject mAction = new JSONObject();
-                mAction.put("_description", "");
-                mAction.put("_status", 0);
+                mAction.put("_description", baseData._description);
+                mAction.put("_status", baseData._status);
                 if (baseData.maps != null && baseData.maps.size() > 0) {
                     JSONObject mOut = new JSONObject();
                     for (String key : baseData.maps.keySet()) {
@@ -99,8 +100,8 @@ public class DataTransfer {
 
                     JSONArray devMsgList = new JSONArray();
                     JSONObject dev = new JSONObject();
-                    dev.put("_status", 0);
-                    dev.put("_description", "");
+                    dev.put("_status", baseData._status);
+                    dev.put("_description", baseData._description);
                     dev.put(sidPrid + "", baseData.maps.get("value"));
                     devMsgList.put(0, dev);
 
@@ -124,8 +125,8 @@ public class DataTransfer {
 
                     JSONArray setDevList = new JSONArray();
                     JSONObject setDdev = new JSONObject();
-                    setDdev.put("_status", 0);
-                    setDdev.put("_description", "");
+                    setDdev.put("_status", baseData._status);
+                    setDdev.put("_description", baseData._description);
                     setDdev.put(sidPrid + "", baseData.maps.get("value"));
                     setDevList.put(0, setDdev);
 
@@ -176,8 +177,8 @@ public class DataTransfer {
                 JSONArray upgradeDatas = new JSONArray();
                 JSONObject upgrade = new JSONObject();
                 upgrade.put("did", clientId);
-                upgrade.put("_status", 0);
-                upgrade.put("_description", "");
+                upgrade.put("_status", baseData._status);
+                upgrade.put("_description", baseData._description);
                 upgradeDatas.put(upgrade);
 
                 JSONObject upgradeList = new JSONObject();

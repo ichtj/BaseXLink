@@ -108,7 +108,6 @@ public class XLink {
 
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
-            Log.d(TAG, "messageArrived: ThreadName>>"+Thread.currentThread().getName());
             instance().platformHandle(message.toString());
         }
 
@@ -244,10 +243,20 @@ public class XLink {
         return instance().client != null && instance().client.isConnected();
     }
 
+    public static boolean putCmd(@IPutType int iPutType, String iid, String operation, Map<String, Object> dataMap,int _status,String _description) {
+        BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
+        if (getConnectStatus()) {
+            MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false,_description,_status);
+            instance().pushMap.add(msgData);
+            return true;
+        }
+        return false;
+    }
+
     public static boolean putCmd(@IPutType int iPutType, String iid, String operation, Map<String, Object> dataMap) {
         BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
         if (getConnectStatus()) {
-            MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false);
+            MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false,"",0);
             instance().pushMap.add(msgData);
             return true;
         }

@@ -76,7 +76,8 @@
         android:usesCleartextTraffic="true"
         android:roundIcon="@drawable/ic_iot_logo"
         android:supportsRtl="true">
-        <activity android:name="com.zgkx.change.MainAty">
+        <activity android:enabled="true"
+            android:exported="true" android:name="com.zgkx.change.MainAty">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

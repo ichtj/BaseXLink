@@ -46,12 +46,8 @@ public class InitParams {
     public InitParams() {
     }
 
-    public boolean checkMqttNotNull(){
-        if(TextUtils.isEmpty(mqttBroker)||TextUtils.isEmpty(mqttPassword)||TextUtils.isEmpty(mqttUsername)){
-            return false;
-        }else{
-            return true;
-        }
+    public static boolean checkProductIsSame(InitParams saveConfig,InitParams newConfig){
+        return saveConfig!=null&&newConfig!=null&&newConfig.pdid.equals(saveConfig.pdid)&&newConfig.appKey.equals(saveConfig.appKey)&newConfig.appSecret.equals(saveConfig.appSecret);
     }
 
     @Override

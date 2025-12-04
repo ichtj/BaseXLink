@@ -170,17 +170,20 @@ public class XLink {
     }
 
     private void startConnectThread() {
-        if (connectThread == null || !connectThread.isAlive()) {
-            isRunConnect = true;
-            connectThread = new Thread(() -> {
-                try {
-                    createConnect();
-                } finally {
-                    isRunConnect = false;
-                }
-            }, "XLink-ConnectThread");
-            connectThread.setDaemon(true);
-            connectThread.start();
+        synchronized (connectLock) {
+            // 如果 connectThread 还在运行，则不启动新的线程
+            if (connectThread == null || !connectThread.isAlive()) {
+                isRunConnect = true;
+                connectThread = new Thread(() -> {
+                    try {
+                        createConnect();
+                    } finally {
+                        isRunConnect = false;
+                    }
+                }, "XLink-ConnectThread");
+                connectThread.setDaemon(true);
+                connectThread.start();
+            }
         }
     }
 
@@ -222,19 +225,29 @@ public class XLink {
     private void createConnect() {
         synchronized (connectLock) {
             try {
+                // 如果已经连接，则直接返回
                 if (client != null && client.isConnected()) {
                     XLog.d("createConnect: already connected");
                     return;
                 }
+
+                // 如果之前的 connectThread 存在，先停止它
+                if (connectThread != null && connectThread.isAlive()) {
+                    connectThread.interrupt();
+                    connectThread = null;  // Reset the thread so that a new one can be created
+                }
+
                 String tmpDir = mCtx.getFilesDir().getAbsolutePath();
                 conOpt = DataTransfer.getConOption(initParams);
                 client = new MqttAndroidClient(mCtx, initParams.mqttBroker, initParams.clientId, new MqttDefaultFilePersistence(tmpDir));
                 client.setCallback(new MqttContentHandle(mCtx));
+
+                // 开始连接
                 client.connect(conOpt).waitForCompletion();
                 XLog.d("createConnect Waiting for connection to finish！");
             } catch (MqttException e) {
                 XLog.e("createConnect>MqttException >> ", e);
-                disConnect (e.getMessage());
+                disConnect(e.getMessage());
             }
         }
     }
@@ -277,25 +290,25 @@ public class XLink {
         }
     }
 
-    public static void connect(Context mCxt, InitParams params, IMqttCallback iMqttCallback) {
+    public static void connect(Context mCxt, InitParams newConfig, IMqttCallback iMqttCallback) {
         instance().mCtx = mCxt;
         if (!getConnectStatus()) {
-            String configFolder = IApis.ROOT + mCxt.getPackageName() + "/" + params.clientId + "/";
+            String configFolder = IApis.ROOT + mCxt.getPackageName() + "/" + newConfig.clientId + "/";
             FileTools.initLogFile(configFolder);
             instance().iMqttCallback = iMqttCallback;
-            InitParams iRparams = null;
+            InitParams saveConfig = null;
             try {
-                iRparams = GsonTools.fromJson(FileTools.readFileData(configFolder + IApis.MY_PROPERTIES), InitParams.class);
+                saveConfig = GsonTools.fromJson(FileTools.readFileData(configFolder + IApis.MY_PROPERTIES), InitParams.class);
             } catch (Throwable e) {
-                XLog.e("connect>iRparams >> " + e.getMessage());
+                XLog.e("connect>saveConfig >> " + e.getMessage());
             }
-            if (iRparams != null && iRparams.checkMqttNotNull()) {
-                instance().initParams = iRparams;
-                instance().pingList = new String[]{Utils.patternIp(iRparams.mqttBroker)};
+            if (!TextUtils.isEmpty(saveConfig.mqttBroker)&&!TextUtils.isEmpty(saveConfig.mqttPassword)&&!TextUtils.isEmpty(saveConfig.mqttUsername)&&InitParams.checkProductIsSame(saveConfig,newConfig)) {
+                instance().initParams = saveConfig;
+                instance().pingList = new String[]{Utils.patternIp(saveConfig.mqttBroker)};
                 instance().startConnectThread();
             } else {
-                instance().initParams = params;
-                XLinkHttp.getAgentList(params, new IHttpRequest() {
+                instance().initParams = newConfig;
+                XLinkHttp.getAgentList(newConfig, new IHttpRequest() {
                     @Override
                     public void requestComplete(String jsonData) {
                         if (!TextUtils.isEmpty(jsonData)) {
@@ -312,10 +325,10 @@ public class XLink {
                                         bestUrl = Utils.compare(agents.servers);
                                     }
                                     XLog.d("requestComplete: bestUrl >> " + bestUrl);
-                                    XLinkHttp.registerDev(params, bestUrl, new IHttpRequest() {
+                                    XLinkHttp.registerDev(newConfig, bestUrl, new IHttpRequest() {
                                         @Override
                                         public void requestComplete(String jsonData) {
-                                            boolean isWrite = FileTools.saveConfig(params, configFolder, jsonData);
+                                            boolean isWrite = FileTools.saveConfig(newConfig, configFolder, jsonData);
                                             if (isWrite) {
                                                 instance().startConnectThread();
                                             } else {
@@ -375,31 +388,17 @@ public class XLink {
             if (instance().client != null) {
                 try {
                     if (instance().client.isConnected()) {
-                        try {
-                            // 更彻底的断开
-                            instance().client.disconnectForcibly(0, 0);
-                        } catch (Throwable ignore) {
-                            try {
-                                instance().client.disconnect();
-                            } catch (Throwable ignore2) {}
-                        }
+                        instance().client.disconnectForcibly(0, 0);
                     }
-                    try {
-                        instance().client.unregisterResources();
-                    } catch (Throwable ignore) {}
-                    try {
-                        instance().client.close();
-                    } catch (Throwable ignore) {}
-                } catch (Throwable ignore) {
-                }
+                    instance().client.unregisterResources();
+                    instance().client.close();
+                } catch (Throwable ignore) {}
                 instance().client = null;
             }
 
-            // 停止 service（放在最后，保证 client 已释放）
+            // 停止服务并清理线程
             try {
-                instance().mCtx.stopService(
-                        new Intent(instance().mCtx, MqttService.class)
-                );
+                instance().mCtx.stopService(new Intent(instance().mCtx, MqttService.class));
             } catch (Throwable ignore) {}
 
             // 清理队列和线程
@@ -410,9 +409,8 @@ public class XLink {
             }
             if (instance().connectThread != null && instance().connectThread.isAlive()) {
                 instance().connectThread.interrupt();
-                instance().connectThread = null;
+                instance().connectThread = null;  // Explicitly reset the connectThread to null
             }
         }
     }
-
 }

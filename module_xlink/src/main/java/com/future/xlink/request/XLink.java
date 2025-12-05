@@ -302,7 +302,7 @@ public class XLink {
             } catch (Throwable e) {
                 XLog.e("connect>saveConfig >> " + e.getMessage());
             }
-            if (!TextUtils.isEmpty(saveConfig.mqttBroker)&&!TextUtils.isEmpty(saveConfig.mqttPassword)&&!TextUtils.isEmpty(saveConfig.mqttUsername)&&InitParams.checkProductIsSame(saveConfig,newConfig)) {
+            if (InitParams.checkProductIsSame(saveConfig,newConfig)) {
                 instance().initParams = saveConfig;
                 instance().pingList = new String[]{Utils.patternIp(saveConfig.mqttBroker)};
                 instance().startConnectThread();

@@ -35,8 +35,8 @@ public class SelfObserver<T> implements Observer <T> {
     }
 
     private void dispose() {
-        if (disposable != null && disposable.isDisposed()) {
-            XLog.d("dispose: dispose()");
+        if (disposable != null && !disposable.isDisposed()) {
+            XLog.d("HTTP_DISPOSE");
             disposable.dispose();
             disposable = null;
         }

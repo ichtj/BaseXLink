@@ -3,7 +3,6 @@ package com.future.xlink.request;
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.R;
@@ -34,6 +33,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.future.xlink.utils.NetTools;
@@ -47,13 +48,17 @@ public class XLink {
     private Context mCtx;
     private String[] pingList;
     private static volatile XLink sInstance;
-    private CopyOnWriteArrayList<MsgData> pushMap = new CopyOnWriteArrayList<>();
-    private boolean isRunPush = false;
-    private boolean isRunConnect = false;
+    // Android 4.4.2 supports LinkedBlockingQueue. It avoids CopyOnWriteArrayList
+    // remove(0) copies and lets the worker block while no message is pending.
+    private final LinkedBlockingQueue<MsgData> pushQueue = new LinkedBlockingQueue<>();
+    private volatile boolean isRunPush = false;
+    private volatile boolean isRunConnect = false;
     private InitParams initParams;
     private Thread pushThread;
     private Thread connectThread;
     private final Object connectLock = new Object();
+    private volatile int connectGeneration = 0;
+    private CopyOnWriteArrayList<String> replyRecordList = new CopyOnWriteArrayList<>();
 
     private static XLink instance() {
         if (sInstance == null) {
@@ -82,33 +87,87 @@ public class XLink {
         }
     }
 
+    private static String getConfigFolder(Context context, String clientId) {
+        return new File(context.getFilesDir(), "xlink/" + context.getPackageName() + "/" + clientId + "/").getAbsolutePath() + File.separator;
+    }
+
+    private static void notifyConnState(boolean connected, String reason) {
+        IMqttCallback callback = instance().iMqttCallback;
+        if (callback != null) {
+            callback.connState(connected, reason);
+        }
+    }
+
+    private boolean isActiveConnectGeneration(int generation) {
+        return generation == connectGeneration && isRunConnect;
+    }
+
+    private boolean isCurrentConnectGeneration(int generation) {
+        return generation == connectGeneration;
+    }
+
+    private void finishConnectGeneration(int generation) {
+        synchronized (connectLock) {
+            if (generation == connectGeneration) {
+                isRunConnect = false;
+            }
+        }
+    }
+
+    private boolean shouldDispatchReply(String act, String iid) {
+        String key = act + "#" + iid;
+        if (replyRecordList.contains(key)) {
+            XLog.d("REPLY_DUP_IGNORE act=" + act + " iid=" + iid);
+            return false;
+        }
+        replyRecordList.add(key);
+        if (replyRecordList.size() > 300) {
+            replyRecordList.remove(0);
+        }
+        return true;
+    }
+
+    private void onMqttConnected(int generation, boolean reconnect, String source) {
+        if (!isCurrentConnectGeneration(generation)) {
+            XLog.d("CONNECT_STALE_IGNORE source=" + source + " gen=" + generation + " currentGen=" + connectGeneration);
+            return;
+        }
+        isRunConnect = false;
+        isRunPush = true;
+        XLog.d("CONNECT_READY source=" + source + " reconnect=" + reconnect + " gen=" + generation + " queue=" + pushQueue.size());
+        notifyConnState(true, reconnect ? "reConnect complete" : "connect complete");
+        startPushThread();
+    }
+
     static class MqttContentHandle implements MqttCallbackExtended {
         Context mContext;
-        public MqttContentHandle(Context mContext) { this.mContext = mContext; }
+        int generation;
+        public MqttContentHandle(Context mContext, int generation) {
+            this.mContext = mContext;
+            this.generation = generation;
+        }
 
         @Override
         public void connectComplete(boolean reconnect, String serverURI) {
-            XLog.d("connectComplete: reconnect >> " + reconnect + ",serverURI >>" + serverURI);
-            if (instance().iMqttCallback != null) {
-                instance().iMqttCallback.connState(true, reconnect ? "reConnect complete" : "connect complete");
+            if (!instance().isCurrentConnectGeneration(generation)) {
+                XLog.d("CONNECT_CALLBACK_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
+                return;
             }
-            instance().isRunPush = true;
-            instance().startPushThread();
+            XLog.d("CONNECT_CALLBACK reconnect=" + reconnect + " uri=" + serverURI);
+            instance().onMqttConnected(generation, reconnect, "callback");
         }
 
         @Override
         public void connectionLost(Throwable cause) {
             boolean isPing = NetTools.checkNet(instance().pingList, mContext);
-            XLog.e("connectionLost: isPing >> " + isPing);
-            if (instance().iMqttCallback != null) {
-                instance().iMqttCallback.connState(false, cause == null ? (isPing ? "other exception" : "network is lost！") : cause.getMessage());
-            }
+            XLog.e("CONNECT_LOST pingOk=" + isPing + " reason=" + (cause == null ? "unknown" : cause.getMessage()));
+            notifyConnState(false, cause == null ? (isPing ? "other exception" : "network is lost！") : cause.getMessage());
             instance().isRunPush = false;
         }
 
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
-            instance().platformHandle(message.toString());
+            instance().platformHandle(topic, message.toString());
         }
 
         @Override
@@ -116,69 +175,98 @@ public class XLink {
             try {
                 boolean isComplete = token.isComplete();
                 BaseData baseData = DataTransfer.deliveryHandle(instance().initParams.clientId, token.getMessage());
-                if (instance().iMqttCallback != null) { // 判空保护
+                if (baseData == null) {
+                    XLog.e("PUBLISH_DELIVERY_PARSE_EMPTY");
+                    return;
+                }
+                IMqttCallback callback = instance().iMqttCallback;
+                if (callback != null) { // 判空保护
                     if (isComplete) {
-                        instance().iMqttCallback.pushed(baseData);
+                        callback.pushed(baseData);
                     } else {
                         MqttException throwException = token.getException();
-                        instance().iMqttCallback.pushFail(baseData, throwException != null ? throwException.getMessage() : "message push failed!");
+                        callback.pushFail(baseData, throwException != null ? throwException.getMessage() : "message push failed!");
                     }
                 } else {
-                    XLog.e("deliveryComplete>iMqttCallback is null");
+                    XLog.e("PUBLISH_CALLBACK_MISSING");
                 }
             } catch (Throwable e) {
-                XLog.e("deliveryComplete>Throwable >> " + e.getMessage());
+                XLog.e("PUBLISH_DELIVERY_ERROR error=" + e.getMessage());
             }
         }
     }
 
-    private void platformHandle(String msgJson) throws JSONException {
+    private void platformHandle(String topic, String msgJson) throws JSONException {
         JSONObject jHandle = new JSONObject(msgJson);
-        String act = jHandle.getString("act");
-        String iid = jHandle.getString("iid");
+        String act = jHandle.optString("act");
+        String iid = jHandle.optString("iid");
+        if (TextUtils.isEmpty(act) || TextUtils.isEmpty(iid)) {
+            XLog.e("MSG_DROP reason=missing_act_or_iid topic=" + topic);
+            return;
+        }
         switch (act) {
             case ICmdType.PLATFORM_EVENT:
             case ICmdType.PLATFORM_UPLOAD:
             case ICmdType.PLATFORM_CMD:
-                instance().iMqttCallback.iotReplyed(act, iid);
+                if (!instance().shouldDispatchReply(act, iid)) {
+                    break;
+                }
+                IMqttCallback replyCallback = instance().iMqttCallback;
+                if (replyCallback != null) {
+                    replyCallback.iotReplyed(act, iid);
+                }
                 break;
             default:
                 BaseData baseData = DataTransfer.IotRequest(instance().initParams.clientId, jHandle, iid);
-                instance().iMqttCallback.msgArrives(baseData);
+                if (baseData == null) {
+                    XLog.e("MSG_DROP reason=unsupported_or_invalid_payload act=" + act + " iid=" + iid + " topic=" + topic);
+                    break;
+                }
+                IMqttCallback msgCallback = instance().iMqttCallback;
+                if (msgCallback != null) {
+                    msgCallback.msgArrives(baseData);
+                }
                 break;
         }
     }
 
     private void startPushThread() {
         if (pushThread == null || !pushThread.isAlive()) {
+            XLog.d("PUSH_WORKER_START queue=" + pushQueue.size());
             pushThread = new Thread(() -> {
                 while (isRunPush) {
                     try {
-                        if (!pushMap.isEmpty() && isRunPush) {
-                            pushData(pushMap.remove(0));
-                        } else {
-                            Thread.sleep(100);
+                        MsgData msgData = pushQueue.poll(1, TimeUnit.SECONDS);
+                        if (msgData != null && isRunPush) {
+                            XLog.d("PUSH_DEQUEUE queueAfter=" + pushQueue.size());
+                            pushData(msgData);
                         }
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        XLog.d("PUSH_WORKER_INTERRUPTED");
+                        break;
                     } catch (Throwable throwable) {
-                        XLog.e("startPushThread err>>" + throwable.getMessage());
+                        XLog.e("PUSH_WORKER_ERROR " + throwable.getMessage());
                     }
                 }
             }, "XLink-PushThread");
             pushThread.setDaemon(true);
             pushThread.start();
+        } else {
+            XLog.d("PUSH_WORKER_ALREADY_RUNNING queue=" + pushQueue.size());
         }
     }
 
-    private void startConnectThread() {
+    private void startConnectThread(int generation) {
         synchronized (connectLock) {
             // 如果 connectThread 还在运行，则不启动新的线程
             if (connectThread == null || !connectThread.isAlive()) {
                 isRunConnect = true;
                 connectThread = new Thread(() -> {
                     try {
-                        createConnect();
+                        createConnect(generation);
                     } finally {
-                        isRunConnect = false;
+                        finishConnectGeneration(generation);
                     }
                 }, "XLink-ConnectThread");
                 connectThread.setDaemon(true);
@@ -193,18 +281,20 @@ public class XLink {
             try {
                 String pushData = DataTransfer.getPushData(instance().initParams.clientId, msgData);
                 String topic = DataTransfer.getDiffTopic(pushData, instance().initParams.clientId, instance().initParams.mqttSsid);
+                XLog.d("PUBLISH_START iid=" + msgData.iid + " type=" + msgData.iPutType + " op=" + msgData.operation + " topic=" + topic);
                 MqttMessage message = new MqttMessage(pushData.getBytes());
                 message.setQos(instance().initParams.qos);
                 IMqttDeliveryToken deliveryToken = instance().client.publish(topic, message, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
-                        Log.d(TAG,"pushData>onSuccess >> " + asyncActionToken.isComplete()+",msgData>>"+pushData);
+                        XLog.d("PUBLISH_OK iid=" + msgData.iid + " complete=" + asyncActionToken.isComplete());
                     }
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        Log.d(TAG,"pushData>onFailure >> " + msgData.isDeliveryed+",msgData>>"+pushData);
-                        if (instance().iMqttCallback != null) {
-                            instance().iMqttCallback.pushFail(msgData, exception.getMessage());
+                        XLog.e("PUBLISH_FAIL iid=" + msgData.iid + " delivered=" + msgData.isDeliveryed + " error=" + exception.getMessage());
+                        IMqttCallback callback = instance().iMqttCallback;
+                        if (callback != null) {
+                            callback.pushFail(msgData, exception.getMessage());
                         }
                     }
                 });
@@ -213,43 +303,54 @@ public class XLink {
                 deliveryToken.waitForCompletion(1400);
                 msgData.isDeliveryed = deliveryToken.isComplete();
             } catch (Throwable e) {
-                XLog.e("pushData>Throwable >> " + msgData.toString() + ",errMeg >> " + e.getMessage());
-                if (instance().iMqttCallback != null) {
-                    instance().iMqttCallback.pushFail(msgData, e.getMessage());
+                XLog.e("PUBLISH_ERROR iid=" + msgData.iid + " type=" + msgData.iPutType + " op=" + msgData.operation + " error=" + e.getMessage());
+                IMqttCallback callback = instance().iMqttCallback;
+                if (callback != null) {
+                    callback.pushFail(msgData, e.getMessage());
                 }
             }
         }
     }
 
     // 优化：连接加锁，状态判断，连接前后清理数据库，异常时释放资源
-    private void createConnect() {
-        synchronized (connectLock) {
-            try {
-                // 如果已经连接，则直接返回
-                if (client != null && client.isConnected()) {
-                    XLog.d("createConnect: already connected");
+    private void createConnect(int generation) {
+        try {
+            MqttAndroidClient connectClient;
+            synchronized (connectLock) {
+                if (!isActiveConnectGeneration(generation)) {
+                    XLog.d("CONNECT_THREAD_STALE_IGNORE gen=" + generation + " currentGen=" + connectGeneration);
                     return;
                 }
-
-                // 如果之前的 connectThread 存在，先停止它
-                if (connectThread != null && connectThread.isAlive()) {
-                    connectThread.interrupt();
-                    connectThread = null;  // Reset the thread so that a new one can be created
+                // 如果已经连接，则直接返回
+                if (client != null && client.isConnected()) {
+                    XLog.d("CONNECT_THREAD_ALREADY_CONNECTED gen=" + generation);
+                    return;
                 }
 
                 String tmpDir = mCtx.getFilesDir().getAbsolutePath();
                 conOpt = DataTransfer.getConOption(initParams);
                 client = new MqttAndroidClient(mCtx, initParams.mqttBroker, initParams.clientId, new MqttDefaultFilePersistence(tmpDir));
-                client.setCallback(new MqttContentHandle(mCtx));
+                client.setCallback(new MqttContentHandle(mCtx, generation));
+                connectClient = client;
+            }
 
                 // 开始连接
-                client.connect(conOpt).waitForCompletion();
-                XLog.d("createConnect Waiting for connection to finish！");
+                connectClient.connect(conOpt).waitForCompletion();
+                if (!isActiveConnectGeneration(generation) && connectClient.isConnected()) {
+                    XLog.d("CONNECT_STALE_CLOSE gen=" + generation + " currentGen=" + connectGeneration);
+                    connectClient.disconnectForcibly(0, 0);
+                    connectClient.unregisterResources();
+                    connectClient.close();
+                    return;
+                }
+                XLog.d("CONNECT_WAIT_DONE gen=" + generation + " connected=" + connectClient.isConnected());
+                if (connectClient.isConnected()) {
+                    onMqttConnected(generation, false, "waitForCompletion");
+                }
             } catch (MqttException e) {
-                XLog.e("createConnect>MqttException >> ", e);
+                XLog.e("CONNECT_ERROR " + e.getMessage(), e);
                 disConnect(e.getMessage());
             }
-        }
     }
 
     public static boolean getConnectStatus() {
@@ -260,7 +361,12 @@ public class XLink {
         BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
         if (getConnectStatus()) {
             MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false,_description,_status);
-            instance().pushMap.add(msgData);
+            instance().pushQueue.offer(msgData);
+            XLog.d("QUEUE_ADD iid=" + iid + " type=" + iPutType + " op=" + operation + " queue=" + instance().pushQueue.size() + " worker=" + instance().isRunPush);
+            if (!instance().isRunPush) {
+                instance().isRunPush = true;
+                instance().startPushThread();
+            }
             return true;
         }
         return false;
@@ -270,7 +376,12 @@ public class XLink {
         BaseData baseData = new BaseData(iPutType, iid, operation, dataMap);
         if (getConnectStatus()) {
             MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false,"",0);
-            instance().pushMap.add(msgData);
+            instance().pushQueue.offer(msgData);
+            XLog.d("QUEUE_ADD iid=" + iid + " type=" + iPutType + " op=" + operation + " queue=" + instance().pushQueue.size() + " worker=" + instance().isRunPush);
+            if (!instance().isRunPush) {
+                instance().isRunPush = true;
+                instance().startPushThread();
+            }
             return true;
         }
         return false;
@@ -278,39 +389,68 @@ public class XLink {
 
     public static void subscribe(String topicName) {
         try {
+            IMqttCallback callback = instance().iMqttCallback;
             if (getConnectStatus()) {
                 instance().client.subscribe(topicName, instance().initParams.qos);
-                instance().iMqttCallback.subscribed(topicName);
-            } else {
-                instance().iMqttCallback.subscribeFail(topicName, "mqtt disconnect");
+                if (callback != null) {
+                    callback.subscribed(topicName);
+                }
+            } else if (callback != null) {
+                callback.subscribeFail(topicName, "mqtt disconnect");
             }
         } catch (MqttException e) {
-            XLog.e("subscribe>MqttException >> " + topicName + ",qos >> " + instance().initParams.qos + ",ReasonCode >> " + e.getReasonCode() + ", errMeg:" + e.getMessage());
-            instance().iMqttCallback.subscribeFail(topicName, "ReasonCode >> " + e.getReasonCode() + ", errMeg " + ">> " + e.getMessage());
+            XLog.e("SUBSCRIBE_FAIL topic=" + topicName + " qos=" + instance().initParams.qos + " code=" + e.getReasonCode() + " error=" + e.getMessage());
+            IMqttCallback callback = instance().iMqttCallback;
+            if (callback != null) {
+                callback.subscribeFail(topicName, "reasonCode=" + e.getReasonCode() + ", error=" + e.getMessage());
+            }
         }
     }
 
     public static void connect(Context mCxt, InitParams newConfig, IMqttCallback iMqttCallback) {
-        instance().mCtx = mCxt;
+        instance().mCtx = mCxt.getApplicationContext();
+        final int generation;
+        synchronized (instance().connectLock) {
+            if (instance().client != null && instance().client.isConnected()) {
+                XLog.d("CONNECT_IGNORE_ALREADY_CONNECTED clientId=" + newConfig.clientId);
+                instance().iMqttCallback = iMqttCallback;
+                notifyConnState(true, "already connected");
+                return;
+            }
+            if (instance().isRunConnect) {
+                XLog.d("CONNECT_IGNORE_IN_PROGRESS clientId=" + newConfig.clientId + " gen=" + instance().connectGeneration);
+                instance().iMqttCallback = iMqttCallback;
+                notifyConnState(false, "connecting");
+                return;
+            }
+            instance().isRunConnect = true;
+            instance().connectGeneration++;
+            generation = instance().connectGeneration;
+            XLog.d("CONNECT_START clientId=" + newConfig.clientId + " gen=" + generation);
+        }
         if (!getConnectStatus()) {
-            String configFolder = IApis.ROOT + mCxt.getPackageName() + "/" + newConfig.clientId + "/";
+            String configFolder = getConfigFolder(instance().mCtx, newConfig.clientId);
             FileTools.initLogFile(configFolder);
             instance().iMqttCallback = iMqttCallback;
             InitParams saveConfig = null;
             try {
                 saveConfig = GsonTools.fromJson(FileTools.readFileData(configFolder + IApis.MY_PROPERTIES), InitParams.class);
             } catch (Throwable e) {
-                XLog.e("connect>saveConfig >> " + e.getMessage());
+                XLog.e("CONFIG_READ_FAIL " + e.getMessage());
             }
             if (InitParams.checkProductIsSame(saveConfig,newConfig)) {
                 instance().initParams = saveConfig;
                 instance().pingList = new String[]{Utils.patternIp(saveConfig.mqttBroker)};
-                instance().startConnectThread();
+                instance().startConnectThread(generation);
             } else {
                 instance().initParams = newConfig;
                 XLinkHttp.getAgentList(newConfig, new IHttpRequest() {
                     @Override
                     public void requestComplete(String jsonData) {
+                        if (!instance().isActiveConnectGeneration(generation)) {
+                            XLog.d("AGENT_LIST_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
+                            return;
+                        }
                         if (!TextUtils.isEmpty(jsonData)) {
                             try {
                                 Agents agents = GsonTools.fromJson(jsonData, Agents.class);
@@ -324,38 +464,49 @@ public class XLink {
                                     if (agents.servers.size() > 1) {
                                         bestUrl = Utils.compare(agents.servers);
                                     }
-                                    XLog.d("requestComplete: bestUrl >> " + bestUrl);
+                                    XLog.d("AGENT_SELECTED url=" + bestUrl + " count=" + agents.servers.size());
                                     XLinkHttp.registerDev(newConfig, bestUrl, new IHttpRequest() {
                                         @Override
                                         public void requestComplete(String jsonData) {
+                                            if (!instance().isActiveConnectGeneration(generation)) {
+                                                XLog.d("REGISTER_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
+                                                return;
+                                            }
                                             boolean isWrite = FileTools.saveConfig(newConfig, configFolder, jsonData);
                                             if (isWrite) {
-                                                instance().startConnectThread();
+                                                instance().startConnectThread(generation);
                                             } else {
-                                                instance().iMqttCallback.connState(false, mCxt.getString(R.string.credential_save_err));
+                                                instance().finishConnectGeneration(generation);
+                                                notifyConnState(false, instance().mCtx.getString(R.string.credential_save_err));
                                             }
                                         }
                                         @Override
                                         public void requestErr(int errCode, String description) {
-                                            XLog.e("connect>registerDev>requestErr >> " + errCode + ", description >> " + description);
-                                            instance().iMqttCallback.connState(false, description);
+                                            XLog.e("REGISTER_FAIL code=" + errCode + " desc=" + description);
+                                            instance().finishConnectGeneration(generation);
+                                            notifyConnState(false, description);
                                         }
                                     });
                                 } else {
-                                    instance().iMqttCallback.connState(false, "Agent List size <= 0");
+                                    instance().finishConnectGeneration(generation);
+                                    notifyConnState(false, "Agent List size <= 0");
                                 }
                             } catch (Throwable e) {
-                                XLog.e("connect>getAgentList>Throwable >> " + e.getMessage());
-                                instance().iMqttCallback.connState(false, "get Agent list failed!");
+                                XLog.e("AGENT_LIST_HANDLE_ERROR " + e.getMessage());
+                                instance().finishConnectGeneration(generation);
+                                notifyConnState(false, "get Agent list failed!");
                             }
                         } else {
-                            XLog.e("connect>getAgentList >> is null!");
+                            XLog.e("AGENT_LIST_EMPTY_RESPONSE");
+                            instance().finishConnectGeneration(generation);
+                            notifyConnState(false, "get Agent list is null");
                         }
                     }
                     @Override
                     public void requestErr(int errCode, String description) {
-                        XLog.e("connect>getAgentList>requestErr >> " + description);
-                        instance().iMqttCallback.connState(false, description);
+                        XLog.e("AGENT_LIST_FAIL code=" + errCode + " desc=" + description);
+                        instance().finishConnectGeneration(generation);
+                        notifyConnState(false, description);
                     }
                 });
             }
@@ -363,25 +514,32 @@ public class XLink {
     }
 
     public static void unInit(Context mContext) {
-        FileTools.delProperties(IApis.ROOT + mContext.getPackageName() + "/" + instance().initParams.clientId + "/" + IApis.MY_PROPERTIES);
-        instance().pushMap.clear();
+        Context appContext = mContext.getApplicationContext();
+        if (instance().initParams != null && !TextUtils.isEmpty(instance().initParams.clientId)) {
+            FileTools.delProperties(getConfigFolder(appContext, instance().initParams.clientId) + IApis.MY_PROPERTIES);
+        }
+        instance().pushQueue.clear();
         disConnect();
-        XLog.e("unInit >> ");
+        XLog.d("UNINIT_DONE");
     }
 
     public static void disConnect(){
         disConnect ( "Active disconnect" );
     }
 
-    // 在断开连接时清空 pushMap
+    // Disconnect must invalidate pending connect/publish work so stale callbacks cannot
+    // revive an old MQTT client after the user has switched state quickly.
     private static void disConnect(String reason) {
         synchronized (instance().connectLock) {
             instance().isRunPush = false;
             instance().isRunConnect = false;
-            XLog.e("disConnect >> ");
+            instance().connectGeneration++;
+            instance().replyRecordList.clear();
+            XLog.d("DISCONNECT_START");
 
-            if (instance().iMqttCallback != null) {
-                instance().iMqttCallback.connState(false, reason);
+            IMqttCallback callback = instance().iMqttCallback;
+            if (callback != null) {
+                callback.connState(false, reason);
                 instance().iMqttCallback = null;
             }
 
@@ -401,14 +559,16 @@ public class XLink {
                 instance().mCtx.stopService(new Intent(instance().mCtx, MqttService.class));
             } catch (Throwable ignore) {}
 
-            // 清理队列和线程
-            instance().pushMap.clear();
+            // Clear queued messages and stop workers on disconnect.
+            instance().pushQueue.clear();
             if (instance().pushThread != null && instance().pushThread.isAlive()) {
                 instance().pushThread.interrupt();
                 instance().pushThread = null;
             }
             if (instance().connectThread != null && instance().connectThread.isAlive()) {
-                instance().connectThread.interrupt();
+                if (instance().connectThread != Thread.currentThread()) {
+                    instance().connectThread.interrupt();
+                }
                 instance().connectThread = null;  // Explicitly reset the connectThread to null
             }
         }

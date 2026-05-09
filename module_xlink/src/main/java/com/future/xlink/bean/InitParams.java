@@ -47,7 +47,14 @@ public class InitParams {
     }
 
     public static boolean checkProductIsSame(InitParams saveConfig,InitParams newConfig){
-        return saveConfig!=null&&newConfig!=null&&!TextUtils.isEmpty(saveConfig.mqttBroker)&&!TextUtils.isEmpty(saveConfig.mqttPassword)&&!TextUtils.isEmpty(saveConfig.mqttUsername)&&newConfig.pdid.equals(saveConfig.pdid)&&newConfig.appKey.equals(saveConfig.appKey)&newConfig.appSecret.equals(saveConfig.appSecret);
+        return saveConfig != null
+                && newConfig != null
+                && !TextUtils.isEmpty(saveConfig.mqttBroker)
+                && !TextUtils.isEmpty(saveConfig.mqttPassword)
+                && !TextUtils.isEmpty(saveConfig.mqttUsername)
+                && TextUtils.equals(newConfig.pdid, saveConfig.pdid)
+                && TextUtils.equals(newConfig.appKey, saveConfig.appKey)
+                && TextUtils.equals(newConfig.appSecret, saveConfig.appSecret);
     }
 
     @Override
@@ -56,16 +63,16 @@ public class InitParams {
                 "clientId='" + clientId + '\'' +
                 ", mqttBroker='" + mqttBroker + '\'' +
                 ", mqttUsername='" + mqttUsername + '\'' +
-                ", mqttPassword='" + mqttPassword + '\'' +
+                ", mqttPassword='***'" +
                 ", mqttSsid='" + mqttSsid + '\'' +
                 ", httpUrl='" + httpUrl + '\'' +
                 ", httpPort='" + httpPort + '\'' +
                 ", autoReConnect=" + autoReConnect +
                 ", pdid='" + pdid + '\'' +
-                ", appKey='" + appKey + '\'' +
-                ", appSecret='" + appSecret + '\'' +
-                ", uniqueKey='" + uniqueKey + '\'' +
-                ", uniqueScret='" + uniqueScret + '\'' +
+                ", appKey='***'" +
+                ", appSecret='***'" +
+                ", uniqueKey='***'" +
+                ", uniqueScret='***'" +
                 '}';
     }
 }

@@ -29,6 +29,38 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DataTransfer {
+    private static JSONObject optObject(JSONObject parent, String name) {
+        JSONObject object = parent.optJSONObject(name);
+        if (object != null) {
+            return object;
+        }
+        String value = parent.optString(name);
+        if (TextUtils.isEmpty(value)) {
+            return null;
+        }
+        try {
+            return new JSONObject(value);
+        } catch (JSONException ignored) {
+            return null;
+        }
+    }
+
+    private static JSONArray optArray(JSONObject parent, String name) {
+        JSONArray array = parent.optJSONArray(name);
+        if (array != null) {
+            return array;
+        }
+        String value = parent.optString(name);
+        if (TextUtils.isEmpty(value)) {
+            return null;
+        }
+        try {
+            return new JSONArray(value);
+        } catch (JSONException ignored) {
+            return null;
+        }
+    }
+
     /**
      * 获取推送的内容
      *
@@ -231,20 +263,23 @@ public class DataTransfer {
         act = !TextUtils.isEmpty(act_alternative) ? act_alternative : act;
         switch (act) {
             case "event":
-                JSONObject eventPayload = new JSONObject(jsonObject.getString("payload"));
-                JSONArray eventArray = eventPayload.getJSONArray("devices");
+                JSONObject eventPayload = optObject(jsonObject, "payload");
+                if (eventPayload == null) return null;
+                JSONArray eventArray = eventPayload.optJSONArray("devices");
+                if (eventArray == null) return null;
                 for (int i = 0; i < eventArray.length(); i++) {
-                    JSONObject jEvent = eventArray.getJSONObject(i);
-                    String event = jEvent.getString("event");
-                    String did = jEvent.getString("did");
+                    JSONObject jEvent = eventArray.optJSONObject(i);
+                    if (jEvent == null) continue;
+                    String event = jEvent.optString("event");
+                    String did = jEvent.optString("did");
                     if (did.equals(cliendId)) {
                         Map<String, Object> outMaps = new HashMap<>();
-                        if (jEvent.has("out")) {
-                            JSONObject jsonOut = jEvent.getJSONObject("out");
+                        JSONObject jsonOut = jEvent.optJSONObject("out");
+                        if (jsonOut != null) {
                             Iterator<String> outSets = jsonOut.keys();
                             while (outSets.hasNext()) {
                                 String key = outSets.next();
-                                String value = jsonOut.getString(key);
+                                String value = jsonOut.optString(key);
                                 outMaps.put(key, value);
                             }
                         }
@@ -253,20 +288,27 @@ public class DataTransfer {
                 }
                 break;
             case "upload":
-                JSONObject uploadJson = new JSONObject(jsonObject.getString("payload"));
-                JSONArray devicesArray = uploadJson.getJSONArray("devices");
+                JSONObject uploadJson = optObject(jsonObject, "payload");
+                if (uploadJson == null) return null;
+                JSONArray devicesArray = uploadJson.optJSONArray("devices");
+                if (devicesArray == null) return null;
                 for (int i = 0; i < devicesArray.length(); i++) {
-                    JSONObject jdevice = devicesArray.getJSONObject(i);
-                    JSONArray serviceArray = jdevice.getJSONArray("services");
-                    String did = jdevice.getString("did");
+                    JSONObject jdevice = devicesArray.optJSONObject(i);
+                    if (jdevice == null) continue;
+                    JSONArray serviceArray = jdevice.optJSONArray("services");
+                    String did = jdevice.optString("did");
                     if (did.equals(cliendId)) {
+                        if (serviceArray == null) return null;
                         for (int j = 0; j < serviceArray.length(); j++) {
-                            JSONObject propertiesJson = serviceArray.getJSONObject(j);
-                            String sid = propertiesJson.getString("sid");
-                            JSONArray valueArray = propertiesJson.getJSONArray("properties");
+                            JSONObject propertiesJson = serviceArray.optJSONObject(j);
+                            if (propertiesJson == null) continue;
+                            String sid = propertiesJson.optString("sid");
+                            JSONArray valueArray = propertiesJson.optJSONArray("properties");
+                            if (valueArray == null) return null;
                             Map<String, Object> maps = new HashMap<>();
                             for (int k = 0; k < valueArray.length(); k++) {
-                                JSONObject valueJson = valueArray.getJSONObject(k);
+                                JSONObject valueJson = valueArray.optJSONObject(k);
+                                if (valueJson == null) continue;
                                 String prid = valueJson.optString("prid");
                                 String value = valueJson.optString("value");
                                 maps.put(prid, value);
@@ -277,26 +319,28 @@ public class DataTransfer {
                 }
                 break;
             case "cmd-resp":
-                JSONObject payloadJson = jsonObject.getJSONObject("payload");
+                JSONObject payloadJson = optObject(jsonObject, "payload");
+                if (payloadJson == null) return null;
                 if (payloadJson.has("devices_get")) {
                     return propertiesHandle(payloadJson, iid, cliendId, PutType.GETPERTIES);
                 } else if (payloadJson.has("devices_set")) {
                     return propertiesHandle(payloadJson, iid, cliendId, PutType.SETPERTIES);
                 } else {
-                    JSONObject mPayload = jsonObject.getJSONObject("payload");
-                    JSONArray mActions = mPayload.getJSONArray("action");
+                    JSONArray mActions = payloadJson.optJSONArray("action");
+                    if (mActions == null) return null;
                     for (int i = 0; i < mActions.length(); i++) {
-                        JSONObject mAction = mActions.getJSONObject(i);
-                        String did = mAction.getString("did");
+                        JSONObject mAction = mActions.optJSONObject(i);
+                        if (mAction == null) continue;
+                        String did = mAction.optString("did");
                         if (did.equals(cliendId)) {
-                            String method = mAction.getString("method");
+                            String method = mAction.optString("method");
                             Map maps = new HashMap();
-                            if (mAction.has("out")) {
-                                JSONObject mOut = mAction.getJSONObject("out");
+                            JSONObject mOut = mAction.optJSONObject("out");
+                            if (mOut != null) {
                                 Iterator<String> outSets = mOut.keys();
                                 while (outSets.hasNext()) {
                                     String key = outSets.next();
-                                    String value = mOut.get(key).toString();
+                                    String value = String.valueOf(mOut.opt(key));
                                     maps.put(key, value);
                                 }
                             }
@@ -323,16 +367,18 @@ public class DataTransfer {
      */
     private static BaseData propertiesHandle(JSONObject payloadJson, String iid, String cliendId,
                                              @IPutType int iPutType) throws JSONException {
-        JSONObject deviceJson = new JSONObject(
-                payloadJson.getString(iPutType == PutType.GETPERTIES ? "devices_get" :
-                        "devices_set"));
+        JSONObject deviceJson = optObject(payloadJson,
+                iPutType == PutType.GETPERTIES ? "devices_get" : "devices_set");
+        if (deviceJson == null) return null;
         Iterator<String> deviceSet = deviceJson.keys();
         while (deviceSet.hasNext()) {
             String clientIdkey = deviceSet.next();
             if (clientIdkey.equals(cliendId)) {
-                JSONArray clientIdArray = deviceJson.getJSONArray(cliendId);
+                JSONArray clientIdArray = deviceJson.optJSONArray(cliendId);
+                if (clientIdArray == null) return null;
                 for (int i = 0; i < clientIdArray.length(); i++) {
-                    JSONObject jInfo = (JSONObject) clientIdArray.get(i);
+                    JSONObject jInfo = clientIdArray.optJSONObject(i);
+                    if (jInfo == null) continue;
                     String sid = "";
                     String prid;
                     Iterator<String> jInfoSet = jInfo.keys();
@@ -365,23 +411,28 @@ public class DataTransfer {
      * 平台请求
      */
     public static BaseData IotRequest(String cliendId, JSONObject jHandle, String iid) throws JSONException {
-        String inputs = jHandle.getString("inputs");
-        JSONObject inHandle = new JSONObject(inputs);
+        // Platform command payloads are not always stable across versions, so use opt*
+        // and return null when required sections are missing instead of throwing.
+        JSONObject inHandle = optObject(jHandle, "inputs");
+        if (inHandle == null) return null;
         String intent = inHandle.optString("intent");
         switch (intent) {
             case ICmdType.PLATFORM_METHOD:
-                JSONArray mActions = inHandle.getJSONArray("action");
+                JSONArray mActions = inHandle.optJSONArray("action");
+                if (mActions == null) return null;
                 for (int i = 0; i < mActions.length(); i++) {
-                    JSONObject mAction = mActions.getJSONObject(i);
-                    String did = mAction.getString("did");
+                    JSONObject mAction = mActions.optJSONObject(i);
+                    if (mAction == null) continue;
+                    String did = mAction.optString("did");
                     if (did.equals(cliendId)) {
-                        JSONObject mInMaps = mAction.getJSONObject("in");
-                        String method = mAction.getString("method");
+                        JSONObject mInMaps = mAction.optJSONObject("in");
+                        if (mInMaps == null) return null;
+                        String method = mAction.optString("method");
                         Iterator<String> mInMapsSet = mInMaps.keys();
                         Map maps = new HashMap();
                         while (mInMapsSet.hasNext()) {
                             String key = mInMapsSet.next();
-                            String value = mInMaps.getString(key);
+                            String value = mInMaps.optString(key);
                             maps.put(key, value);
                         }
                         return new BaseData(PutType.METHOD, iid, method, maps);
@@ -389,15 +440,18 @@ public class DataTransfer {
                 }
                 break;
             case ICmdType.PLATFORM_GETPROPERTIES:
-                JSONArray getdevices = inHandle.getJSONArray("devices");
+                JSONArray getdevices = inHandle.optJSONArray("devices");
+                if (getdevices == null) return null;
                 for (int i = 0; i < getdevices.length(); i++) {
-                    JSONObject jDevice = getdevices.getJSONObject(i);
-                    String did = jDevice.getString("did");
+                    JSONObject jDevice = getdevices.optJSONObject(i);
+                    if (jDevice == null) continue;
+                    String did = jDevice.optString("did");
                     if (did.equals(cliendId)) {
                         String serv_pros =
-                                jDevice.getString("serv_pros").replace("[\"", "").replace("\"]",
+                                jDevice.optString("serv_pros").replace("[\"", "").replace("\"]",
                                         "");
                         String[] servInfo = serv_pros.split("-");
+                        if (servInfo.length < 2) return null;
                         Map<String, Object> maps = new HashMap<>();
                         maps.put("prid", servInfo[1]);
                         return new BaseData(PutType.GETPERTIES, iid, servInfo[0], maps);
@@ -405,21 +459,24 @@ public class DataTransfer {
                 }
                 break;
             case ICmdType.PLATFORM_SETPROPERTIES:
-                JSONObject jset = new JSONObject(jHandle.getString("inputs"));
-                JSONArray jdevices = jset.getJSONArray("devices");
+                JSONArray jdevices = inHandle.optJSONArray("devices");
+                if (jdevices == null) return null;
                 for (int i = 0; i < jdevices.length(); i++) {
-                    JSONObject opera = (JSONObject) jdevices.get(i);
-                    String did = opera.getString("did");
-                    JSONObject propts = opera.getJSONObject("propts");
+                    JSONObject opera = jdevices.optJSONObject(i);
+                    if (opera == null) continue;
+                    String did = opera.optString("did");
+                    JSONObject propts = opera.optJSONObject("propts");
                     if (did.equals(cliendId)) {
+                        if (propts == null) return null;
                         Iterator<String> keys = propts.keys();// jsonObject.keys();
                         Map<String, Object> maps = new HashMap<>();
                         while (keys.hasNext()) {
                             String key = keys.next();
                             String[] operationsetInfo = key.split("-");
+                            if (operationsetInfo.length < 2) continue;
                             String sid = operationsetInfo[0];
                             String prid = operationsetInfo[1];
-                            String value = propts.getString(key);
+                            String value = propts.optString(key);
                             maps.put("prid", prid);
                             maps.put("value", value);
                             return new BaseData(PutType.SETPERTIES, iid, sid, maps);
@@ -428,16 +485,18 @@ public class DataTransfer {
                 }
                 break;
             case ICmdType.PLATFORM_UPGRADE:
-                JSONArray jArray = inHandle.getJSONArray(ICmdType.PLATFORM_UPGRADE);
+                JSONArray jArray = inHandle.optJSONArray(ICmdType.PLATFORM_UPGRADE);
+                if (jArray == null) return null;
                 for (int i = 0; i < jArray.length(); i++) {
-                    JSONObject jsonObject = (JSONObject) jArray.get(i);
-                    String jsonDid = jsonObject.getString("did");
+                    JSONObject jsonObject = jArray.optJSONObject(i);
+                    if (jsonObject == null) continue;
+                    String jsonDid = jsonObject.optString("did");
                     if (jsonDid.equals(cliendId)) {
                         Iterator<String> keys = jsonObject.keys();// jsonObject.keys();
                         Map maps = new HashMap();
                         while (keys.hasNext()) {
                             String key = keys.next();
-                            String value = jsonObject.getString(key);
+                            String value = jsonObject.optString(key);
                             maps.put(key, value);
                         }
                         return new BaseData(PutType.UPGRADE, iid, ICmdType.PLATFORM_UPGRADE, maps);

@@ -1,7 +1,6 @@
 package com.future.xlink.request;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
@@ -45,11 +44,10 @@ public class XLinkHttp {
                         @Override
                         public void onNext(BaseResponse<Agents> bResponse) {
                             super.onNext(bResponse);
-                            XLog.d("getAgentList: baseResponse=" + bResponse.toString() + "," +
-                                    "ThreadName >> " + Thread.currentThread().getName());
+                            XLog.d("HTTP_AGENT_LIST_RESPONSE status=" + bResponse.status + " desc=" + bResponse.description + " thread=" + Thread.currentThread().getName());
                             if (bResponse.isSuccessNonNull()) {
                                 //获取服务器列表成功，进行ping操作，获得最佳连接链路
-                                XLog.d("onNext pinglist:" + bResponse.payload.servers.toString());
+                                XLog.d("HTTP_AGENT_LIST_SERVERS count=" + (bResponse.payload.servers == null ? 0 : bResponse.payload.servers.size()));
                                 if (bResponse.payload.servers == null || bResponse.payload.servers.size() == 0) {
                                     //返回失败1
                                     iReq.requestErr(ERR.AGENTNULL,bResponse.description);
@@ -96,8 +94,7 @@ public class XLinkHttp {
                         @Override
                         public void onNext(BaseResponse<ProductInfo> baseResponse) {
                             super.onNext(baseResponse);
-                            XLog.d("accept: baseResponse >> " + baseResponse.toString() + "," +
-                                    "ThreadName >> " + Thread.currentThread().getName());
+                            XLog.d("HTTP_DEVICE_INFO_RESPONSE status=" + baseResponse.status + " desc=" + baseResponse.description + " thread=" + Thread.currentThread().getName());
                             if (baseResponse.status == 0) {
                                 //产品一致
                                 iReq.requestComplete(GsonTools.toJsonWtihNullField(baseResponse.payload));
@@ -139,8 +136,6 @@ public class XLinkHttp {
         body.put("payload", payload);
         String token = DataTransfer.getToken(params.uniqueKey, params.uniqueScret,
                 params.clientId, time);
-        Log.d("ichtj", "addProdId: token>>"+token+",time>>"+time+",SN>>"+params.clientId);
-        Log.d("ichtj", "addProdId: "+GsonTools.toJsonWtihNullField(body));
         if (token != null) {
             RetrofitClient.getInstance()
                     .uniqueProduct(params.httpUrl + ":" + params.httpPort + "/" + IApis.PRODUCT_UNIQUE, token, time, params.clientId, body)
@@ -149,8 +144,7 @@ public class XLinkHttp {
                         @Override
                         public void onNext(BaseResponse baseResponse) {
                             super.onNext(baseResponse);
-                            XLog.d("registeronNext:>=" + baseResponse.toString() + ",ThreadName " +
-                                    ">> " + Thread.currentThread().getName());
+                            XLog.d("HTTP_ADD_DEVICE_RESPONSE status=" + baseResponse.status + " desc=" + baseResponse.description + " thread=" + Thread.currentThread().getName());
                             if (baseResponse.status == 0) {
                                 iReq.requestComplete("{\"code\":0,\"description\":\"已完成\"}");
                             } else {
@@ -175,7 +169,7 @@ public class XLinkHttp {
     }
 
     public static int getErrCode(Throwable e) {
-        XLog.e("XLinkHttp error >> " + e.getMessage());
+        XLog.e("HTTP_ERROR type=" + e.getClass().getSimpleName() + " error=" + e.getMessage());
         if (e instanceof SocketTimeoutException) {
             return ERR.READTIMEOUT;
         } else if (e instanceof UnknownHostException) {
@@ -208,8 +202,7 @@ public class XLinkHttp {
                     .subscribe(new Consumer<BaseResponse<Register>>() {
                         @Override
                         public void accept(BaseResponse<Register> regPonse) throws Exception {
-                            XLog.d("registerRequest onNext status:" + regPonse.toString() + "," +
-                                    "ThreadName >> " + Thread.currentThread().getName());
+                            XLog.d("HTTP_REGISTER_RESPONSE status=" + regPonse.status + " desc=" + regPonse.description + " thread=" + Thread.currentThread().getName());
                             if (regPonse.isSuccessNonNull()) {
                                 iReq.requestComplete(GsonTools.toJsonWtihNullField(regPonse.payload));
                             } else {

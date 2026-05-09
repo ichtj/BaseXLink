@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_padding">10dp</dimen>
+    <dimen name="panel_padding">8dp</dimen>
+    <dimen name="section_gap">8dp</dimen>
+    <dimen name="item_gap">6dp</dimen>
+    <dimen name="control_height">38dp</dimen>
+    <dimen name="secondary_button_width">116dp</dimen>
+    <dimen name="label_text_size">15sp</dimen>
+    <dimen name="hint_text_size">13sp</dimen>
+    <dimen name="button_text_size">12sp</dimen>
+    <dimen name="log_text_size">14sp</dimen>
+    <dimen name="log_min_height">220dp</dimen>
+    <dimen name="log_padding">8dp</dimen>
+</resources>

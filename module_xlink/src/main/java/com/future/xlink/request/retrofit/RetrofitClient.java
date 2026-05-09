@@ -22,7 +22,7 @@ public class RetrofitClient {
     }
 
     private static class SingletonInstance {
-        private static final String HOST_IP = formatHost("https://www.baidu.com");
+        private static final String HOST_IP = formatHost("localhost");
         private static final ApiService INSTANCE = new Retrofit.Builder()
                 .client(OkHttpSingleton.getInstance())
                 .baseUrl(getServerHostIp())
@@ -65,7 +65,9 @@ public class RetrofitClient {
     }
 
     public static String formatHost(String host) {
+        if (host.startsWith("http://") || host.startsWith("https://")) {
+            return host.endsWith("/") ? host : host + "/";
+        }
         return String.format("http://%s/", host);
     }
 }
-

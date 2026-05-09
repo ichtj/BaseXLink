@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.InetAddresses;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.text.Html;
 import android.text.TextUtils;
@@ -68,10 +69,14 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     private TextView tvResult;
     private TextView tvConnStatus;
     private EditText etSn;
-    private static boolean isHeartbeat = false;
+    private static volatile boolean isHeartbeat = false;
+    private boolean lastConnected = false;
     //private String clientId = "FSMMMNNNFF001";
     private String clientId;
-    ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+    // Periodic heartbeat uses a single worker to avoid overlapping sends on slow devices.
+    private ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+    // Button actions may touch MQTT/network state, so keep them off the main thread.
+    private final ExecutorService actionExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * 获取初始化参数
@@ -130,22 +135,16 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         btnReboot.setOnClickListener(this);
         FormatViewUtils.setMovementMethod(tvResult);
 
-        String configFolder = IApis.ROOT + getPackageName() + "/" + clientId + "/xlink-log/";
+        String configFolder = new File(getFilesDir(), "xlink-log").getAbsolutePath() + File.separator;
         XLogTools.initXLog(configFolder);
         service.scheduleAtFixedRate(this::run, 0, 15, TimeUnit.SECONDS);
 
         if (isAutoConn) {
-            Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     btnConn.performClick();
-                    try {
-                        Thread.sleep(1500);
-                    } catch (Throwable e) {
-                        Log.e(TAG, "run: ", e);
-                    }
-                    btnSeHearbeat.performClick();
+                    handler.postDelayed(() -> btnSeHearbeat.performClick(), 1500);
                 }
             }, 5000);
         }
@@ -159,15 +158,24 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void connState(boolean connected, String description) {
-        Log.d(TAG, "connState: connected>>"+connected);
-        sendToMessage(MainUtil.getFont("connState()", !connected) + " >> connected=" + connected + ",description=" + description + "<br />");
-        if (connected) {
+        Log.d(TAG, "UI_CONN_STATE connected=" + connected + " desc=" + description);
+        sendToMessage(MainUtil.getFont("connState", !connected) + " connected=" + connected + " desc=" + description + "<br />");
+        boolean firstConnected = connected && !lastConnected;
+        lastConnected = connected;
+        if (firstConnected) {
             XLink.subscribe("dev/" + clientId + "/#");
             Map<String, Object> maps = new HashMap<>();
             maps.put("address", "飞思未来深圳科技有限公司");
             maps.put("longitude", "113°55′43.91″");
             maps.put("latitude", "22°37′55.12″");
             XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "online", maps);
+            // If the user enabled heartbeat before reconnecting, send one immediately
+            // after MQTT is ready instead of waiting for the next scheduled tick.
+            if (isHeartbeat) {
+                runOffMain("heartbeatOnConnect", this::pushHeartbeatOnce);
+            }
+        } else if (connected) {
+            Log.d(TAG, "UI_CONN_DUP_IGNORE connected=true");
         }
         handler.sendMessage(handler.obtainMessage(0x101, connected));
     }
@@ -179,8 +187,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void msgArrives(BaseData baseData) {
-        Log.d(TAG, "msgArrives: "+baseData.operation);
-        sendToMessage(MainUtil.getFont("msgArrives()", false) + " >> " + baseData.toString() + "<br />");
+        Log.d(TAG, "UI_MSG_ARRIVE type=" + baseData.iPutType + " iid=" + baseData.iid + " op=" + baseData.operation);
+        sendToMessage(MainUtil.getFont("msgArrives", false) + " type=" + baseData.iPutType + " iid=" + baseData.iid + " op=" + baseData.operation + "<br />");
         switch (baseData.iPutType) {
             case PutType.UPGRADE:
                 Map<String, Object> upMaps = new HashMap<>();
@@ -215,7 +223,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void pushed(BaseData baseData) {
-        sendToMessage(MainUtil.getFont("pushed()", false) + " >> " + baseData.toString() + "<br />");
+        sendToMessage(MainUtil.getFont("pushed", false) + " iid=" + baseData.iid + " op=" + baseData.operation + "<br />");
     }
 
     /**
@@ -226,7 +234,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void iotReplyed(String act, String iid) {
-        sendToMessage(MainUtil.getFont("iotReplyed()", false) + " >> act=" + act + ", iid >> " + iid + "<br />");
+        Log.d(TAG, "UI_REPLY act=" + act + " iid=" + iid);
+        sendToMessage(MainUtil.getFont("iotReplyed", false) + " act=" + act + " iid=" + iid + "<br />");
     }
 
     /**
@@ -237,7 +246,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void pushFail(BaseData baseData, String description) {
-        sendToMessage(MainUtil.getFont("pushFail()", true) + " >> " + baseData.toString() + " >> description=" + description + "<br />");
+        Log.d(TAG, "UI_PUSH_FAIL iid=" + baseData.iid + " op=" + baseData.operation + " desc=" + description);
+        sendToMessage(MainUtil.getFont("pushFail", true) + " iid=" + baseData.iid + " op=" + baseData.operation + " desc=" + description + "<br />");
     }
 
     /**
@@ -245,7 +255,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void subscribed(String topic) {
-        sendToMessage(MainUtil.getFont("subscriptionComplete()", false) + " topic >> " + topic + "<br />");
+        Log.d(TAG, "UI_SUBSCRIBE_OK topic=" + topic);
+        sendToMessage(MainUtil.getFont("subscriptionComplete", false) + " topic=" + topic + "<br />");
     }
 
     /**
@@ -255,25 +266,29 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
      */
     @Override
     public void subscribeFail(String topic, String description) {
-        sendToMessage(MainUtil.getFont("subscriptionFail()", true) + ", topic >> " + topic + " >> description=" + description + "<br />");
+        Log.d(TAG, "UI_SUBSCRIBE_FAIL topic=" + topic + " desc=" + description);
+        sendToMessage(MainUtil.getFont("subscriptionFail", true) + " topic=" + topic + " desc=" + description + "<br />");
     }
 
     @Override
     public void onClick(View v) {
         if (checkSn()) return;
+        String actionName = getResources().getResourceEntryName(v.getId());
+        Log.d(TAG, "UI_CLICK action=" + actionName + " connected=" + XLink.getConnectStatus() + " heartbeat=" + isHeartbeat);
+        sendToMessage(MainUtil.getFont("click", false) + " action=" + actionName + "<br />");
         switch (v.getId()) {
             case R.id.btnClearMQttCache:
-                XLink.clearMqttDatabaseFiles (this);
+                runOffMain(actionName, () -> XLink.clearMqttDatabaseFiles(MainAty.this));
                 break;
             case R.id.btnClear:
                 tvResult.setText("");
                 tvResult.scrollTo(0, 0);
                 break;
             case R.id.btnConn:
-                XLink.connect(MainAty.this, getInitParams(), MainAty.this);
+                runOffMain(actionName, () -> XLink.connect(MainAty.this, getInitParams(), MainAty.this));
                 break;
             case R.id.btnUninit:
-                XLink.unInit(MainAty.this);
+                runOffMain(actionName, () -> XLink.unInit(MainAty.this));
                 break;
             case R.id.btnSeHearbeat:
                 if (isHeartbeat) {
@@ -281,12 +296,18 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                     btnSeHearbeat.setText("开启心跳");
                 } else {
                     isHeartbeat = true;
+                    if (XLink.getConnectStatus()) {
+                        runOffMain("heartbeatOnce", this::pushHeartbeatOnce);
+                    } else {
+                        Log.d(TAG, "HEARTBEAT_WAIT_CONNECT enabled=true connected=false");
+                        sendToMessage(MainUtil.getFont("heartbeat", true) + " waitingForConnect=true<br />");
+                    }
                     btnSeHearbeat.setText("关闭心跳");
                 }
                 break;
             case R.id.btnDisConn:
-                XLink.disConnect();
                 FormatViewUtils.scrollBackToTop(tvResult);
+                runOffMain(actionName, XLink::disConnect);
                 break;
             case R.id.btnAddDev:
                 //检查是否存在
@@ -296,12 +317,14 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                         if (!TextUtils.isEmpty(jsonData)) {
                             jsonData = "<br />" + JsonFormat.formatJson(jsonData).replace("\n", "<br />");
                         }
-                        sendToMessage(MainUtil.getFont("addProdId >> requestComplete()", false) + " >> success " + jsonData + "<br />");
+                        Log.d(TAG, "HTTP_ADD_DEVICE_OK hasBody=" + !TextUtils.isEmpty(jsonData));
+                        sendToMessage(MainUtil.getFont("httpAddDevice", false) + " success=true body=" + jsonData + "<br />");
                     }
 
                     @Override
                     public void requestErr(int errCode, String description) {
-                        sendToMessage(MainUtil.getFont("addProdId >> requestErr()", true) + " >> description = " + description + "<br />");
+                        Log.d(TAG, "HTTP_ADD_DEVICE_FAIL code=" + errCode + " desc=" + description);
+                        sendToMessage(MainUtil.getFont("httpAddDevice", true) + " success=false code=" + errCode + " desc=" + description + "<br />");
                     }
                 });
                 break;
@@ -312,12 +335,14 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                         if (!TextUtils.isEmpty(jsonData)) {
                             jsonData = "<br />" + JsonFormat.formatJson(jsonData).replace("\n", "<br />");
                         }
-                        sendToMessage(MainUtil.getFont("getDeviceInfo >> requestComplete()", false) + " >> success " + jsonData + "<br />");
+                        Log.d(TAG, "HTTP_DEVICE_INFO_OK hasBody=" + !TextUtils.isEmpty(jsonData));
+                        sendToMessage(MainUtil.getFont("httpDeviceInfo", false) + " success=true body=" + jsonData + "<br />");
                     }
 
                     @Override
                     public void requestErr(int errCode, String description) {
-                        sendToMessage(MainUtil.getFont("getDeviceInfo >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
+                        Log.d(TAG, "HTTP_DEVICE_INFO_FAIL code=" + errCode + " desc=" + description);
+                        sendToMessage(MainUtil.getFont("httpDeviceInfo", true) + " success=false code=" + errCode + " desc=" + description + "<br />");
                     }
                 });
                 break;
@@ -328,12 +353,14 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                         if (!TextUtils.isEmpty(jsonData)) {
                             jsonData = "<br />" + JsonFormat.formatJson(jsonData).replace("\n", "<br />");
                         }
-                        sendToMessage(MainUtil.getFont("getAgentList >> requestComplete()", false) + " >> success " + jsonData + "<br />");
+                        Log.d(TAG, "HTTP_AGENT_LIST_OK hasBody=" + !TextUtils.isEmpty(jsonData));
+                        sendToMessage(MainUtil.getFont("httpAgentList", false) + " success=true body=" + jsonData + "<br />");
                     }
 
                     @Override
                     public void requestErr(int errCode, String description) {
-                        sendToMessage(MainUtil.getFont("getAgentList >> requestErr()", true) + " >> requestErr description = " + description + "<br />");
+                        Log.d(TAG, "HTTP_AGENT_LIST_FAIL code=" + errCode + " desc=" + description);
+                        sendToMessage(MainUtil.getFont("httpAgentList", true) + " success=false code=" + errCode + " desc=" + description + "<br />");
                     }
                 });
                 break;
@@ -343,12 +370,14 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 SPUtils.putBoolean(this, MainUtil.KEY_AUTOCONN, !isAutoConn);
                 break;
             case R.id.btnReboot:
-                rebootSystem();
+                runOffMain(actionName, this::rebootSystem);
                 break;
             case R.id.btnPushEvent:
                 if (XLink.getConnectStatus()) {
-                    MainUtil.pushTestEvent();
-                    MainUtil.pushTestEvent2();
+                    runOffMain(actionName, () -> {
+                        MainUtil.pushTestEvent();
+                        MainUtil.pushTestEvent2();
+                    });
                 } else {
                     Toast.makeText(this, "请先连接", Toast.LENGTH_LONG).show();
                 }
@@ -364,7 +393,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
             intent.putExtra("window", 0);
             sendBroadcast(intent);
         }catch(Throwable throwable){
-            throwable.printStackTrace();
+            Log.e(TAG, "REBOOT_BROADCAST_ERROR error=" + throwable.getMessage(), throwable);
         }
         try {
             Process process = Runtime.getRuntime().exec("su");
@@ -375,9 +404,22 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
             os.flush();
             process.waitFor();
         } catch (Throwable throwable) {
-            throwable.printStackTrace();
+            Log.e(TAG, "REBOOT_SHELL_ERROR error=" + throwable.getMessage(), throwable);
         }
 
+    }
+
+    private void runOffMain(String actionName, Runnable runnable) {
+        actionExecutor.execute(() -> {
+            try {
+                Log.d(TAG, "TASK_START action=" + actionName);
+                runnable.run();
+                Log.d(TAG, "TASK_END action=" + actionName);
+            } catch (Throwable throwable) {
+                Log.e(TAG, "TASK_ERROR action=" + actionName + " error=" + throwable.getMessage(), throwable);
+                sendToMessage(MainUtil.getFont("task", true) + " action=" + actionName + " error=" + throwable.getMessage() + "<br />");
+            }
+        });
     }
 
 
@@ -392,32 +434,43 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
 
     int count=0;
     public void run() {
-        if (isHeartbeat) {
-            if (XLink.getConnectStatus ()){
-                XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
-
-                Map uploadList1 = new HashMap();
-                uploadList1.put("prid", "15");
-                uploadList1.put("value", count);
-                XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
-
-                Map uploadList2 = new HashMap();
-                uploadList2.put("prid", "13");
-                uploadList2.put("value", count);
-                XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
-                //MainUtil.pushTestEvent();
-                //MainUtil.pushTestEvent2();
-                count++;
-                try {
-                    Thread.sleep(3500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        try {
+            if (!isHeartbeat) {
+                Log.d(TAG, "HEARTBEAT_TICK_SKIP reason=disabled");
+                return;
             }
+            if (!XLink.getConnectStatus()) {
+                Log.d(TAG, "HEARTBEAT_TICK_SKIP reason=disconnected");
+                return;
+            }
+            pushHeartbeatOnce();
+        } catch (Throwable throwable) {
+            Log.e(TAG, "HEARTBEAT_TICK_ERROR error=" + throwable.getMessage(), throwable);
+            sendToMessage(MainUtil.getFont("heartbeat", true) + " error=" + throwable.getMessage() + "<br />");
         }
     }
 
-    Handler handler = new Handler() {
+    private synchronized void pushHeartbeatOnce() {
+        int current = count++;
+        // Each heartbeat round queues one event and two property uploads. The return
+        // values only mean "queued locally"; publish result is logged by XLink.
+        boolean eventOk = XLink.putCmd(PutType.EVENT, DataTransfer.createIID(), "Heartbeat", null);
+
+        Map uploadList1 = new HashMap();
+        uploadList1.put("prid", "15");
+        uploadList1.put("value", current);
+        boolean upload1Ok = XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList1);
+
+        Map uploadList2 = new HashMap();
+        uploadList2.put("prid", "13");
+        uploadList2.put("value", current);
+        boolean upload2Ok = XLink.putCmd(PutType.UPLOAD, DataTransfer.createIID(), "16", uploadList2);
+
+        Log.d(TAG, "HEARTBEAT_SEND count=" + current + " queuedEvent=" + eventOk + " queuedUpload15=" + upload1Ok + " queuedUpload13=" + upload2Ok + " connected=" + XLink.getConnectStatus());
+        sendToMessage(MainUtil.getFont("heartbeat", !(eventOk && upload1Ok && upload2Ok)) + " count=" + current + " queuedEvent=" + eventOk + " queuedUpload15=" + upload1Ok + " queuedUpload13=" + upload2Ok + "<br />");
+    }
+
+    private final Handler handler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
@@ -448,6 +501,9 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        XLink.disConnect();
+        handler.removeCallbacksAndMessages(null);
+        service.shutdownNow();
+        actionExecutor.shutdownNow();
+        new Thread(XLink::disConnect, "XLink-Disconnect").start();
     }
 }

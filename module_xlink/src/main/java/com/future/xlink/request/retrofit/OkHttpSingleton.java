@@ -1,6 +1,5 @@
 package com.future.xlink.request.retrofit;
 
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.elvishew.xlog.XLog;
@@ -51,13 +50,7 @@ final class OkHttpSingleton {
             HttpUrl modifiedUrl = builder.build();
             Request request = original.newBuilder().url(modifiedUrl).build();
             try {
-                String params = getParameters(request.body());
-                String urlStr = request.url().toString();
-                if (TextUtils.isEmpty(params)) {
-                    XLog.d(urlStr);
-                } else {
-                    XLog.d(urlStr + "&" + params);
-                }
+                XLog.d(request.method() + " " + request.url().encodedPath());
             } catch (Throwable e) {
                 XLog.e(e);
             }

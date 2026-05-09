@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.InitParams;
+import com.future.xlink.bean.LocationBean;
 import com.future.xlink.bean.other.Agents;
 import com.future.xlink.bean.other.Body;
 import com.future.xlink.bean.other.Payload;

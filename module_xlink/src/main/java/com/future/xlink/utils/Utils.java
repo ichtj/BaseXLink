@@ -1,8 +1,12 @@
 package com.future.xlink.utils;
 
+import android.content.Context;
+import android.telephony.TelephonyManager;
+import android.telephony.gsm.GsmCellLocation;
 import android.text.TextUtils;
 
 import com.elvishew.xlog.XLog;
+import com.future.xlink.bean.GsmCell;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +18,24 @@ import java.util.regex.Pattern;
  * @author chtj
  */
 public class Utils {
+
+    public static GsmCell getSimMsg(Context context) {
+        GsmCell gsmCell = new GsmCell();
+        // 调用API获取基站信息
+        TelephonyManager mTelNet =
+                (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        GsmCellLocation location = (GsmCellLocation) mTelNet.getCellLocation();
+        if (location != null) {
+            String operator = mTelNet.getNetworkOperator();
+            if (!TextUtils.isEmpty(operator)) {
+                gsmCell.MCC = Integer.parseInt(operator.substring(0, 3));
+                gsmCell.MNC = Integer.parseInt(operator.substring(3));
+                gsmCell.LAC = location.getLac();
+                gsmCell.CID = location.getCid();
+            }
+        }
+        return gsmCell;
+    }
     /**
      * 获取字符串中的正则表达式
      *

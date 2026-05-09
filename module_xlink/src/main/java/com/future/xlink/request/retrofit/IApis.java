@@ -12,4 +12,5 @@ public interface IApis {
     String UPLOAD_FILE = "api/iot/reg/device/file/upload"; //上传文件
     String PRODUCT_DEVICE_INFO = "api/iot/reg/device/info"; //获取产品下的该设备信息
     String PRODUCT_UNIQUE = "api/iot/reg/device/unique"; //设备sn唯一性验证
+    String PRODUCT_LOCATION = "/api/iot/admin/test/dv/location"; //获取地址
 }

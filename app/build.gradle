@@ -31,7 +31,5 @@ dependencies {
     implementation (project(path: ':module_xlink')){
         transitive = true
     }
-
-
     //implementation 'com.github.wave-chtj:BaseXLink:2.7.6'
 }

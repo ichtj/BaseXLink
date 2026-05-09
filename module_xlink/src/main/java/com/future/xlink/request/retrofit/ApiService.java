@@ -1,6 +1,7 @@
 package com.future.xlink.request.retrofit;
 
 
+import com.future.xlink.bean.LocationBean;
 import com.future.xlink.bean.base.BaseResponse;
 import com.future.xlink.bean.other.Agents;
 import com.future.xlink.bean.other.ProductInfo;
@@ -26,6 +27,10 @@ import retrofit2.http.Url;
  * @author lee
  */
 public interface ApiService {
+
+    @POST
+    Observable <BaseResponse <LocationBean>> getLocation(@Url String url,
+                                                         @Header("Authorization") String token);
 
     @POST
     Observable <BaseResponse <Agents>> getAgentList(@Url String url,

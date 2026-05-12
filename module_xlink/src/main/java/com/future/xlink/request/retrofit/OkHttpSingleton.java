@@ -2,7 +2,7 @@ package com.future.xlink.request.retrofit;
 
 import android.util.Log;
 
-import com.elvishew.xlog.XLog;
+import com.future.xlink.xlog.XLogTools;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -50,9 +50,9 @@ final class OkHttpSingleton {
             HttpUrl modifiedUrl = builder.build();
             Request request = original.newBuilder().url(modifiedUrl).build();
             try {
-                XLog.d(request.method() + " " + request.url().encodedPath());
+                XLogTools.d(TAG,request.method() + " " + request.url().encodedPath());
             } catch (Throwable e) {
-                XLog.e(e);
+                XLogTools.d(TAG, e.getMessage());
             }
             return chain.proceed(request);
         }

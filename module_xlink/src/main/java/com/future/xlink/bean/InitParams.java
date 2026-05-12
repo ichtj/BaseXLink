@@ -1,6 +1,7 @@
 package com.future.xlink.bean;
 
-import android.text.TextUtils;
+
+import com.future.xlink.utils.Utils;
 
 /**
  * 用于设备初始化连接前的配置参数
@@ -49,12 +50,12 @@ public class InitParams {
     public static boolean checkProductIsSame(InitParams saveConfig,InitParams newConfig){
         return saveConfig != null
                 && newConfig != null
-                && !TextUtils.isEmpty(saveConfig.mqttBroker)
-                && !TextUtils.isEmpty(saveConfig.mqttPassword)
-                && !TextUtils.isEmpty(saveConfig.mqttUsername)
-                && TextUtils.equals(newConfig.pdid, saveConfig.pdid)
-                && TextUtils.equals(newConfig.appKey, saveConfig.appKey)
-                && TextUtils.equals(newConfig.appSecret, saveConfig.appSecret);
+                && !Utils.isEmpty(saveConfig.mqttBroker)
+                && !Utils.isEmpty(saveConfig.mqttPassword)
+                && !Utils.isEmpty(saveConfig.mqttUsername)
+                && Utils.equals(newConfig.pdid, saveConfig.pdid)
+                && Utils.equals(newConfig.appKey, saveConfig.appKey)
+                && Utils.equals(newConfig.appSecret, saveConfig.appSecret);
     }
 
     @Override

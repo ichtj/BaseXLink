@@ -5,8 +5,8 @@ import android.telephony.TelephonyManager;
 import android.telephony.gsm.GsmCellLocation;
 import android.text.TextUtils;
 
-import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.GsmCell;
+import com.future.xlink.xlog.XLogTools;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * @author chtj
  */
 public class Utils {
-
+    private static final String TAG = "Utils";
     public static GsmCell getSimMsg(Context context) {
         GsmCell gsmCell = new GsmCell();
         // 调用API获取基站信息
@@ -27,7 +27,7 @@ public class Utils {
         GsmCellLocation location = (GsmCellLocation) mTelNet.getCellLocation();
         if (location != null) {
             String operator = mTelNet.getNetworkOperator();
-            if (!TextUtils.isEmpty(operator)) {
+            if (!Utils.isEmpty(operator)) {
                 gsmCell.MCC = Integer.parseInt(operator.substring(0, 3));
                 gsmCell.MNC = Integer.parseInt(operator.substring(3));
                 gsmCell.LAC = location.getLac();
@@ -44,7 +44,7 @@ public class Utils {
      */
     public static String patternIp(String str) {
         String regular = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
-        if (!TextUtils.isEmpty(str)) {
+        if (!Utils.isEmpty(str)) {
             Pattern pattern = Pattern.compile(regular);
             Matcher matcher = pattern.matcher(str);
             if (matcher.find()) {
@@ -59,7 +59,7 @@ public class Utils {
      */
     public static boolean checkIsNull(String... params) {
         for (int i = 0; i < params.length; i++) {
-            if (TextUtils.isEmpty(params[i])) {
+            if (Utils.isEmpty(params[i])) {
                 return true;
             }
         }
@@ -73,7 +73,7 @@ public class Utils {
         List<String> bestAddrList=new ArrayList<>();
         for (int i = 0; i < addrList.size(); i++) {
             String pingResult= NetTools.ping(addrList.get(i),3,new StringBuffer());
-            XLog.d( "compare: pingResult >> "+pingResult);
+            XLogTools.d(TAG, "compare: pingResult >> "+pingResult);
             bestAddrList.add(pingResult);
         }
         Collections.sort(bestAddrList, (s1, s2) -> {
@@ -91,5 +91,15 @@ public class Utils {
 
         });
         return bestAddrList.get(0).split("#")[0];
+    }
+    
+    //判断字符串是否为空
+    public static boolean isEmpty(String str) {
+        return str == null || str.length() == 0 || str.equals("null");
+    }
+
+    //equals两个字符串判断
+    public static boolean equals(String str1, String str2) {
+        return str1 == null ? str2 == null : str1.equals(str2);
     }
 }

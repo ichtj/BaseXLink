@@ -1,6 +1,6 @@
 package com.future.xlink.utils;
 
-import com.elvishew.xlog.XLog;
+import com.future.xlink.xlog.XLogTools;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @author chtj
  */
 public class TheadTools {
+    private static final String TAG = TheadTools.class.getSimpleName();
     private static ThreadPoolExecutor mThreadPool;
 
     /*线程池维护线程的最少数量 核心线程数*/
@@ -57,7 +58,7 @@ public class TheadTools {
                             TIME_KEEP_ALIVE, TIME_UNIT, new ArrayBlockingQueue<Runnable>(SIZE_WORK_QUEUE), new RejectedExecutionHandler() {
                         @Override
                         public void rejectedExecution(Runnable task, ThreadPoolExecutor executor) {
-                            XLog.e("rejectedExecution: task=" + task.toString() + ",rejected from=" + executor.toString());
+                            XLogTools.e(TAG,"rejectedExecution: task=" + task.toString() + ",rejected from=" + executor.toString());
                         }
                     });
                     mThreadPool.allowCoreThreadTimeOut(ALLOW_CORE_THREAD_TIMEOUT);

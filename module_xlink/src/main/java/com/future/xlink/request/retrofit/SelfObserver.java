@@ -1,6 +1,6 @@
 package com.future.xlink.request.retrofit;
 
-import com.elvishew.xlog.XLog;
+import com.future.xlink.xlog.XLogTools;
 
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
@@ -9,6 +9,7 @@ import io.reactivex.disposables.Disposable;
  * @author lee
  */
 public class SelfObserver<T> implements Observer <T> {
+    private static final String TAG = "SelfObserver";
     private Disposable disposable;
 
     public SelfObserver() {
@@ -36,7 +37,7 @@ public class SelfObserver<T> implements Observer <T> {
 
     private void dispose() {
         if (disposable != null && !disposable.isDisposed()) {
-            XLog.d("HTTP_DISPOSE");
+            XLogTools.d(TAG,"HTTP_DISPOSE");
             disposable.dispose();
             disposable = null;
         }

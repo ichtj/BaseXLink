@@ -2,7 +2,7 @@ package com.future.xlink.utils;
 
 import android.util.Base64;
 
-import com.elvishew.xlog.XLog;
+import com.future.xlink.xlog.XLogTools;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -11,6 +11,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AesTools {
+    private static final String TAG = "AesTools";
     /**
      * 采用AES加密算法
      */
@@ -94,6 +95,6 @@ public class AesTools {
      * 处理异常
      */
     private static void handleException(String methodName, Exception e) {
-        XLog.e("handleException",e);
+        XLogTools.e(TAG,"handleException"+e.getMessage());
     }
 }

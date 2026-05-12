@@ -63,6 +63,10 @@
                 android:layout_height="@dimen/control_height"
                 android:layout_marginStart="@dimen/item_gap"
                 android:text="清MQTT缓存" />
+            <Button
+                android:id="@+id/btnReboot"
+                style="@style/BaseXLinkCompactButton"
+                android:text="重启" />
         </LinearLayout>
     </LinearLayout>
 

@@ -26,6 +26,7 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 }
+
 //Copy类型
 task makeJar(type: Copy) {
     //删除存在的
@@ -58,7 +59,8 @@ dependencies {
     implementation rootProject.ext.dependencies["retrofit"]
     implementation rootProject.ext.dependencies["converter-gson"]
     implementation rootProject.ext.dependencies["adapter-rxjava"]
-    api rootProject.ext.dependencies["xlog"]
+//    api rootProject.ext.dependencies["xlog"]
+    api 'io.github.ichtj:LogTools:1.4.0'
     //okhttp目前只能使用该版本，最新版本需要针对android低版本做兼容操作
     implementation rootProject.ext.dependencies["okhttp"]
     //Mqtt

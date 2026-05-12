@@ -2,7 +2,6 @@ package com.future.xlink.request;
 
 import android.text.TextUtils;
 
-import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.base.BaseData;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.base.MsgData;
@@ -10,11 +9,9 @@ import com.future.xlink.callback.ICmdType;
 import com.future.xlink.bean.PutType;
 import com.future.xlink.callback.IPutType;
 import com.future.xlink.utils.AesTools;
-import com.google.gson.Gson;
+import com.future.xlink.utils.Utils;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,7 +20,6 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,7 +31,7 @@ public class DataTransfer {
             return object;
         }
         String value = parent.optString(name);
-        if (TextUtils.isEmpty(value)) {
+        if (Utils.isEmpty(value)) {
             return null;
         }
         try {
@@ -51,7 +47,7 @@ public class DataTransfer {
             return array;
         }
         String value = parent.optString(name);
-        if (TextUtils.isEmpty(value)) {
+        if (Utils.isEmpty(value)) {
             return null;
         }
         try {
@@ -260,7 +256,7 @@ public class DataTransfer {
         String act = jsonObject.optString("act");
         String iid = jsonObject.optString("iid");
         String act_alternative = jsonObject.optString("act_alternative");
-        act = !TextUtils.isEmpty(act_alternative) ? act_alternative : act;
+        act = !Utils.isEmpty(act_alternative) ? act_alternative : act;
         switch (act) {
             case "event":
                 JSONObject eventPayload = optObject(jsonObject, "payload");
@@ -386,7 +382,7 @@ public class DataTransfer {
                     while (jInfoSet.hasNext()) {
                         String deviceKey = jInfoSet.next();
                         String sidPrid = regular("[0-9]*-[0-9]*", deviceKey);
-                        if (!TextUtils.isEmpty(sidPrid)) {
+                        if (!Utils.isEmpty(sidPrid)) {
                             String[] sidPridArray = sidPrid.split("-");
                             sid = sidPridArray[0];
                             prid = sidPridArray[1];
@@ -539,7 +535,7 @@ public class DataTransfer {
      */
     public static String getToken(String appKey, String appSecret, String clientId, String time) {
         String tokenMsg = AesTools.encrypt(appKey, clientId + ":" + appSecret + ":" + time);
-        return TextUtils.isEmpty(tokenMsg) ? null : "Basic " + tokenMsg;
+        return Utils.isEmpty(tokenMsg) ? null : "Basic " + tokenMsg;
     }
 
     /**

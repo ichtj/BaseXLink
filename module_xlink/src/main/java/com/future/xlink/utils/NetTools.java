@@ -5,13 +5,11 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
 
-import com.elvishew.xlog.XLog;
+import com.future.xlink.xlog.XLogTools;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,13 +41,13 @@ public class NetTools {
             String command = "ping -c " + pingCount + " " + pingHosts[0];
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
-                XLog.d("ping ping fail:process is null.");
+                XLogTools.d(TAG,"ping ping fail:process is null.");
                 append(stringBuffer, "ping fail:process is null.");
                 return result;
             }
             successReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while ((line = successReader.readLine()) != null) {
-                XLog.d("ping line-->" + line);
+                XLogTools.d(TAG,"ping line-->" + line);
                 if (line.contains("rtt min/avg/max/mdev = ")) {
                     //获取avg数据返回
                     result = host + "#" + parsedata(line);
@@ -58,16 +56,16 @@ public class NetTools {
             }
             int status = process.waitFor();
             if (status == 0) {
-                XLog.d("ping exec cmd success:" + command);
+                XLogTools.d(TAG,"ping exec cmd success:" + command);
                 append(stringBuffer, "exec cmd success:" + command);
             } else {
-                XLog.d("ping exec cmd fail.");
+                XLogTools.d(TAG,"ping exec cmd fail.");
                 append(stringBuffer, "exec cmd fail.");
             }
-            XLog.d("ping exec finished.");
+            XLogTools.d(TAG,"ping exec finished.");
             append(stringBuffer, "exec finished.");
         } catch (Throwable e) {
-            XLog.e("ping", e);
+            XLogTools.e(TAG,"ping"+e.getMessage());
         } finally {
             if (process != null) {
                 process.destroy();
@@ -76,7 +74,7 @@ public class NetTools {
                 try {
                     successReader.close();
                 } catch (Throwable e) {
-                    XLog.e(e);
+                    XLogTools.e(TAG,e.getMessage());
                 }
             }
         }
@@ -128,11 +126,11 @@ public class NetTools {
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         if (activeNetworkInfo != null) {
             String[] newList = getRandomPingList(pingList, pingList.length<3?pingList.length:3);
-            XLog.d("newList >> " + Arrays.toString(newList));
+            XLogTools.d(TAG,"newList >> " + Arrays.toString(newList));
             for (int i = 0; i < newList.length; i++) {
                 String pingAddr = newList[i];
                 boolean isNetOk = ping(pingAddr, 1, 1);
-                XLog.d("newList [" + i + "]>> " + pingAddr + " >> " + isNetOk);
+                XLogTools.d(TAG,"newList [" + i + "]>> " + pingAddr + " >> " + isNetOk);
                 if (isNetOk) {
                     return true;
                 }
@@ -199,7 +197,7 @@ public class NetTools {
             String end = line.substring("rtt min/avg/max/mdev = ".length());
             return end.split("/")[1];
         } catch (Throwable e) {
-            XLog.e(e);
+            XLogTools.e(TAG,e.getMessage());
             return null;
         }
     }

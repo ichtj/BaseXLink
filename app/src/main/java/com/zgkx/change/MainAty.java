@@ -19,7 +19,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import com.elvishew.xlog.XLog;
 import com.future.xlink.bean.base.BaseData;
 import com.future.xlink.bean.PutType;
 import com.future.xlink.request.DataTransfer;
@@ -28,27 +27,16 @@ import com.future.xlink.request.XLink;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.callback.IMqttCallback;
 import com.future.xlink.callback.IHttpRequest;
-import com.future.xlink.request.retrofit.IApis;
 import com.future.xlink.utils.JsonFormat;
-import com.future.xlink.utils.TheadTools;
 import com.future.xlink.utils.Utils;
 import com.future.xlink.xlog.XLogTools;
-
-import org.json.JSONObject;
+import com.library.logtools.FaceLogTools;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -136,7 +124,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         FormatViewUtils.setMovementMethod(tvResult);
 
         String configFolder = new File(getFilesDir(), "xlink-log").getAbsolutePath() + File.separator;
-        XLogTools.initXLog(configFolder);
+        XLogTools.initXLog(this,configFolder);
         service.scheduleAtFixedRate(this::run, 0, 15, TimeUnit.SECONDS);
 
         if (isAutoConn) {
@@ -314,10 +302,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 XLinkHttp.addProdId(getInitParams(), new IHttpRequest() {
                     @Override
                     public void requestComplete(String jsonData) {
-                        if (!TextUtils.isEmpty(jsonData)) {
+                        if (!Utils.isEmpty(jsonData)) {
                             jsonData = "<br />" + JsonFormat.formatJson(jsonData).replace("\n", "<br />");
                         }
-                        Log.d(TAG, "HTTP_ADD_DEVICE_OK hasBody=" + !TextUtils.isEmpty(jsonData));
+                        Log.d(TAG, "HTTP_ADD_DEVICE_OK hasBody=" + !Utils.isEmpty(jsonData));
                         sendToMessage(MainUtil.getFont("httpAddDevice", false) + " success=true body=" + jsonData + "<br />");
                     }
 
@@ -332,10 +320,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 XLinkHttp.getDeviceInfo(getInitParams(), new IHttpRequest() {
                     @Override
                     public void requestComplete(String jsonData) {
-                        if (!TextUtils.isEmpty(jsonData)) {
+                        if (!Utils.isEmpty(jsonData)) {
                             jsonData = "<br />" + JsonFormat.formatJson(jsonData).replace("\n", "<br />");
                         }
-                        Log.d(TAG, "HTTP_DEVICE_INFO_OK hasBody=" + !TextUtils.isEmpty(jsonData));
+                        Log.d(TAG, "HTTP_DEVICE_INFO_OK hasBody=" + !Utils.isEmpty(jsonData));
                         sendToMessage(MainUtil.getFont("httpDeviceInfo", false) + " success=true body=" + jsonData + "<br />");
                     }
 
@@ -350,10 +338,10 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 XLinkHttp.getAgentList(getInitParams(), new IHttpRequest() {
                     @Override
                     public void requestComplete(String jsonData) {
-                        if (!TextUtils.isEmpty(jsonData)) {
+                        if (!Utils.isEmpty(jsonData)) {
                             jsonData = "<br />" + JsonFormat.formatJson(jsonData).replace("\n", "<br />");
                         }
-                        Log.d(TAG, "HTTP_AGENT_LIST_OK hasBody=" + !TextUtils.isEmpty(jsonData));
+                        Log.d(TAG, "HTTP_AGENT_LIST_OK hasBody=" + !Utils.isEmpty(jsonData));
                         sendToMessage(MainUtil.getFont("httpAgentList", false) + " success=true body=" + jsonData + "<br />");
                     }
 
@@ -370,7 +358,7 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 SPUtils.putBoolean(this, MainUtil.KEY_AUTOCONN, !isAutoConn);
                 break;
             case R.id.btnReboot:
-                runOffMain(actionName, this::rebootSystem);
+                rebootSystemDialog();
                 break;
             case R.id.btnPushEvent:
                 if (XLink.getConnectStatus()) {
@@ -383,6 +371,18 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
                 }
                 break;
         }
+    }
+
+    /**
+     * 重启弹窗确认
+     */
+    private void rebootSystemDialog() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("提示")
+                .setMessage("确定要重启设备吗？")
+                .setPositiveButton("确定", (dialog, which) -> runOffMain("reboot", this::rebootSystem))
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     public void rebootSystem(){
@@ -406,7 +406,6 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         } catch (Throwable throwable) {
             Log.e(TAG, "REBOOT_SHELL_ERROR error=" + throwable.getMessage(), throwable);
         }
-
     }
 
     private void runOffMain(String actionName, Runnable runnable) {

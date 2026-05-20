@@ -3,7 +3,8 @@ package com.future.xlink.utils;
 import com.future.xlink.bean.InitParams;
 import com.future.xlink.bean.other.Register;
 import com.future.xlink.request.retrofit.IApis;
-import com.future.xlink.xlog.XLogTools;
+import com.library.logtools.FaceLogTools;
+
 
 import org.json.JSONException;
 
@@ -16,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileTools {
-    private static final String TAG = "FileTools";
     /**
      * 初始化log文件
      */
@@ -24,7 +24,7 @@ public class FileTools {
         File configFile = new File(configFolder);
         if (!configFile.exists()) {
             boolean isWriteComplete=configFile.mkdirs();
-            XLogTools.d(TAG,"initLogFile>isWriteComplete>"+isWriteComplete);
+            FaceLogTools.debug("initLogFile>isWriteComplete>"+isWriteComplete);
         }
     }
 
@@ -50,7 +50,7 @@ public class FileTools {
             //将byte数组转换成指定格式的字符串
             result = new String(buffer, "UTF-8");
         } catch (Throwable e) {
-            XLogTools.e(TAG,"readFileData>Throwable >> "+ e.getMessage());
+            FaceLogTools.error("readFileData>Throwable >> "+ e.getMessage());
         }
         return result;
     }
@@ -78,12 +78,12 @@ public class FileTools {
             fos.flush();
             return true;
         } catch (Exception e) {
-            XLogTools.e(TAG,"writeFileData>Exception >> " + e.getMessage());
+            FaceLogTools.error("writeFileData>Exception >> " + e.getMessage());
         } finally {
             try {
                 fos.close();//关闭文件输出流
             } catch (Throwable e) {
-                XLogTools.e(TAG,"writeFileData>Throwable >> " + e.getMessage());
+                FaceLogTools.error("writeFileData>Throwable >> " + e.getMessage());
             }
         }
         return false;
@@ -96,9 +96,9 @@ public class FileTools {
     public static void delProperties(String configPath) {
         try {
             boolean isDel = new File(configPath).delete();
-            XLogTools.d(TAG,"delProperties: isDel=" + isDel);
+            FaceLogTools.debug("delProperties: isDel=" + isDel);
         } catch (Exception e) {
-            XLogTools.e(TAG,"delProperties>Exception>> "+ e.getMessage());
+            FaceLogTools.error("delProperties>Exception>> "+ e.getMessage());
         }
     }
 
@@ -115,7 +115,7 @@ public class FileTools {
             String configSave = JsonFormat.formatJson(GsonTools.toJsonWtihNullField(params));
             return writeFileData(configFolder + IApis.MY_PROPERTIES, configSave, true);
         } catch (JSONException e) {
-            XLogTools.e(TAG,"saveConfig>JSONException >> " + e.getMessage());
+            FaceLogTools.error("saveConfig>JSONException >> " + e.getMessage());
             return false;
         }
     }

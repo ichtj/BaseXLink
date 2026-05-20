@@ -6,7 +6,8 @@ import android.telephony.gsm.GsmCellLocation;
 import android.text.TextUtils;
 
 import com.future.xlink.bean.GsmCell;
-import com.future.xlink.xlog.XLogTools;
+import com.library.logtools.FaceLogTools;
+
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +19,6 @@ import java.util.regex.Pattern;
  * @author chtj
  */
 public class Utils {
-    private static final String TAG = "Utils";
     public static GsmCell getSimMsg(Context context) {
         GsmCell gsmCell = new GsmCell();
         // 调用API获取基站信息
@@ -73,7 +73,7 @@ public class Utils {
         List<String> bestAddrList=new ArrayList<>();
         for (int i = 0; i < addrList.size(); i++) {
             String pingResult= NetTools.ping(addrList.get(i),3,new StringBuffer());
-            XLogTools.d(TAG, "compare: pingResult >> "+pingResult);
+            FaceLogTools.debug( "compare: pingResult >> "+pingResult);
             bestAddrList.add(pingResult);
         }
         Collections.sort(bestAddrList, (s1, s2) -> {

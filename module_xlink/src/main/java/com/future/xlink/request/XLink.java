@@ -38,10 +38,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.future.xlink.utils.NetTools;
 import com.future.xlink.utils.Utils;
-import com.future.xlink.xlog.XLogTools;
+import com.library.logtools.FaceLogTools;
 
 public class XLink {
-    private static final String TAG = XLink.class.getSimpleName();
     private MqttAndroidClient client;
     private MqttConnectOptions conOpt;
     private IMqttCallback iMqttCallback;
@@ -73,7 +72,7 @@ public class XLink {
 
     public static boolean clearMqttDatabaseFiles(Context context) {
         if (instance().client != null || instance().isRunConnect || instance().isRunPush) {
-            XLogTools.d(TAG,"CLEAR_MQTT_DB_DISCONNECT_FIRST");
+            FaceLogTools.debug("CLEAR_MQTT_DB_DISCONNECT_FIRST");
             disConnect("Clear mqtt cache");
         }
         try {
@@ -85,12 +84,12 @@ public class XLink {
             boolean allDeleted = true;
             for (File file : files) {
                 boolean deleted = file.delete();
-                XLogTools.d(TAG,"CLEAR_MQTT_DB_FILE name=" + file.getName() + " deleted=" + deleted);
+                FaceLogTools.debug("CLEAR_MQTT_DB_FILE name=" + file.getName() + " deleted=" + deleted);
                 if (!deleted) allDeleted = false;
             }
             return allDeleted;
         } catch (Exception e) {
-            XLogTools.e(TAG,"CLEAR_MQTT_DB_ERROR " + getThrowableMessage(e, "clear mqtt database failed"));
+            FaceLogTools.error("CLEAR_MQTT_DB_ERROR " + getThrowableMessage(e, "clear mqtt database failed"));
             return false;
         }
     }
@@ -135,24 +134,24 @@ public class XLink {
                 mqttClient.disconnect().waitForCompletion(1000);
             }
         } catch (Throwable throwable) {
-            XLogTools.e(TAG,"MQTT_DISCONNECT_ERROR " + getThrowableMessage(throwable, "disconnect failed"));
+            FaceLogTools.error("MQTT_DISCONNECT_ERROR " + getThrowableMessage(throwable, "disconnect failed"));
         }
         try {
             mqttClient.unregisterResources();
         } catch (Throwable throwable) {
-            XLogTools.e(TAG,"MQTT_UNREGISTER_ERROR " + getThrowableMessage(throwable, "unregister failed"));
+            FaceLogTools.error("MQTT_UNREGISTER_ERROR " + getThrowableMessage(throwable, "unregister failed"));
         }
         try {
             mqttClient.close();
         } catch (Throwable throwable) {
-            XLogTools.e(TAG,"MQTT_CLOSE_ERROR " + getThrowableMessage(throwable, "close failed"));
+            FaceLogTools.error("MQTT_CLOSE_ERROR " + getThrowableMessage(throwable, "close failed"));
         }
     }
 
     private boolean shouldDispatchReply(String act, String iid) {
         String key = act + "#" + iid;
         if (replyRecordList.contains(key)) {
-            XLogTools.d(TAG,"REPLY_DUP_IGNORE act=" + act + " iid=" + iid);
+            FaceLogTools.debug("REPLY_DUP_IGNORE act=" + act + " iid=" + iid);
             return false;
         }
         replyRecordList.add(key);
@@ -164,12 +163,12 @@ public class XLink {
 
     private void onMqttConnected(int generation, boolean reconnect, String source) {
         if (!isCurrentConnectGeneration(generation)) {
-            XLogTools.d(TAG,"CONNECT_STALE_IGNORE source=" + source + " gen=" + generation + " currentGen=" + connectGeneration);
+            FaceLogTools.debug("CONNECT_STALE_IGNORE source=" + source + " gen=" + generation + " currentGen=" + connectGeneration);
             return;
         }
         isRunConnect = false;
         isRunPush = true;
-        XLogTools.d(TAG,"CONNECT_READY source=" + source + " reconnect=" + reconnect + " gen=" + generation + " queue=" + pushQueue.size());
+        FaceLogTools.debug("CONNECT_READY source=" + source + " reconnect=" + reconnect + " gen=" + generation + " queue=" + pushQueue.size());
         notifyConnState(true, reconnect ? "reConnect complete" : "connect complete");
         startPushThread();
     }
@@ -185,17 +184,17 @@ public class XLink {
         @Override
         public void connectComplete(boolean reconnect, String serverURI) {
             if (!instance().isCurrentConnectGeneration(generation)) {
-                XLogTools.d(TAG,"CONNECT_CALLBACK_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
+                FaceLogTools.debug("CONNECT_CALLBACK_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
                 return;
             }
-            XLogTools.d(TAG,"CONNECT_CALLBACK reconnect=" + reconnect + " uri=" + serverURI);
+            FaceLogTools.debug("CONNECT_CALLBACK reconnect=" + reconnect + " uri=" + serverURI);
             instance().onMqttConnected(generation, reconnect, "callback");
         }
 
         @Override
         public void connectionLost(Throwable cause) {
             boolean isPing = NetTools.checkNet(instance().pingList, mContext);
-            XLogTools.e(TAG,"CONNECT_LOST pingOk=" + isPing + " reason=" + (cause == null ? "unknown" : cause.getMessage()));
+            FaceLogTools.error("CONNECT_LOST pingOk=" + isPing + " reason=" + (cause == null ? "unknown" : cause.getMessage()));
             notifyConnState(false, cause == null ? (isPing ? "other exception" : "network is lost！") : cause.getMessage());
             instance().isRunPush = false;
         }
@@ -211,7 +210,7 @@ public class XLink {
                 boolean isComplete = token.isComplete();
                 BaseData baseData = DataTransfer.deliveryHandle(instance().initParams.clientId, token.getMessage());
                 if (baseData == null) {
-                    XLogTools.e(TAG,"PUBLISH_DELIVERY_PARSE_EMPTY");
+                    FaceLogTools.error("PUBLISH_DELIVERY_PARSE_EMPTY");
                     return;
                 }
                 IMqttCallback callback = instance().iMqttCallback;
@@ -223,10 +222,10 @@ public class XLink {
                         callback.pushFail(baseData, throwException != null ? throwException.getMessage() : "message push failed!");
                     }
                 } else {
-                    XLogTools.e(TAG,"PUBLISH_CALLBACK_MISSING");
+                    FaceLogTools.error("PUBLISH_CALLBACK_MISSING");
                 }
             } catch (Throwable e) {
-                XLogTools.e(TAG,"PUBLISH_DELIVERY_ERROR error=" + e.getMessage());
+                FaceLogTools.error("PUBLISH_DELIVERY_ERROR error=" + e.getMessage());
             }
         }
     }
@@ -236,7 +235,7 @@ public class XLink {
         String act = jHandle.optString("act");
         String iid = jHandle.optString("iid");
         if (Utils.isEmpty(act) || Utils.isEmpty(iid)) {
-            XLogTools.e(TAG,"MSG_DROP reason=missing_act_or_iid topic=" + topic);
+            FaceLogTools.error("MSG_DROP reason=missing_act_or_iid topic=" + topic);
             return;
         }
         switch (act) {
@@ -254,7 +253,7 @@ public class XLink {
             default:
                 BaseData baseData = DataTransfer.IotRequest(instance().initParams.clientId, jHandle, iid);
                 if (baseData == null) {
-                    XLogTools.e(TAG,"MSG_DROP reason=unsupported_or_invalid_payload act=" + act + " iid=" + iid + " topic=" + topic);
+                    FaceLogTools.error("MSG_DROP reason=unsupported_or_invalid_payload act=" + act + " iid=" + iid + " topic=" + topic);
                     break;
                 }
                 IMqttCallback msgCallback = instance().iMqttCallback;
@@ -267,28 +266,28 @@ public class XLink {
 
     private void startPushThread() {
         if (pushThread == null || !pushThread.isAlive()) {
-            XLogTools.d(TAG,"PUSH_WORKER_START queue=" + pushQueue.size());
+            FaceLogTools.debug("PUSH_WORKER_START queue=" + pushQueue.size());
             pushThread = new Thread(() -> {
                 while (isRunPush) {
                     try {
                         MsgData msgData = pushQueue.poll(1, TimeUnit.SECONDS);
                         if (msgData != null && isRunPush) {
-                            XLogTools.d(TAG,"PUSH_DEQUEUE queueAfter=" + pushQueue.size());
+                            FaceLogTools.debug("PUSH_DEQUEUE queueAfter=" + pushQueue.size());
                             pushData(msgData);
                         }
                     } catch (InterruptedException interruptedException) {
                         Thread.currentThread().interrupt();
-                        XLogTools.d(TAG,"PUSH_WORKER_INTERRUPTED");
+                        FaceLogTools.debug("PUSH_WORKER_INTERRUPTED");
                         break;
                     } catch (Throwable throwable) {
-                        XLogTools.e(TAG,"PUSH_WORKER_ERROR " + throwable.getMessage());
+                        FaceLogTools.error("PUSH_WORKER_ERROR " + throwable.getMessage());
                     }
                 }
             }, "XLink-PushThread");
             pushThread.setDaemon(true);
             pushThread.start();
         } else {
-            XLogTools.d(TAG,"PUSH_WORKER_ALREADY_RUNNING queue=" + pushQueue.size());
+            FaceLogTools.debug("PUSH_WORKER_ALREADY_RUNNING queue=" + pushQueue.size());
         }
     }
 
@@ -316,18 +315,18 @@ public class XLink {
             try {
                 String pushData = DataTransfer.getPushData(instance().initParams.clientId, msgData);
                 String topic = DataTransfer.getDiffTopic(pushData, instance().initParams.clientId, instance().initParams.mqttSsid);
-                XLogTools.d(TAG,"PUBLISH_START iid=" + msgData.iid + " type=" + msgData.iPutType + " op=" + msgData.operation + " topic=" + topic);
+                FaceLogTools.debug("PUBLISH_START iid=" + msgData.iid + " type=" + msgData.iPutType + " op=" + msgData.operation + " topic=" + topic);
                 MqttMessage message = new MqttMessage(pushData.getBytes());
                 message.setQos(instance().initParams.qos);
                 IMqttDeliveryToken deliveryToken = instance().client.publish(topic, message, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
-                        XLogTools.d(TAG,"PUBLISH_OK iid=" + msgData.iid + " complete=" + asyncActionToken.isComplete());
+                        FaceLogTools.debug("PUBLISH_OK iid=" + msgData.iid + " complete=" + asyncActionToken.isComplete());
                     }
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                         String errorMessage = getThrowableMessage(exception, "mqtt publish failed");
-                        XLogTools.e(TAG,"PUBLISH_FAIL iid=" + msgData.iid + " delivered=" + msgData.isDeliveryed + " error=" + errorMessage);
+                        FaceLogTools.error("PUBLISH_FAIL iid=" + msgData.iid + " delivered=" + msgData.isDeliveryed + " error=" + errorMessage);
                         IMqttCallback callback = instance().iMqttCallback;
                         if (callback != null) {
                             callback.pushFail(msgData, errorMessage);
@@ -340,7 +339,7 @@ public class XLink {
                 msgData.isDeliveryed = deliveryToken.isComplete();
             } catch (Throwable e) {
                 String errorMessage = getThrowableMessage(e, "mqtt publish error");
-                XLogTools.e(TAG,"PUBLISH_ERROR iid=" + msgData.iid + " type=" + msgData.iPutType + " op=" + msgData.operation + " error=" + errorMessage);
+                FaceLogTools.error("PUBLISH_ERROR iid=" + msgData.iid + " type=" + msgData.iPutType + " op=" + msgData.operation + " error=" + errorMessage);
                 IMqttCallback callback = instance().iMqttCallback;
                 if (callback != null) {
                     callback.pushFail(msgData, errorMessage);
@@ -355,12 +354,12 @@ public class XLink {
             MqttAndroidClient connectClient;
             synchronized (connectLock) {
                 if (!isActiveConnectGeneration(generation)) {
-                    XLogTools.d(TAG,"CONNECT_THREAD_STALE_IGNORE gen=" + generation + " currentGen=" + connectGeneration);
+                    FaceLogTools.debug("CONNECT_THREAD_STALE_IGNORE gen=" + generation + " currentGen=" + connectGeneration);
                     return;
                 }
                 // 如果已经连接，则直接返回
                 if (client != null && client.isConnected()) {
-                    XLogTools.d(TAG,"CONNECT_THREAD_ALREADY_CONNECTED gen=" + generation);
+                    FaceLogTools.debug("CONNECT_THREAD_ALREADY_CONNECTED gen=" + generation);
                     return;
                 }
 
@@ -374,19 +373,19 @@ public class XLink {
                 // 开始连接
                 connectClient.connect(conOpt).waitForCompletion();
                 if (!isActiveConnectGeneration(generation) && connectClient.isConnected()) {
-                    XLogTools.d(TAG,"CONNECT_STALE_CLOSE gen=" + generation + " currentGen=" + connectGeneration);
+                    FaceLogTools.debug("CONNECT_STALE_CLOSE gen=" + generation + " currentGen=" + connectGeneration);
                     closeMqttClient(connectClient);
                     return;
                 }
-                XLogTools.d(TAG,"CONNECT_WAIT_DONE gen=" + generation + " connected=" + connectClient.isConnected());
+                FaceLogTools.debug("CONNECT_WAIT_DONE gen=" + generation + " connected=" + connectClient.isConnected());
                 if (connectClient.isConnected()) {
                     onMqttConnected(generation, false, "waitForCompletion");
                 }
             } catch (MqttException e) {
-                XLogTools.e(TAG,"CONNECT_ERROR " + e.getMessage());
+                FaceLogTools.error("CONNECT_ERROR " + e.getMessage());
                 disConnect(e.getMessage());
             } catch (Throwable throwable) {
-                XLogTools.e(TAG,"CONNECT_FATAL_ERROR " + throwable.getMessage());
+                FaceLogTools.error("CONNECT_FATAL_ERROR " + throwable.getMessage());
                 disConnect(throwable.getMessage());
             }
     }
@@ -400,7 +399,7 @@ public class XLink {
         if (getConnectStatus()) {
             MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false,_description,_status);
             instance().pushQueue.offer(msgData);
-            XLogTools.d(TAG,"QUEUE_ADD iid=" + iid + " type=" + iPutType + " op=" + operation + " queue=" + instance().pushQueue.size() + " worker=" + instance().isRunPush);
+            FaceLogTools.debug("QUEUE_ADD iid=" + iid + " type=" + iPutType + " op=" + operation + " queue=" + instance().pushQueue.size() + " worker=" + instance().isRunPush);
             if (!instance().isRunPush) {
                 instance().isRunPush = true;
                 instance().startPushThread();
@@ -415,7 +414,7 @@ public class XLink {
         if (getConnectStatus()) {
             MsgData msgData = new MsgData(baseData.iPutType, baseData.iid, baseData.operation, baseData.maps, false,"",0);
             instance().pushQueue.offer(msgData);
-            XLogTools.d(TAG,"QUEUE_ADD iid=" + iid + " type=" + iPutType + " op=" + operation + " queue=" + instance().pushQueue.size() + " worker=" + instance().isRunPush);
+            FaceLogTools.debug("QUEUE_ADD iid=" + iid + " type=" + iPutType + " op=" + operation + " queue=" + instance().pushQueue.size() + " worker=" + instance().isRunPush);
             if (!instance().isRunPush) {
                 instance().isRunPush = true;
                 instance().startPushThread();
@@ -437,7 +436,7 @@ public class XLink {
                 callback.subscribeFail(topicName, "mqtt disconnect");
             }
         } catch (MqttException e) {
-            XLogTools.e(TAG,"SUBSCRIBE_FAIL topic=" + topicName + " qos=" + instance().initParams.qos + " code=" + e.getReasonCode() + " error=" + e.getMessage());
+            FaceLogTools.error("SUBSCRIBE_FAIL topic=" + topicName + " qos=" + instance().initParams.qos + " code=" + e.getReasonCode() + " error=" + e.getMessage());
             IMqttCallback callback = instance().iMqttCallback;
             if (callback != null) {
                 callback.subscribeFail(topicName, "reasonCode=" + e.getReasonCode() + ", error=" + e.getMessage());
@@ -450,13 +449,13 @@ public class XLink {
         final int generation;
         synchronized (instance().connectLock) {
             if (instance().client != null && instance().client.isConnected()) {
-                XLogTools.d(TAG,"CONNECT_IGNORE_ALREADY_CONNECTED clientId=" + newConfig.clientId);
+                FaceLogTools.debug("CONNECT_IGNORE_ALREADY_CONNECTED clientId=" + newConfig.clientId);
                 instance().iMqttCallback = iMqttCallback;
                 notifyConnState(true, "already connected");
                 return;
             }
             if (instance().isRunConnect) {
-                XLogTools.d(TAG,"CONNECT_IGNORE_IN_PROGRESS clientId=" + newConfig.clientId + " gen=" + instance().connectGeneration);
+                FaceLogTools.debug("CONNECT_IGNORE_IN_PROGRESS clientId=" + newConfig.clientId + " gen=" + instance().connectGeneration);
                 instance().iMqttCallback = iMqttCallback;
                 notifyConnState(false, "connecting");
                 return;
@@ -464,7 +463,7 @@ public class XLink {
             instance().isRunConnect = true;
             instance().connectGeneration++;
             generation = instance().connectGeneration;
-            XLogTools.d(TAG,"CONNECT_START clientId=" + newConfig.clientId + " gen=" + generation);
+            FaceLogTools.debug("CONNECT_START clientId=" + newConfig.clientId + " gen=" + generation);
         }
         if (!getConnectStatus()) {
             String configFolder = getConfigFolder(instance().mCtx, newConfig.clientId);
@@ -474,7 +473,7 @@ public class XLink {
             try {
                 saveConfig = GsonTools.fromJson(FileTools.readFileData(configFolder + IApis.MY_PROPERTIES), InitParams.class);
             } catch (Throwable e) {
-                XLogTools.e(TAG,"CONFIG_READ_FAIL " + e.getMessage());
+                FaceLogTools.error("CONFIG_READ_FAIL " + e.getMessage());
             }
             if (InitParams.checkProductIsSame(saveConfig,newConfig)) {
                 instance().initParams = saveConfig;
@@ -486,7 +485,7 @@ public class XLink {
                     @Override
                     public void requestComplete(String jsonData) {
                         if (!instance().isActiveConnectGeneration(generation)) {
-                            XLogTools.d(TAG,"AGENT_LIST_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
+                            FaceLogTools.debug("AGENT_LIST_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
                             return;
                         }
                         if (!Utils.isEmpty(jsonData)) {
@@ -502,12 +501,12 @@ public class XLink {
                                     if (agents.servers.size() > 1) {
                                         bestUrl = Utils.compare(agents.servers);
                                     }
-                                    XLogTools.d(TAG,"AGENT_SELECTED url=" + bestUrl + " count=" + agents.servers.size());
+                                    FaceLogTools.debug("AGENT_SELECTED url=" + bestUrl + " count=" + agents.servers.size());
                                     XLinkHttp.registerDev(newConfig, bestUrl, new IHttpRequest() {
                                         @Override
                                         public void requestComplete(String jsonData) {
                                             if (!instance().isActiveConnectGeneration(generation)) {
-                                                XLogTools.d(TAG,"REGISTER_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
+                                                FaceLogTools.debug("REGISTER_STALE_IGNORE gen=" + generation + " currentGen=" + instance().connectGeneration);
                                                 return;
                                             }
                                             boolean isWrite = FileTools.saveConfig(newConfig, configFolder, jsonData);
@@ -520,7 +519,7 @@ public class XLink {
                                         }
                                         @Override
                                         public void requestErr(int errCode, String description) {
-                                            XLogTools.e(TAG,"REGISTER_FAIL code=" + errCode + " desc=" + description);
+                                            FaceLogTools.error("REGISTER_FAIL code=" + errCode + " desc=" + description);
                                             instance().finishConnectGeneration(generation);
                                             notifyConnState(false, description);
                                         }
@@ -530,19 +529,19 @@ public class XLink {
                                     notifyConnState(false, "Agent List size <= 0");
                                 }
                             } catch (Throwable e) {
-                                XLogTools.e(TAG,"AGENT_LIST_HANDLE_ERROR " + e.getMessage());
+                                FaceLogTools.error("AGENT_LIST_HANDLE_ERROR " + e.getMessage());
                                 instance().finishConnectGeneration(generation);
                                 notifyConnState(false, "get Agent list failed!");
                             }
                         } else {
-                            XLogTools.e(TAG,"AGENT_LIST_EMPTY_RESPONSE");
+                            FaceLogTools.error("AGENT_LIST_EMPTY_RESPONSE");
                             instance().finishConnectGeneration(generation);
                             notifyConnState(false, "get Agent list is null");
                         }
                     }
                     @Override
                     public void requestErr(int errCode, String description) {
-                        XLogTools.e(TAG,"AGENT_LIST_FAIL code=" + errCode + " desc=" + description);
+                        FaceLogTools.error("AGENT_LIST_FAIL code=" + errCode + " desc=" + description);
                         instance().finishConnectGeneration(generation);
                         notifyConnState(false, description);
                     }
@@ -558,7 +557,7 @@ public class XLink {
         }
         instance().pushQueue.clear();
         disConnect();
-        XLogTools.d(TAG,"UNINIT_DONE");
+        FaceLogTools.debug("UNINIT_DONE");
     }
 
     public static void disConnect(){
@@ -573,7 +572,7 @@ public class XLink {
             instance().isRunConnect = false;
             instance().connectGeneration++;
             instance().replyRecordList.clear();
-            XLogTools.d(TAG,"DISCONNECT_START");
+            FaceLogTools.debug("DISCONNECT_START");
 
             IMqttCallback callback = instance().iMqttCallback;
             if (callback != null) {

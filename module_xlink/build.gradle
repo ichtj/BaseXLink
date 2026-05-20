@@ -1,6 +1,10 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
-group='com.githup.wave-chtj'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+group = findProperty('mavenCentralNamespace') ?: 'io.github.ichtj'
+version = rootProject.ext.android.versionName
 
 android {
     compileSdkVersion rootProject.ext.android.compileSdkVersion
@@ -28,9 +32,9 @@ android {
 }
 
 //Copy类型
-task makeJar(type: Copy) {
+task makeAospJar(type: Copy) {
     //删除存在的
-    delete 'build/libs/jarsdk.jar'
+    delete 'build/libs/base_xlink.jar'
     //设置拷贝的文件
     // from('build/intermediates/bundles/release/')
     from('build/intermediates/aar_main_jar/release/')
@@ -44,9 +48,10 @@ task makeJar(type: Copy) {
     rename ('classes.jar', 'base_xlink.jar')
 }
 
-makeJar.dependsOn(build)
+makeAospJar.dependsOn('assembleRelease')
+
 //在终端执行生成JAR包
-// gradlew makeJar
+// gradlew.bat --no-daemon :module_xlink:makeAospJar
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     //gson
@@ -60,7 +65,7 @@ dependencies {
     implementation rootProject.ext.dependencies["converter-gson"]
     implementation rootProject.ext.dependencies["adapter-rxjava"]
 //    api rootProject.ext.dependencies["xlog"]
-    api 'io.github.ichtj:LogTools:1.4.0'
+    api 'io.github.ichtj:LogTools:1.5.0'
     //okhttp目前只能使用该版本，最新版本需要针对android低版本做兼容操作
     implementation rootProject.ext.dependencies["okhttp"]
     //Mqtt
@@ -69,5 +74,143 @@ dependencies {
     }
     api (rootProject.ext.dependencies["mqttv-service"]){
         transitive=true
+    }
+}
+
+//apply from: '../bintray.gradle'
+/*apply from: '../maven.gradle'*/
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from android.sourceSets.main.java.srcDirs
+}
+
+task androidJavadocsJar(type: Jar) {
+    // Maven Central requires a javadoc artifact; the Android API docs are not generated in this old AGP setup.
+    archiveClassifier.set('javadoc')
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                artifact androidSourcesJar
+                artifact androidJavadocsJar
+
+                groupId = project.group
+                artifactId = 'BaseXLink'
+                version = project.version
+
+                pom {
+                    name = 'BaseXLink'
+                    description = 'Android base xlink utilities for system API access.'
+                    url = 'https://github.com/ichtj/BaseXLink'
+
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = 'ichtj'
+                            name = 'ichtj'
+                        }
+                    }
+
+                    scm {
+                        connection = 'scm:git:https://github.com/ichtj/BaseXLink.git'
+                        developerConnection = 'scm:git:ssh://git@github.com/ichtj/BaseXLink.git'
+                        url = 'https://github.com/ichtj/BaseXLink'
+                    }
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                name = 'centralBundle'
+                url = uri("$buildDir/central-staging")
+            }
+        }
+    }
+
+    signing {
+        def signingKey = findProperty('signingKey') ?: System.getenv('SIGNING_KEY')
+        def signingPassword = findProperty('signingPassword') ?: System.getenv('SIGNING_PASSWORD')
+        if (signingKey) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        } else if ("${findProperty('signing.useGpgCmd')}".toBoolean()) {
+            useGpgCmd()
+        }
+        sign publishing.publications.release
+    }
+}
+
+tasks.withType(Sign) {
+    onlyIf {
+        findProperty('signingKey') || System.getenv('SIGNING_KEY') ||
+                findProperty('signing.keyId') || findProperty('signing.secretKeyRingFile')
+    }
+}
+
+task cleanCentralBundle(type: Delete) {
+    group = 'publishing'
+    description = 'Cleans generated Maven Central staging and bundle files.'
+    delete "$buildDir/central-staging", "$buildDir/central-bundle"
+}
+
+task validateCentralPublishConfig {
+    group = 'publishing'
+    description = 'Validates Maven Central token and GPG signing configuration.'
+
+    doLast {
+        def centralUsername = findProperty('centralUsername') ?: findProperty('mavenCentralUsername') ?: System.getenv('CENTRAL_USERNAME')
+        def centralPassword = findProperty('centralPassword') ?: findProperty('mavenCentralPassword') ?: System.getenv('CENTRAL_PASSWORD')
+        if (!centralUsername || !centralPassword) {
+            throw new GradleException('Missing Central Portal token. Set mavenCentralUsername/mavenCentralPassword, CENTRAL_USERNAME/CENTRAL_PASSWORD, or pass -PcentralUsername/-PcentralPassword.')
+        }
+        if (!findProperty('signingKey') && !System.getenv('SIGNING_KEY')
+                && !findProperty('signing.keyId') && !findProperty('signing.secretKeyRingFile')) {
+            throw new GradleException('Missing GPG signing key. Set SIGNING_KEY/SIGNING_PASSWORD or Gradle signing.* properties before publishing to Maven Central.')
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.getByName('publishReleasePublicationToCentralBundleRepository').mustRunAfter cleanCentralBundle
+}
+
+task centralBundleZip(type: Zip) {
+    group = 'publishing'
+    description = 'Builds a Maven Central Portal deployment bundle.'
+    dependsOn cleanCentralBundle
+    dependsOn 'publishReleasePublicationToCentralBundleRepository'
+    archiveFileName = "${project.name}-${project.version}-central-bundle.zip"
+    destinationDirectory = file("$buildDir/central-bundle")
+    from "$buildDir/central-staging"
+}
+
+task publishReleaseToCentral(type: Exec) {
+    group = 'publishing'
+    description = 'Publishes the release bundle to Sonatype Central Portal.'
+    dependsOn validateCentralPublishConfig
+    dependsOn centralBundleZip
+
+    def centralUsername = findProperty('centralUsername') ?: findProperty('mavenCentralUsername') ?: System.getenv('CENTRAL_USERNAME')
+    def centralPassword = findProperty('centralPassword') ?: findProperty('mavenCentralPassword') ?: System.getenv('CENTRAL_PASSWORD')
+    def publishingType = findProperty('centralPublishingType') ?: System.getenv('CENTRAL_PUBLISHING_TYPE') ?: 'AUTOMATIC'
+
+    doFirst {
+        def token = "${centralUsername}:${centralPassword}".bytes.encodeBase64().toString()
+        commandLine 'curl',
+                '--request', 'POST',
+                '--fail',
+                '--show-error',
+                '--header', "Authorization: Bearer ${token}",
+                '--form', "bundle=@${centralBundleZip.archiveFile.get().asFile.absolutePath}",
+                "https://central.sonatype.com/api/v1/publisher/upload?name=BaseXLink-${project.version}&publishingType=${publishingType}"
     }
 }

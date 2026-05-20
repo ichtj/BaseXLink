@@ -29,7 +29,6 @@ import com.future.xlink.callback.IMqttCallback;
 import com.future.xlink.callback.IHttpRequest;
 import com.future.xlink.utils.JsonFormat;
 import com.future.xlink.utils.Utils;
-import com.future.xlink.xlog.XLogTools;
 import com.library.logtools.FaceLogTools;
 
 import java.io.File;
@@ -124,7 +123,8 @@ public class MainAty extends Activity implements IMqttCallback, View.OnClickList
         FormatViewUtils.setMovementMethod(tvResult);
 
         String configFolder = new File(getFilesDir(), "xlink-log").getAbsolutePath() + File.separator;
-        XLogTools.initXLog(this,configFolder);
+        FaceLogTools.initialize(this);
+        FaceLogTools.putLogDirectory(configFolder);
         service.scheduleAtFixedRate(this::run, 0, 15, TimeUnit.SECONDS);
 
         if (isAutoConn) {

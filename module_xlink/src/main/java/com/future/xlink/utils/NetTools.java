@@ -5,7 +5,8 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
 
-import com.future.xlink.xlog.XLogTools;
+
+import com.library.logtools.FaceLogTools;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -19,7 +20,6 @@ import java.util.Random;
  * @author chtj
  */
 public class NetTools {
-    private static final String TAG = NetTools.class.getSimpleName();
     /**
      * 获取ping 的耗时
      */
@@ -41,13 +41,13 @@ public class NetTools {
             String command = "ping -c " + pingCount + " " + pingHosts[0];
             process = Runtime.getRuntime().exec(command);
             if (process == null) {
-                XLogTools.d(TAG,"ping ping fail:process is null.");
+                FaceLogTools.debug("ping ping fail:process is null.");
                 append(stringBuffer, "ping fail:process is null.");
                 return result;
             }
             successReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while ((line = successReader.readLine()) != null) {
-                XLogTools.d(TAG,"ping line-->" + line);
+                FaceLogTools.debug("ping line-->" + line);
                 if (line.contains("rtt min/avg/max/mdev = ")) {
                     //获取avg数据返回
                     result = host + "#" + parsedata(line);
@@ -56,16 +56,16 @@ public class NetTools {
             }
             int status = process.waitFor();
             if (status == 0) {
-                XLogTools.d(TAG,"ping exec cmd success:" + command);
+                FaceLogTools.debug("ping exec cmd success:" + command);
                 append(stringBuffer, "exec cmd success:" + command);
             } else {
-                XLogTools.d(TAG,"ping exec cmd fail.");
+                FaceLogTools.debug("ping exec cmd fail.");
                 append(stringBuffer, "exec cmd fail.");
             }
-            XLogTools.d(TAG,"ping exec finished.");
+            FaceLogTools.debug("ping exec finished.");
             append(stringBuffer, "exec finished.");
         } catch (Throwable e) {
-            XLogTools.e(TAG,"ping"+e.getMessage());
+            FaceLogTools.error("ping"+e.getMessage());
         } finally {
             if (process != null) {
                 process.destroy();
@@ -74,7 +74,7 @@ public class NetTools {
                 try {
                     successReader.close();
                 } catch (Throwable e) {
-                    XLogTools.e(TAG,e.getMessage());
+                    FaceLogTools.error(e.getMessage());
                 }
             }
         }
@@ -126,11 +126,11 @@ public class NetTools {
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         if (activeNetworkInfo != null) {
             String[] newList = getRandomPingList(pingList, pingList.length<3?pingList.length:3);
-            XLogTools.d(TAG,"newList >> " + Arrays.toString(newList));
+            FaceLogTools.debug("newList >> " + Arrays.toString(newList));
             for (int i = 0; i < newList.length; i++) {
                 String pingAddr = newList[i];
                 boolean isNetOk = ping(pingAddr, 1, 1);
-                XLogTools.d(TAG,"newList [" + i + "]>> " + pingAddr + " >> " + isNetOk);
+                FaceLogTools.debug("newList [" + i + "]>> " + pingAddr + " >> " + isNetOk);
                 if (isNetOk) {
                     return true;
                 }
@@ -176,12 +176,12 @@ public class NetTools {
             }
             // ping的状态
             int status = p.waitFor();
-            Log.d(TAG, "ping: cmd >> " + cmd + ", content >> " + stringBuffer.toString() + ", status >> " + status);
+            FaceLogTools.debug("ping: cmd >> " + cmd + ", content >> " + stringBuffer.toString() + ", status >> " + status);
             if (status == 0) {
                 return true;
             }
         } catch (Throwable e) {
-            Log.e(TAG, "ping: ", e);
+            FaceLogTools.error("ping: "+e.getMessage());
         }
         return false;
     }
@@ -197,7 +197,7 @@ public class NetTools {
             String end = line.substring("rtt min/avg/max/mdev = ".length());
             return end.split("/")[1];
         } catch (Throwable e) {
-            XLogTools.e(TAG,e.getMessage());
+            FaceLogTools.error(e.getMessage());
             return null;
         }
     }

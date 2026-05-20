@@ -2,7 +2,7 @@ package com.future.xlink.request.retrofit;
 
 import android.util.Log;
 
-import com.future.xlink.xlog.XLogTools;
+import com.library.logtools.FaceLogTools;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -20,7 +20,6 @@ import okhttp3.Response;
 import okio.Buffer;
 
 final class OkHttpSingleton {
-    private static final String TAG = "OkHttpSingleton";
     private static final long CONNECT_TIMEOUT = 12;
     private static final long WRITE_TIMEOUT = 12;
     private static final long READ_TIMEOUT = 12;
@@ -50,9 +49,9 @@ final class OkHttpSingleton {
             HttpUrl modifiedUrl = builder.build();
             Request request = original.newBuilder().url(modifiedUrl).build();
             try {
-                XLogTools.d(TAG,request.method() + " " + request.url().encodedPath());
+                FaceLogTools.debug(request.method() + " " + request.url().encodedPath());
             } catch (Throwable e) {
-                XLogTools.d(TAG, e.getMessage());
+                FaceLogTools.debug( e.getMessage());
             }
             return chain.proceed(request);
         }
@@ -81,7 +80,7 @@ final class OkHttpSingleton {
                 return parameter;
             }
         } catch (Throwable e) {
-            Log.e(TAG, "getParameters: ", e);
+            FaceLogTools.error("getParameters: "+e.getMessage());
         }
         return "";
     }
